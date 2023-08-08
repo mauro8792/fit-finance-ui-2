@@ -18,7 +18,26 @@ export const useSportsStore = () => {
     }
   };
 
-  
+  const create = async (sport) => {
+    try {
+      await financeApi.post('/sports', { ...sport, monthlyFee: parseInt(sport.monthlyFee) });
+    } catch (error) {
+      setTimeout(() => {
+        dispatch(clearErrorMessage());
+      }, 10);
+    }
+  };
+
+  const update = async (payload) => {
+    const { id, ...sport } = payload;
+    try {
+      await financeApi.patch(`/sports/${id}`, { ...sport, monthlyFee: parseInt(sport.monthlyFee) });
+    } catch (error) {
+      setTimeout(() => {
+        dispatch(clearErrorMessage());
+      }, 10);
+    }
+  };
 
   return {
     //* Propiedades
@@ -26,5 +45,7 @@ export const useSportsStore = () => {
     errorMessage,
     //* Métodos
     findAllSports,
+    update,
+    create,
   };
 };

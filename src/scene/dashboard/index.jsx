@@ -11,7 +11,7 @@ export const Dashboard = () => {
       height='100vh' // Ajustar la altura al 100% del viewport
       overflow='hidden' // Evitar el desplazamiento si la imagen es grande
     >
-      <img src={`../../assets/round22.jpg`} alt='Dashboard' style={{ maxWidth: '90%', maxHeight: '90%' }} />
+      <img src={`../../assets/icon-round.png`} alt='Dashboard' style={{ maxWidth: '90%', maxHeight: '90%' }} />
     </Box>
   );
 };
