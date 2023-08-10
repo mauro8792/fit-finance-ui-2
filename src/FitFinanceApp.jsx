@@ -11,6 +11,7 @@ import {Dashboard} from './scene/dashboard'
 import { AuthRoutes } from './scene/auth/routes/AuthRoutes';
 import { useAuthStore } from './hooks';
 import { Students } from './scene/students';
+import { Fees } from './scene/fees';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
@@ -40,6 +41,7 @@ export const FitFinanceApp = () => {
                   <>
                     <Route path='/sports' element={<Sports />} />
                     <Route path='/usuarios' element={<Users />} />
+                    <Route path='/cuotas' element={<Fees />} />
                     <Route path='/pagos' element={<Payments />} />
                     <Route path='/alumnos' element={<Students />} />
                     <Route path='/*' element={<Dashboard />} />

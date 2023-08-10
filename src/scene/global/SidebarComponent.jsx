@@ -1,16 +1,20 @@
 /* eslint-disable react/prop-types */
 import { useState } from 'react';
-import { ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
-import { Box, IconButton, Typography, useTheme } from '@mui/material';
 import { Link } from 'react-router-dom';
-import 'react-pro-sidebar/dist/css/styles.css';
-import { tokens } from '../../theme';
+import { Box, IconButton, Typography, useTheme } from '@mui/material';
+import { ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
+
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import GroupIcon from '@mui/icons-material/Group';
 import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
-import PaidIcon from '@mui/icons-material/Paid';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import PaidIcon from '@mui/icons-material/Paid';
+import FeedIcon from '@mui/icons-material/Feed';
+
+import 'react-pro-sidebar/dist/css/styles.css';
+import { tokens } from '../../theme';
+
 
 const Item = ({ title, to, icon, selected, setSelected }) => {
   const theme = useTheme();
@@ -70,7 +74,7 @@ export const SidebarComponent = () => {
           >
             {!isCollapsed && (
               <Box display='flex' justifyContent='space-between' alignItems='center' ml='15px' color={colors.orangeAccent[500]}>
-                <Typography variant='h3'>Leo Perez</Typography>
+                <Typography variant='h3'>Adrian Martinez</Typography>
                 <IconButton onClick={() => setIsCollapsed(!isCollapsed)}>
                   <MenuOutlinedIcon />
                 </IconButton>
@@ -94,6 +98,7 @@ export const SidebarComponent = () => {
             <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
             <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
             <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
+            <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
             <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
           </Box>
         </Menu>
