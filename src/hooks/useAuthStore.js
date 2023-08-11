@@ -9,7 +9,7 @@ export const useAuthStore = () => {
   const startLogin = async ({ email, password }) => {
     dispatch(onChecking());
     try {
-    
+      console.log(' email, password', email, password);
       const { data } = await financeApi.post('/auth/login', { email, password });
       localStorage.setItem('token', data.token);
       localStorage.setItem('token-init-date', new Date().getTime());

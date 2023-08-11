@@ -1,21 +1,18 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable react/prop-types */
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { Box, CircularProgress, IconButton, MenuItem, Select, TextField, Tooltip, Typography } from '@mui/material';
+import { Box,  IconButton, MenuItem, Select, TextField,  Typography } from '@mui/material';
 import { Card, CardContent, CardActions, Button } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import { useTheme } from '@mui/material';
 import BackspaceIcon from '@mui/icons-material/Backspace';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import EditIcon from '@mui/icons-material/Edit';
-import InfoIcon from '@mui/icons-material/Info';
 
-import { tokens } from '../../theme';
 import Header from '../../components/Header';
-import { useSportsStore } from '../../hooks';
+import { usePaymentsStore } from '../../hooks';
 import { useFeesStore } from '../../hooks/useFeesStore';
 import { ViewFeeModal } from './ViewFee';
+import { AddPaymentModal } from './AddPayment';
+import { UpdateFeeModal } from './UpdateFee';
 
 const monthOptions = Array.from({ length: 12 }, (_, index) => ({
   value: (index + 1).toString(),
@@ -29,14 +26,12 @@ const yearOptions = [
 ];
 
 export const Fees = () => {
-  const theme = useTheme();
-  const colors = tokens(theme.palette.mode);
   const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
 
-  const { findAllSports, sports, update } = useSportsStore();
+  const { create } = usePaymentsStore();
+
   const { findAllFees, fees } = useFeesStore();
 
-  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const filteredFees = fees.filter((fee) => fee.nameStudent.toLowerCase().includes(searchTerm.toLowerCase()));
   const inputRef = useRef(null);
@@ -49,22 +44,20 @@ export const Fees = () => {
 
   const [feeSelected, setFeeSelected] = useState(null);
   const [openViewModal, setOpenViewModal] = useState(false);
+  const [openAddPaymentModal, setOpenAddPaymentModal] = useState(false);
   const [openUpdateModal, setOpenUpdateModal] = useState(false);
-  const [openAddModal, setOpenAddModal] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   const fetchFee = async () => {
     try {
       await findAllFees({ month: selectedMonth, year: selectedYear });
-      setLoading(false);
     } catch (error) {
       console.error('Error al obtener los estudiantes:', error);
     }
   };
 
-  const handleSaveChanges = async (updatedSport) => {
-    await update(updatedSport);
-    setLoading(true);
-    await fetchFee();
+  const handleUpdateFee = async (updateFee) => {
+    console.log('updateFee', updateFee);
   };
 
   const handleOpenViewModal = (fee) => {
@@ -72,8 +65,13 @@ export const Fees = () => {
     setOpenViewModal(true);
   };
 
-  const handleOpenUpdateModal = (sport) => {
-    setFeeSelected(sport);
+  const handleOpenAddPaymentModal = (fee) => {
+    setFeeSelected(fee);
+    setOpenAddPaymentModal(true);
+  };
+
+  const handleOpenUpdateModal = (fee) => {
+    setFeeSelected(fee);
     setOpenUpdateModal(true);
   };
 
@@ -81,13 +79,20 @@ export const Fees = () => {
     setFeeSelected(null);
     setOpenViewModal(false);
     setOpenUpdateModal(false);
+    setOpenAddPaymentModal(false);
   };
 
   const handleClearSearch = () => {
     setSearchTerm('');
     inputRef.current.focus();
   };
-  
+
+  const handlePaymentSubmit = async (data) => {
+    await create(data);
+    handleCloseModal();
+    setRefresh(true);
+  };
+
   useEffect(() => {
     fetchFee();
   }, []);
@@ -96,148 +101,155 @@ export const Fees = () => {
     fetchFee();
   }, [selectedMonth, selectedYear]);
 
-  useEffect(() => {}, [sports]);
+  useEffect(() => {
+    if (refresh) {
+      fetchFee();
+      setRefresh(false); // Restablecer el estado de refresco
+    }
+  }, [refresh, selectedMonth, selectedYear]);
 
 
+  const CardComponent = ({ fee }) => {
+    const remainingPayment = parseInt(fee.value) - parseInt(fee.amountPaid);
+    const isFullyPaid = remainingPayment === 0;
 
-  
-const CardComponent = ({ fee }) => {
-  const remainingPayment = parseInt(fee.value) - parseInt(fee.amountPaid);
-  const isFullyPaid = remainingPayment === 0;
-
-  return (
-    <Card
-      sx={{
-        minWidth: 275,
-        margin: '10px',
-        maxWidth: '30%',
-        backgroundColor: '#333333', // Gris oscuro en lugar de negro
-        color: '#FFFFFF',
-        boxShadow: '0px 2px 6px rgba(255, 255, 255, 0.1)', // Sombras más claras
-        borderRadius: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <CardContent>
-        <Typography variant='h6' component='div'>
-          {fee.nameStudent}
-        </Typography>
-        <Typography sx={{ mb: 1.5, color: isFullyPaid ? '#00FF00' : '#FF0000' }} color='text.secondary'>
-          Valor cuota: {fee.value}
-        </Typography>
-        <Typography sx={{ mb: 1.5 }} color='text.secondary'>
-          Pago parcial: {fee.amountPaid}
-        </Typography>
-        <Typography sx={{ mb: 1.5, color: isFullyPaid ? '#00FF00' : '#FF0000' }} color='text.secondary'>
-          Restan: {remainingPayment}
-        </Typography>
-        <Typography sx={{ mb: 1.5 }} color='text.secondary'>
-          Fecha venc.: {format(new Date(fee.startDate), 'dd-MM-yyyy')}
-        </Typography>
-        {/* Más información sobre la cuota */}
-      </CardContent>
-      <CardActions>
-        <Button
-          size='small'
-          sx={{
-            color: '#FFC107',
-            '&:hover': {
-              backgroundColor: '#555555', // Cambia el color de fondo al pasar el mouse
-            },
-          }}
-        >
-          Editar
-        </Button>
-        <Button
-          size='small'
-          onClick={() => handleOpenViewModal(fee)}
-          sx={{
-            color: '#00FF00',
-            '&:hover': {
-              backgroundColor: '#555555', // Cambia el color de fondo al pasar el mouse
-            },
-          }}
-        >
-          Ver
-        </Button>
-        <Button
-          size='small'
-          sx={{
-            color: '#FF0000',
-            '&:hover': {
-              backgroundColor: '#555555', // Cambia el color de fondo al pasar el mouse
-            },
-          }}
-        >
-          Ingresar Pago
-        </Button>
-      </CardActions>
-    </Card>
-  );
-};
+    return (
+      <Card
+        sx={{
+          minWidth: 275,
+          margin: '10px',
+          maxWidth: '30%',
+          backgroundColor: '#333333',
+          color: '#FFFFFF',
+          borderRadius: '10px',
+          display: 'flex',
+          flexDirection: 'column',
+          position: 'relative',
+          backgroundImage: 'url("../../assets/hexa2.jpg")', // Reemplaza con la URL de tu imagen
+          backgroundSize: 'cover',
+          transition: 'box-shadow 0.3s ease, background-color 0.3s ease', // Transiciones suaves
+          '&:hover': {
+            boxShadow: '0px 6px 12px rgba(255, 255, 255, 0.2)', // Cambio de sombra al pasar el mouse
+            backgroundColor: '#444444', // Cambio de color de fondo al pasar el mouse
+          },
+        }}
+      >
+        <CardContent>
+          <Typography variant='h6' component='div'>
+            {fee.nameStudent}
+          </Typography>
+          <Typography sx={{ mb: 1.5, color: isFullyPaid ? '#00FF00' : '#FF0000' }} color='text.secondary'>
+            Valor cuota: {fee.value}
+          </Typography>
+          <Typography sx={{ mb: 1.5 }} color='text.secondary'>
+            Pago parcial: {fee.amountPaid}
+          </Typography>
+          <Typography sx={{ mb: 1.5, color: isFullyPaid ? '#00FF00' : '#FF0000' }} color='text.secondary'>
+            Restan: {remainingPayment}
+          </Typography>
+          <Typography sx={{ mb: 1.5 }} color='text.secondary'>
+            Fecha venc.: {format(new Date(fee.startDate), 'dd-MM-yyyy')}
+          </Typography>
+        </CardContent>
+        <CardActions>
+          <Button
+            size='small'
+            sx={{
+              color: '#FFC107',
+              '&:hover': {
+                backgroundColor: '#555555',
+              },
+            }}
+            onClick={() => handleOpenUpdateModal(fee)}
+          >
+            Editar
+          </Button>
+          <Button
+            size='small'
+            onClick={() => handleOpenViewModal(fee)}
+            sx={{
+              color: '#00FF00',
+              '&:hover': {
+                backgroundColor: '#555555',
+              },
+            }}
+          >
+            Ver
+          </Button>
+          {!isFullyPaid && (
+            <Button
+              size='small'
+              onClick={() => handleOpenAddPaymentModal(fee)}
+              sx={{
+                color: '#FF0000',
+                '&:hover': {
+                  backgroundColor: '#555555',
+                },
+              }}
+            >
+              Ingresar Pago
+            </Button>
+          )}
+        </CardActions>
+      </Card>
+    );
+  };
   return (
     <>
       <Header title='Cuotas' subtitle='Lista de cuotas por mes '></Header>
-      {/* <Tooltip title='Agregar nueva disciplina' placement='top'>
-        <IconButton color='primary' aria-label='agregar nuevo alumno' component='span' onClick={() => setOpenAddModal(true)}>
-          <Typography style={{ paddingRight: '5px' }}>Agregar Nueva disciplina</Typography>
-          <PersonAddIcon />
-        </IconButton>
-      </Tooltip> */}
 
-      {/* <AddSportModal openModal={openAddModal} setOpenModal={setOpenAddModal} fetchSports={fetchFee} /> */}
-      <Box display='flex' justifyContent='center' alignItems='center' flexDirection={isMobile ? 'column' : 'row'} gap='20px' p={2}>
-        <Box display='flex' alignItems='center' gap='10px' sx={{ height: '40px' }}>
-          <Select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} label='Mes'>
-            {monthOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
+      
+          <Box
+            display='flex'
+            justifyContent='center'
+            alignItems='center'
+            flexDirection={isMobile ? 'column' : 'row'}
+            gap='20px'
+            p={2}
+            className='animate__animated animate__fadeIn animate__faster'
+          >
+            <Box display='flex' alignItems='center' gap='10px' sx={{ height: '40px' }}>
+              <Select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} label='Mes'>
+                {monthOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+              <Select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} label='Año'>
+                {yearOptions.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+            <TextField
+              label='Buscar alumno'
+              variant='outlined'
+              size='small'
+              value={searchTerm}
+              inputRef={inputRef}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              sx={{ width: isMobile ? '100%' : 'auto', height: '40px', marginBottom: isMobile ? '10px' : '0' }}
+              InputProps={{
+                endAdornment: searchTerm && (
+                  <IconButton onClick={handleClearSearch}>
+                    <BackspaceIcon />
+                  </IconButton>
+                ),
+              }}
+            />
+          </Box>
+          <Box display='flex' flexWrap='wrap' justifyContent='center' maxHeight='75vh' overflow='auto'>
+            {filteredFees.map((fee) => (
+              <CardComponent key={fee.id} fee={fee} />
             ))}
-          </Select>
-          <Select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} label='Año'>
-            {yearOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-        </Box>
-        <TextField
-          label='Buscar alumno'
-          variant='outlined'
-          size='small'
-          value={searchTerm}
-          inputRef={inputRef}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: isMobile ? '100%' : 'auto', height: '40px', marginBottom: isMobile ? '10px' : '0' }}
-          InputProps={{
-            endAdornment: searchTerm && (
-              <IconButton onClick={handleClearSearch}>
-                <BackspaceIcon />
-              </IconButton>
-            ),
-          }}
-        />
-      </Box>
-      <Box display='flex' flexWrap='wrap' justifyContent='center' maxHeight='75vh' overflow='auto'>
-        {filteredFees.map((fee) => (
-          <CardComponent key={fee.id} fee={fee} />
-        ))}
-      </Box>
-
-      {/* {feeSelected && openUpdateModal && (
-        <UpdateSportModal
-          openModal={openUpdateModal}
-          setOpenModal={setOpenUpdateModal}
-          feeSelected={feeSelected}
-          onSaveChanges={handleSaveChanges}
-          setfeeSelected={setfeeSelected}
-        />
-      )} */}
+          </Box>
 
       {feeSelected && <ViewFeeModal openModal={openViewModal} selectedFee={feeSelected} handleCloseModal={handleCloseModal} />}
+      {feeSelected && <UpdateFeeModal openModal={openUpdateModal} handleCloseModal={handleCloseModal} fee={feeSelected} handleUpdateFee={handleUpdateFee} />}
+      {feeSelected && <AddPaymentModal openModal={openAddPaymentModal} handlePaymentSubmit={handlePaymentSubmit} selectedFee={feeSelected} handleCloseModal={handleCloseModal} />}
     </>
   );
 };

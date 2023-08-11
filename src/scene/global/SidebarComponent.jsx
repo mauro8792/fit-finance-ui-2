@@ -37,7 +37,7 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 export const SidebarComponent = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const [selected, setSelected] = useState('dashboard');
 
   return (
