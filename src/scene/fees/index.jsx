@@ -2,8 +2,9 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
+import InfiniteScroll from 'react-infinite-scroll-component';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { Box,  IconButton, MenuItem, Select, TextField,  Typography } from '@mui/material';
+import { Box, IconButton, MenuItem, Select, TextField, Typography } from '@mui/material';
 import { Card, CardContent, CardActions, Button } from '@mui/material';
 import BackspaceIcon from '@mui/icons-material/Backspace';
 
@@ -108,7 +109,6 @@ export const Fees = () => {
     }
   }, [refresh, selectedMonth, selectedYear]);
 
-
   const CardComponent = ({ fee }) => {
     const remainingPayment = parseInt(fee.value) - parseInt(fee.amountPaid);
     const isFullyPaid = remainingPayment === 0;
@@ -198,54 +198,84 @@ export const Fees = () => {
     <>
       <Header title='Cuotas' subtitle='Lista de cuotas por mes '></Header>
 
-      
-          <Box
-            display='flex'
-            justifyContent='center'
-            alignItems='center'
-            flexDirection={isMobile ? 'column' : 'row'}
-            gap='20px'
-            p={2}
-            className='animate__animated animate__fadeIn animate__faster'
-          >
-            <Box display='flex' alignItems='center' gap='10px' sx={{ height: '40px' }}>
-              <Select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} label='Mes'>
-                {monthOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-              <Select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} label='Año'>
-                {yearOptions.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </Box>
-            <TextField
-              label='Buscar alumno'
-              variant='outlined'
-              size='small'
-              value={searchTerm}
-              inputRef={inputRef}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              sx={{ width: isMobile ? '100%' : 'auto', height: '40px', marginBottom: isMobile ? '10px' : '0' }}
-              InputProps={{
-                endAdornment: searchTerm && (
-                  <IconButton onClick={handleClearSearch}>
-                    <BackspaceIcon />
-                  </IconButton>
-                ),
-              }}
-            />
-          </Box>
-          <Box display='flex' flexWrap='wrap' justifyContent='center' maxHeight='75vh' overflow='auto'>
+      <Box
+        display='flex'
+        justifyContent='center'
+        alignItems='center'
+        flexDirection={isMobile ? 'column' : 'row'}
+        gap='20px'
+        p={2}
+        className='animate__animated animate__fadeIn animate__faster'
+      >
+        <Box display='flex' alignItems='center' gap='10px' sx={{ height: '40px' }}>
+          <Select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} label='Mes'>
+            {monthOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+          <Select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} label='Año'>
+            {yearOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </Box>
+        <TextField
+          label='Buscar alumno'
+          variant='outlined'
+          size='small'
+          value={searchTerm}
+          inputRef={inputRef}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          sx={{ width: isMobile ? '100%' : 'auto', height: '40px', marginBottom: isMobile ? '10px' : '0' }}
+          InputProps={{
+            endAdornment: searchTerm && (
+              <IconButton onClick={handleClearSearch}>
+                <BackspaceIcon />
+              </IconButton>
+            ),
+          }}
+        />
+      </Box>
+      <Box display='flex' flexWrap='wrap' justifyContent='center' maxHeight='75vh' overflow='auto'>
+        <InfiniteScroll
+          dataLength={filteredFees.length}
+          next={() => {
+            // Lógica para cargar más datos, por ejemplo, paginación
+          }}
+          hasMore={true} // Determina si hay más datos para cargar
+          // loader={<h4>Cargando...</h4>} // Componente de carga
+        >
+          <Box display='flex' flexWrap='wrap' justifyContent='center' overflow='hidden' className='card-container'>
             {filteredFees.map((fee) => (
               <CardComponent key={fee.id} fee={fee} />
             ))}
+            <Card
+              sx={{
+                visibility: 'hidden', // Oculta la tarjeta
+                minWidth: 275,
+                margin: '10px',
+                maxWidth: '30%',
+                backgroundColor: '#333333',
+                color: '#FFFFFF',
+                borderRadius: '10px',
+              }}
+            >
+              <CardContent>
+                <Typography variant='h6' component='div'>
+                  Título de ejemplo
+                </Typography>
+                <Typography variant='h6' component='div'>
+                  Título de ejemplo
+                </Typography>
+              </CardContent>
+            </Card>
           </Box>
+        </InfiniteScroll>
+      </Box>
 
       {feeSelected && <ViewFeeModal openModal={openViewModal} selectedFee={feeSelected} handleCloseModal={handleCloseModal} />}
       {feeSelected && <UpdateFeeModal openModal={openUpdateModal} handleCloseModal={handleCloseModal} fee={feeSelected} handleUpdateFee={handleUpdateFee} />}

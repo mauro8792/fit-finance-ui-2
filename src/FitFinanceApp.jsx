@@ -25,7 +25,7 @@ export const FitFinanceApp = () => {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className='app'>
+        <div className='app' style={{height:'100%'}}>
           {status === 'authenticated' && <Topbar setIsSidebar={setIsSidebar} />}
 
           <main className='content' style={{ display: 'flex' }}>

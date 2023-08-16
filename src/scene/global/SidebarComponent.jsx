@@ -24,6 +24,7 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
       active={selected === title}
       style={{
         color: colors.grey[100],
+        backgroundColor: selected === title ? colors.orangeAccent[500] : 'transparent',
       }}
       onClick={() => setSelected(title)}
       icon={icon}
@@ -43,8 +44,9 @@ export const SidebarComponent = () => {
   return (
     <Box
       sx={{
+        height: '100vh',
         '& .pro-sidebar-inner': {
-          background: `${colors.primary[900]} !important`,
+          background: `linear-gradient(${colors.primary[900]}, ${colors.orangeAccent[500]}) !important`,
         },
         '& .pro-icon-wrapper': {
           backgroundColor: 'transparent !important',
@@ -56,12 +58,11 @@ export const SidebarComponent = () => {
           color: `${colors.orangeAccent[300]} !important`,
         },
         '& .pro-menu-item.active': {
-          // color: '#ffca86 !important',
-          color: `${colors.orangeAccent[400]} !important`,
+          color: `${colors.primary[400]} !important`,
         },
       }}
     >
-      <ProSidebar collapsed={isCollapsed}>
+      <ProSidebar collapsed={isCollapsed} style={{ height: '100vh' }}>
         <Menu iconShape='square'>
           {/* LOGO AND MENU ICON */}
           <MenuItem
