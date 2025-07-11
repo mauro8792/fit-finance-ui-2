@@ -1,8 +1,8 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { financeApi } from '../api';
-import { clearErrorMessage, onLoadFee } from '../store';
+import { useDispatch, useSelector } from "react-redux";
+import { financeApi } from "../api";
+import { clearErrorMessage, onLoadFee } from "../store";
 
-const url = '/fees';
+const url = "/fees";
 
 export const useFeesStore = () => {
   const { fees, errorMessage } = useSelector((state) => state.fee);
@@ -32,7 +32,10 @@ export const useFeesStore = () => {
 
   const create = async (sport) => {
     try {
-      await financeApi.post(url, { ...sport, monthlyFee: parseInt(sport.monthlyFee) });
+      await financeApi.post(url, {
+        ...sport,
+        monthlyFee: parseInt(sport.monthlyFee),
+      });
     } catch (error) {
       setTimeout(() => {
         dispatch(clearErrorMessage());
@@ -43,11 +46,50 @@ export const useFeesStore = () => {
   const update = async (payload) => {
     const { id, ...sport } = payload;
     try {
-      await financeApi.patch(`${url}/${id}`, { ...sport, monthlyFee: parseInt(sport.monthlyFee) });
+      await financeApi.patch(`${url}/${id}`, {
+        ...sport,
+        monthlyFee: parseInt(sport.monthlyFee),
+      });
     } catch (error) {
       setTimeout(() => {
         dispatch(clearErrorMessage());
       }, 10);
+    }
+  };
+
+  const getUnpaidFeesByStudent = async (studentId) => {
+    try {
+      const { data } = await financeApi.get(
+        `${url}/student/${studentId}/unpaid`
+      );
+      return data;
+    } catch (error) {
+      console.error("Error al obtener cuotas pendientes:", error);
+      throw error;
+    }
+  };
+
+  const validateSequentialPayment = async (studentId, feeId) => {
+    try {
+      const { data } = await financeApi.get(
+        `${url}/student/${studentId}/validate-payment/${feeId}`
+      );
+      return data;
+    } catch (error) {
+      console.error("Error al validar pago secuencial:", error);
+      throw error;
+    }
+  };
+
+  const checkStudentUnpaidFees = async (studentId) => {
+    try {
+      const { data } = await financeApi.get(
+        `${url}/student/${studentId}/unpaid`
+      );
+      return data.unpaidFeesCount > 0 ? data : null;
+    } catch (error) {
+      console.error("Error al verificar cuotas pendientes:", error);
+      return null;
     }
   };
 
@@ -59,5 +101,8 @@ export const useFeesStore = () => {
     findAllFees,
     update,
     create,
+    getUnpaidFeesByStudent,
+    validateSequentialPayment,
+    checkStudentUnpaidFees,
   };
 };

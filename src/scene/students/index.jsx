@@ -1,17 +1,32 @@
-import { useEffect, useState } from 'react';
-import { Box, CircularProgress, IconButton, Tooltip, Typography } from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
-import { useTheme } from '@mui/material';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import EditIcon from '@mui/icons-material/Edit';
-import InfoIcon from '@mui/icons-material/Info';
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import EditIcon from "@mui/icons-material/Edit";
+import InfoIcon from "@mui/icons-material/Info";
+import PersonIcon from "@mui/icons-material/Person";
+import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import PhoneIcon from "@mui/icons-material/Phone";
+import SportsIcon from "@mui/icons-material/Sports";
+import {
+  Avatar,
+  Box,
+  Button,
+  Card,
+  CardActions,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Grid,
+  Tooltip,
+  Typography,
+  useTheme,
+} from "@mui/material";
+import { useEffect, useState } from "react";
 
-import { tokens } from '../../theme';
-import Header from '../../components/Header';
-import { useSportsStore, useStudentsStore } from '../../hooks';
-import { UpdateStudentModal } from './UpdateStudent/UpdateStudentModal';
-import { AddStudentModal } from './AddStudent';
-import { ViewStudentModal } from './ViewStudent';
+import Header from "../../components/Header";
+import { useSportsStore, useStudentsStore } from "../../hooks";
+import { tokens } from "../../theme";
+import { AddStudentModal } from "./AddStudent";
+import { UpdateStudentModal } from "./UpdateStudent/UpdateStudentModal";
+import { ViewStudentModal } from "./ViewStudent";
 
 export const Students = () => {
   const theme = useTheme();
@@ -32,14 +47,14 @@ export const Students = () => {
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      console.error('Error al obtener los estudiantes:', error);
+      console.error("Error al obtener los estudiantes:", error);
     }
   };
   const fetchSports = async () => {
     try {
       await findAllSports();
     } catch (error) {
-      console.error('Error al obtener los estudiantes:', error);
+      console.error("Error al obtener los estudiantes:", error);
     }
   };
 
@@ -66,102 +81,195 @@ export const Students = () => {
   };
 
   useEffect(() => {
-    fetchStudents();
-    fetchSports();
+    const loadData = async () => {
+      await fetchStudents();
+      await fetchSports();
+    };
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {}, [students]);
 
-  const columns = [
-    // { field: 'id', headerName: 'ID', flex: 0.5 },
-    { field: 'firstName', headerName: 'Nombre', flex: 1 },
-    { field: 'lastName', headerName: 'Apellido', flex: 1 },
-    { field: 'birthDate', headerName: 'F. nacimiento', headerAlign: 'left', align: 'left', hide: true },
-    { field: 'phone', headerName: 'Telefono', flex: 1, hide: true },
-    { field: 'startDate', headerName: 'Inicio', flex: 1 },
-    { field: 'document', headerName: 'Documento', flex: 1, hide: true },
-    { field: 'isActive', headerName: 'Activo', flex: 1 },
-    { field: 'sportName', headerName: 'Deporte', flex: 1 },
-    {
-      field: 'actions',
-      headerName: 'Acciones',
-      flex: 1,
-      renderCell: (params) => (
-        <div>
-          <Tooltip title='Edit' placement='top'>
-            <IconButton
-              color='primary'
-              aria-label=''
-              component='span'
-              onClick={() => handleOpenUpdateModal(params.row)} // Llamar la función cuando se haga clic
+  /* eslint-disable react/prop-types */
+  const StudentCard = ({ student }) => (
+    <Grid item xs={12} sm={6} md={4} lg={3}>
+      <Card
+        sx={{
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: "12px",
+          boxShadow: 3,
+          transition: "all 0.3s ease",
+          "&:hover": {
+            transform: "translateY(-4px)",
+            boxShadow: 6,
+          },
+          background: `linear-gradient(135deg, ${colors.primary[400]}, ${colors.primary[600]})`,
+        }}
+        className="animate__animated animate__fadeIn animate__faster"
+      >
+        <CardContent sx={{ flexGrow: 1, p: 3 }}>
+          <Box display="flex" alignItems="center" mb={2}>
+            <Avatar
+              sx={{
+                backgroundColor: colors.orangeAccent[500],
+                mr: 2,
+                width: 50,
+                height: 50,
+              }}
             >
-              <EditIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title='Ver' placement='top'>
-            <IconButton
-              color='secondary'
-              aria-label=''
-              component='span'
-              onClick={() => handleOpenViewModal(params.row)} // Llamar la función cuando se haga clic
-            >
-              <InfoIcon />
-            </IconButton>
-          </Tooltip>
-        </div>
-      ),
-    },
-  ];
+              <PersonIcon />
+            </Avatar>
+            <Box>
+              <Typography
+                variant="h6"
+                component="h2"
+                fontWeight="bold"
+                color={colors.grey[100]}
+              >
+                {student.firstName} {student.lastName}
+              </Typography>
+              <Chip
+                label={student.isActive ? "Activo" : "Inactivo"}
+                size="small"
+                sx={{
+                  backgroundColor: student.isActive
+                    ? colors.greenAccent[500]
+                    : colors.redAccent[500],
+                  color: "white",
+                  fontWeight: "bold",
+                }}
+              />
+            </Box>
+          </Box>
+
+          <Box display="flex" alignItems="center" mb={1}>
+            <SportsIcon
+              sx={{ color: colors.orangeAccent[500], mr: 1, fontSize: 18 }}
+            />
+            <Typography variant="body2" color={colors.grey[200]}>
+              {student.sportName || "Sin deporte"}
+            </Typography>
+          </Box>
+
+          <Box display="flex" alignItems="center" mb={1}>
+            <CalendarTodayIcon
+              sx={{ color: colors.orangeAccent[500], mr: 1, fontSize: 18 }}
+            />
+            <Typography variant="body2" color={colors.grey[200]}>
+              Inicio: {student.startDate}
+            </Typography>
+          </Box>
+
+          {student.phone && (
+            <Box display="flex" alignItems="center" mb={1}>
+              <PhoneIcon
+                sx={{ color: colors.orangeAccent[500], mr: 1, fontSize: 18 }}
+              />
+              <Typography variant="body2" color={colors.grey[200]}>
+                {student.phone}
+              </Typography>
+            </Box>
+          )}
+        </CardContent>
+
+        <CardActions sx={{ p: 2, pt: 0 }}>
+          <Button
+            size="small"
+            startIcon={<InfoIcon />}
+            onClick={() => handleOpenViewModal(student)}
+            sx={{
+              color: colors.blueAccent[300],
+              "&:hover": { backgroundColor: colors.blueAccent[800] },
+            }}
+          >
+            Ver
+          </Button>
+          <Button
+            size="small"
+            startIcon={<EditIcon />}
+            onClick={() => handleOpenUpdateModal(student)}
+            sx={{
+              color: colors.orangeAccent[300],
+              "&:hover": { backgroundColor: colors.orangeAccent[800] },
+            }}
+          >
+            Editar
+          </Button>
+        </CardActions>
+      </Card>
+    </Grid>
+  );
 
   return (
-    <>
-      <Header title='Alumnos' subtitle='List of Contacts for Future Reference'></Header>
-      <Tooltip title='Agregar nuevo alumno' placement='top'>
-        <IconButton color='primary' aria-label='agregar nuevo alumno' component='span' onClick={() => setOpenAddModal(true)}>
-          <Typography style={{ paddingRight: '5px' }}>Agregar Nuevo alumno</Typography>
-          <PersonAddIcon />
-        </IconButton>
-      </Tooltip>
+    <Box m="20px">
+      <Header
+        title="Alumnos"
+        subtitle="Gestión de estudiantes del gimnasio"
+      ></Header>
 
-      <AddStudentModal openModal={openAddModal} setOpenModal={setOpenAddModal} fetchStudents={fetchStudents} sports={sports} />
-
-      <Box
-        m='40px 0 0 0'
-        height='75vh'
-        display='flex'
-        justifyContent='center'
-        alignItems='center' // Esto centrará verticalmente
-        sx={{
-          '& .MuiDataGrid-root': {
-            border: 'none',
-          },
-          '& .MuiDataGrid-cell': {
-            borderBottom: 'none',
-          },
-          '& .no-border-bottom': {
-            borderBottom: 'none !important',
-          },
-          '& .MuiDataGrid-columnHeaders': {
-            backgroundColor: colors.blueAccent[700],
-            borderBottom: 'none',
-          },
-          '& .MuiDataGrid-virtualScroller': {
-            backgroundColor: colors.primary[400],
-          },
-          '& .MuiDataGrid-footerContainer': {
-            borderTop: 'none',
-            backgroundColor: colors.blueAccent[700],
-          },
-          '& .MuiCheckbox-root': {
-            color: `${colors.greenAccent[200]} !important`,
-          },
-          '& .MuiDataGrid-toolbarContainer .MuiButton-text': {
-            color: `${colors.grey[100]} !important`,
-          },
-        }}
-      >
-        {loading ? <CircularProgress /> : <DataGrid rows={students} columns={columns} className='animate__animated animate__fadeIn animate__faster' />}
+      <Box mb={3}>
+        <Tooltip title="Agregar nuevo alumno" placement="top">
+          <Button
+            variant="contained"
+            startIcon={<PersonAddIcon />}
+            onClick={() => setOpenAddModal(true)}
+            sx={{
+              backgroundColor: colors.orangeAccent[500],
+              "&:hover": { backgroundColor: colors.orangeAccent[600] },
+              borderRadius: "8px",
+              textTransform: "none",
+              fontWeight: "bold",
+            }}
+          >
+            Agregar Nuevo Alumno
+          </Button>
+        </Tooltip>
       </Box>
+
+      <AddStudentModal
+        openModal={openAddModal}
+        setOpenModal={setOpenAddModal}
+        fetchStudents={fetchStudents}
+        sports={sports}
+      />
+
+      {loading ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          minHeight="400px"
+        >
+          <CircularProgress
+            size={60}
+            sx={{ color: colors.orangeAccent[500] }}
+          />
+        </Box>
+      ) : (
+        <Grid container spacing={3} sx={{ mt: 1 }}>
+          {students.map((student) => (
+            <StudentCard key={student.id} student={student} />
+          ))}
+          {students.length === 0 && (
+            <Grid item xs={12}>
+              <Box textAlign="center" py={8}>
+                <PersonIcon
+                  sx={{ fontSize: 80, color: colors.grey[500], mb: 2 }}
+                />
+                <Typography variant="h5" color={colors.grey[500]} gutterBottom>
+                  No hay estudiantes registrados
+                </Typography>
+                <Typography variant="body1" color={colors.grey[600]}>
+                  Comienza agregando tu primer alumno
+                </Typography>
+              </Box>
+            </Grid>
+          )}
+        </Grid>
+      )}
 
       {selectedUser && openUpdateModal && (
         <UpdateStudentModal
@@ -174,7 +282,13 @@ export const Students = () => {
         />
       )}
 
-      {selectedUser && <ViewStudentModal openModal={openViewModal} selectedUser={selectedUser} handleCloseModal={handleCloseModal} />}
-    </>
+      {selectedUser && (
+        <ViewStudentModal
+          openModal={openViewModal}
+          selectedUser={selectedUser}
+          handleCloseModal={handleCloseModal}
+        />
+      )}
+    </Box>
   );
 };

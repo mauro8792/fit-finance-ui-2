@@ -20,11 +20,10 @@ const monthOptions = Array.from({ length: 12 }, (_, index) => ({
   label: new Date(0, index).toLocaleString('es', { month: 'long' }),
 }));
 
-const yearOptions = [
-  { value: '2023', label: '2023' },
-  { value: '2022', label: '2022' },
-  // ... y los años que necesites
-];
+const yearOptions = Array.from({ length: 11 }, (_, index) => {
+  const year = 2020 + index;
+  return { value: year.toString(), label: year.toString() };
+});
 
 export const Fees = () => {
   const isMobile = useMediaQuery((theme) => theme.breakpoints.down('sm'));
@@ -35,6 +34,25 @@ export const Fees = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const filteredFees = fees.filter((fee) => fee.nameStudent.toLowerCase().includes(searchTerm.toLowerCase()));
+  
+  // Cálculo de estadísticas corregido - usando la misma lógica que las tarjetas
+  const totalFees = filteredFees.length;
+  const paidFees = filteredFees.filter(fee => {
+    const feeValue = Number(fee.value) || 0;
+    const amountPaid = Number(fee.amountPaid) || 0;
+    const remainingPayment = Math.max(0, feeValue - amountPaid);
+    return remainingPayment <= 0 && amountPaid > 0;
+  }).length;
+  const partialFees = filteredFees.filter(fee => {
+    const feeValue = Number(fee.value) || 0;
+    const amountPaid = Number(fee.amountPaid) || 0;
+    return amountPaid > 0 && amountPaid < feeValue;
+  }).length;
+  const pendingFees = filteredFees.filter(fee => {
+    const amountPaid = Number(fee.amountPaid) || 0;
+    return amountPaid === 0;
+  }).length;
+  
   const inputRef = useRef(null);
 
   const currentDate = new Date();
@@ -110,84 +128,135 @@ export const Fees = () => {
   }, [refresh, selectedMonth, selectedYear]);
 
   const CardComponent = ({ fee }) => {
-    const remainingPayment = parseInt(fee.value) - parseInt(fee.amountPaid);
-    const isFullyPaid = remainingPayment === 0;
+    // Mejorar cálculos
+    const feeValue = Number(fee.value) || 0;
+    const amountPaid = Number(fee.amountPaid) || 0;
+    const remainingPayment = Math.max(0, feeValue - amountPaid);
+    const isFullyPaid = remainingPayment <= 0 && amountPaid > 0;
+    const isPartialPaid = amountPaid > 0 && remainingPayment > 0;
+
+    // Colores dinámicos
+    const cardColor = isFullyPaid ? '#1e3a1e' : isPartialPaid ? '#3a2a1e' : '#3a1e1e';
+    const borderColor = isFullyPaid ? '#4caf50' : isPartialPaid ? '#ff9800' : '#f44336';
 
     return (
       <Card
         sx={{
-          minWidth: 275,
-          margin: '10px',
-          maxWidth: '30%',
-          backgroundColor: '#333333',
+          minWidth: 300,
+          maxWidth: 380,
+          margin: '12px',
+          backgroundColor: cardColor,
           color: '#FFFFFF',
-          borderRadius: '10px',
+          borderRadius: '16px',
+          border: `2px solid ${borderColor}`,
           display: 'flex',
           flexDirection: 'column',
-          position: 'relative',
-          backgroundImage: 'url("../../assets/hexa2.jpg")', // Reemplaza con la URL de tu imagen
-          backgroundSize: 'cover',
-          transition: 'box-shadow 0.3s ease, background-color 0.3s ease', // Transiciones suaves
+          transition: 'all 0.3s ease',
+          boxShadow: `0 4px 20px ${borderColor}40`,
           '&:hover': {
-            boxShadow: '0px 6px 12px rgba(255, 255, 255, 0.2)', // Cambio de sombra al pasar el mouse
-            backgroundColor: '#444444', // Cambio de color de fondo al pasar el mouse
+            transform: 'translateY(-8px)',
+            boxShadow: `0 8px 30px ${borderColor}60`,
           },
         }}
       >
-        <CardContent>
-          <Typography variant='h6' component='div'>
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h6" component="div" sx={{ mb: 2, fontWeight: 'bold' }}>
             {fee.nameStudent}
           </Typography>
-          <Typography sx={{ mb: 1.5, color: isFullyPaid ? '#00FF00' : '#FF0000' }} color='text.secondary'>
-            Valor cuota: {fee.value}
-          </Typography>
-          <Typography sx={{ mb: 1.5 }} color='text.secondary'>
-            Pago parcial: {fee.amountPaid}
-          </Typography>
-          <Typography sx={{ mb: 1.5, color: isFullyPaid ? '#00FF00' : '#FF0000' }} color='text.secondary'>
-            Restan: {remainingPayment}
-          </Typography>
-          <Typography sx={{ mb: 1.5 }} color='text.secondary'>
-            Fecha venc.: {format(new Date(fee.startDate), 'dd-MM-yyyy')}
+          
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="body2" sx={{ color: '#4fc3f7', mb: 1 }}>
+              💰 Valor cuota: ${feeValue.toLocaleString()}
+            </Typography>
+            <Typography variant="body2" sx={{ color: '#66bb6a', mb: 1 }}>
+              ✅ Pagado: ${amountPaid.toLocaleString()}
+            </Typography>
+            <Typography variant="body2" sx={{ color: isFullyPaid ? '#66bb6a' : '#ef5350', mb: 1 }}>
+              ⏳ Restante: ${remainingPayment.toLocaleString()}
+            </Typography>
+          </Box>
+
+          <Typography variant="body2" sx={{ 
+            color: 'rgba(255,255,255,0.8)', 
+            textAlign: 'center',
+            backgroundColor: 'rgba(255,255,255,0.1)',
+            padding: '8px',
+            borderRadius: '8px'
+          }}>
+            📅 Vence: {format(new Date(fee.startDate), 'dd/MM/yyyy')}
           </Typography>
         </CardContent>
-        <CardActions>
+        <CardActions sx={{ p: 2, gap: 1 }}>
           <Button
-            size='small'
+            size="small"
+            variant="outlined"
+            onClick={() => handleOpenUpdateModal(fee)}
             sx={{
               color: '#FFC107',
+              borderColor: '#FFC107',
               '&:hover': {
-                backgroundColor: '#555555',
+                backgroundColor: 'rgba(255, 193, 7, 0.15)',
+                transform: 'translateY(-1px)',
               },
+              flex: 1,
+              borderRadius: '8px',
+              textTransform: 'none',
             }}
-            onClick={() => handleOpenUpdateModal(fee)}
           >
-            Editar
+            ✏️ Editar
           </Button>
+          
           <Button
-            size='small'
+            size="small"
+            variant="outlined"
             onClick={() => handleOpenViewModal(fee)}
             sx={{
-              color: '#00FF00',
+              color: '#4fc3f7',
+              borderColor: '#4fc3f7',
               '&:hover': {
-                backgroundColor: '#555555',
+                backgroundColor: 'rgba(79, 195, 247, 0.15)',
+                transform: 'translateY(-1px)',
               },
+              flex: 1,
+              borderRadius: '8px',
+              textTransform: 'none',
             }}
           >
-            Ver
+            👁️ Ver
           </Button>
-          {!isFullyPaid && (
+
+          {isFullyPaid ? (
             <Button
-              size='small'
-              onClick={() => handleOpenAddPaymentModal(fee)}
+              size="small"
+              variant="contained"
+              disabled
               sx={{
-                color: '#FF0000',
-                '&:hover': {
-                  backgroundColor: '#555555',
-                },
+                backgroundColor: '#4caf50',
+                color: 'white',
+                flex: 1,
+                borderRadius: '8px',
+                textTransform: 'none',
               }}
             >
-              Ingresar Pago
+              ✅ Pagado
+            </Button>
+          ) : (
+            <Button
+              size="small"
+              variant="contained"
+              onClick={() => handleOpenAddPaymentModal(fee)}
+              sx={{
+                backgroundColor: '#66bb6a',
+                '&:hover': {
+                  backgroundColor: '#4caf50',
+                  transform: 'translateY(-1px)',
+                },
+                flex: 1,
+                borderRadius: '8px',
+                textTransform: 'none',
+              }}
+            >
+              💰 Pagar
             </Button>
           )}
         </CardActions>
@@ -196,51 +265,280 @@ export const Fees = () => {
   };
   return (
     <>
-      <Header title='Cuotas' subtitle='Lista de cuotas por mes '></Header>
+     
 
+      {/* Panel de filtros mejorado */}
       <Box
-        display='flex'
-        justifyContent='center'
-        alignItems='center'
-        flexDirection={isMobile ? 'column' : 'row'}
-        gap='20px'
-        p={2}
+        sx={{
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          margin: '16px',
+          padding: '20px',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+        }}
         className='animate__animated animate__fadeIn animate__faster'
       >
-        <Box display='flex' alignItems='center' gap='10px' sx={{ height: '40px' }}>
-          <Select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} label='Mes'>
-            {monthOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
-          <Select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} label='Año'>
-            {yearOptions.map((option) => (
-              <MenuItem key={option.value} value={option.value}>
-                {option.label}
-              </MenuItem>
-            ))}
-          </Select>
+        <Box
+          display='flex'
+          justifyContent='center'
+          alignItems='center'
+          flexDirection={isMobile ? 'column' : 'row'}
+          gap='20px'
+        >
+          <Box display='flex' alignItems='center' gap='15px' flexWrap='wrap'>
+            <Typography variant="body2" color="rgba(255,255,255,0.8)" fontWeight="bold">
+              📅 Período:
+            </Typography>
+            <Select 
+              value={selectedMonth} 
+              onChange={(e) => setSelectedMonth(e.target.value)} 
+              size="small"
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                borderRadius: '8px',
+                minWidth: 120,
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255,255,255,0.3)',
+                },
+                '& .MuiSelect-icon': {
+                  color: 'white',
+                },
+              }}
+            >
+              {monthOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+            <Select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(e.target.value)} 
+              size="small"
+              sx={{
+                backgroundColor: 'rgba(255,255,255,0.1)',
+                color: 'white',
+                borderRadius: '8px',
+                minWidth: 100,
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: 'rgba(255,255,255,0.3)',
+                },
+                '& .MuiSelect-icon': {
+                  color: 'white',
+                },
+              }}
+            >
+              {yearOptions.map((option) => (
+                <MenuItem key={option.value} value={option.value}>
+                  {option.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </Box>
+
+          <Box display='flex' alignItems='center' gap='10px' flexWrap='wrap'>
+            <Typography variant="body2" color="rgba(255,255,255,0.8)" fontWeight="bold">
+              🔍 Buscar:
+            </Typography>
+            <TextField
+              label='Buscar alumno'
+              variant='outlined'
+              size='small'
+              value={searchTerm}
+              inputRef={inputRef}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              sx={{
+                minWidth: isMobile ? 200 : 250,
+                '& .MuiInputLabel-root': { 
+                  color: 'rgba(255,255,255,0.7)',
+                  '&.Mui-focused': { color: '#4fc3f7' }
+                },
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: 'white',
+                  borderRadius: '8px',
+                  '& fieldset': {
+                    borderColor: 'rgba(255,255,255,0.3)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255,255,255,0.5)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#4fc3f7',
+                  },
+                },
+              }}
+              InputProps={{
+                endAdornment: searchTerm && (
+                  <IconButton 
+                    onClick={handleClearSearch} 
+                    size="small" 
+                    sx={{ 
+                      color: 'rgba(255,255,255,0.7)',
+                      '&:hover': { color: '#4fc3f7' }
+                    }}
+                  >
+                    <BackspaceIcon />
+                  </IconButton>
+                ),
+              }}
+            />
+          </Box>
         </Box>
-        <TextField
-          label='Buscar alumno'
-          variant='outlined'
-          size='small'
-          value={searchTerm}
-          inputRef={inputRef}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          sx={{ width: isMobile ? '100%' : 'auto', height: '40px', marginBottom: isMobile ? '10px' : '0' }}
-          InputProps={{
-            endAdornment: searchTerm && (
-              <IconButton onClick={handleClearSearch}>
-                <BackspaceIcon />
-              </IconButton>
-            ),
+
+        {/* Estadísticas de cuotas */}
+        <Box
+          sx={{
+            marginTop: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
           }}
-        />
+        >
+          <Typography variant="body2" color="rgba(255,255,255,0.8)" fontWeight="bold">
+            📊 Estadísticas:
+          </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              padding: '12px',
+              border: '1px solid rgba(255,255,255,0.3)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Total Cuotas:
+              </Typography>
+              <Typography variant="body2" color="#FFFFFF" fontWeight="bold">
+                {totalFees}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Pagadas:
+              </Typography>
+              <Typography variant="body2" color="#4caf50" fontWeight="bold">
+                {paidFees}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Parciales:
+              </Typography>
+              <Typography variant="body2" color="#ff9800" fontWeight="bold">
+                {partialFees}
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Typography variant="body2" color="rgba(255,255,255,0.7)">
+                Pendientes:
+              </Typography>
+              <Typography variant="body2" color="#ef5350" fontWeight="bold">
+                {pendingFees}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
+        
+        {/* Panel de estadísticas */}
+        <Box 
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '12px',
+            mt: 3,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Box sx={{
+            backgroundColor: 'rgba(76, 175, 80, 0.2)',
+            border: '1px solid rgba(76, 175, 80, 0.5)',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <Typography variant="body2" color="#4caf50" fontWeight="bold">
+              ✅ Pagadas: {paidFees}
+            </Typography>
+          </Box>
+          
+          <Box sx={{
+            backgroundColor: 'rgba(255, 152, 0, 0.2)',
+            border: '1px solid rgba(255, 152, 0, 0.5)',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <Typography variant="body2" color="#ff9800" fontWeight="bold">
+              ⏳ Parciales: {partialFees}
+            </Typography>
+          </Box>
+          
+          <Box sx={{
+            backgroundColor: 'rgba(244, 67, 54, 0.2)',
+            border: '1px solid rgba(244, 67, 54, 0.5)',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <Typography variant="body2" color="#f44336" fontWeight="bold">
+              ❌ Pendientes: {pendingFees}
+            </Typography>
+          </Box>
+          
+          <Box sx={{
+            backgroundColor: 'rgba(33, 150, 243, 0.2)',
+            border: '1px solid rgba(33, 150, 243, 0.5)',
+            borderRadius: '8px',
+            padding: '8px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}>
+            <Typography variant="body2" color="#2196f3" fontWeight="bold">
+              📊 Total: {totalFees}
+            </Typography>
+          </Box>
+        </Box>
       </Box>
-      <Box display='flex' flexWrap='wrap' justifyContent='center' maxHeight='75vh' overflow='auto'>
+      {/* Contenedor de tarjetas mejorado */}
+      <Box 
+        sx={{
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          justifyContent: 'center', 
+          maxHeight: '75vh', 
+          overflow: 'auto',
+          padding: '0 16px',
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'rgba(255,255,255,0.1)',
+            borderRadius: '4px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: 'rgba(255,255,255,0.3)',
+            borderRadius: '4px',
+            '&:hover': {
+              background: 'rgba(255,255,255,0.5)',
+            },
+          },
+        }}
+      >
         <InfiniteScroll
           dataLength={filteredFees.length}
           next={() => {
@@ -249,7 +547,17 @@ export const Fees = () => {
           hasMore={true} // Determina si hay más datos para cargar
           // loader={<h4>Cargando...</h4>} // Componente de carga
         >
-          <Box display='flex' flexWrap='wrap' justifyContent='center' overflow='hidden' className='card-container'>
+          <Box 
+            sx={{
+              display: 'flex', 
+              flexWrap: 'wrap', 
+              justifyContent: 'center', 
+              overflow: 'hidden',
+              gap: '16px',
+              padding: '8px',
+            }}
+            className='card-container'
+          >
             {filteredFees.map((fee) => (
               <CardComponent key={fee.id} fee={fee} />
             ))}
