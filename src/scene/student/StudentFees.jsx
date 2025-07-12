@@ -72,8 +72,13 @@ export const StudentFees = () => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    return new Date(dateString).toLocaleDateString('es-ES');
+    if (!dateString) return 'No disponible';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
   };
 
   if (loading) {
@@ -180,29 +185,80 @@ export const StudentFees = () => {
                 </TableHead>
                 <TableBody>
                   {fees.map((fee) => (
-                    <TableRow key={fee.id} sx={{ '&:nth-of-type(odd)': { bgcolor: '#fafafa' } }}>
+                    <TableRow 
+                      key={fee.id} 
+                      sx={{ 
+                        '&:nth-of-type(odd)': { bgcolor: '#fafafa' },
+                        backgroundColor: 
+                          fee.status === 'paid' ? '#e8f5e8' :
+                          fee.status === 'partial' ? '#fff3e0' :
+                          fee.isOverdue ? '#ffebee' : 'inherit',
+                        '&:hover': {
+                          backgroundColor: 
+                            fee.status === 'paid' ? '#d4edda' :
+                            fee.status === 'partial' ? '#ffeaa7' :
+                            fee.isOverdue ? '#f8d7da' : '#f5f5f5',
+                        }
+                      }}
+                    >
+                      <TableCell>
+                        <Box>
+                          <Typography fontWeight="bold" color={fee.isCurrent ? 'primary.main' : 'text.primary'}>
+                            {fee.monthName || `${fee.month}/${fee.year}`}
+                          </Typography>
+                          {fee.isCurrent && (
+                            <Typography variant="caption" color="primary.main">
+                              Mes actual
+                            </Typography>
+                          )}
+                          {fee.isOverdue && (
+                            <Typography variant="caption" color="error.main">
+                              Vencida
+                            </Typography>
+                          )}
+                        </Box>
+                      </TableCell>
                       <TableCell>
                         <Typography fontWeight="bold">
-                          {fee.month}/{fee.year}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>${fee.amount}</TableCell>
-                      <TableCell>
-                        <Typography color={fee.amountPaid > 0 ? 'success.main' : 'text.secondary'}>
-                          ${fee.amountPaid}
+                          ${fee.value?.toLocaleString() || fee.amount?.toLocaleString()}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Typography color={fee.amount - fee.amountPaid > 0 ? 'error.main' : 'success.main'}>
-                          ${fee.amount - fee.amountPaid}
+                        <Typography 
+                          color={fee.amountPaid > 0 ? 'success.main' : 'text.secondary'}
+                          fontWeight={fee.amountPaid > 0 ? 'bold' : 'normal'}
+                        >
+                          ${fee.amountPaid?.toLocaleString()}
+                        </Typography>
+                        {fee.paymentCount > 0 && (
+                          <Typography variant="caption" display="block" color="text.secondary">
+                            {fee.paymentCount} pago{fee.paymentCount !== 1 ? 's' : ''}
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography 
+                          color={fee.remainingAmount > 0 ? 'error.main' : 'success.main'}
+                          fontWeight="bold"
+                        >
+                          ${fee.remainingAmount?.toLocaleString() || (fee.amount - fee.amountPaid)?.toLocaleString()}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        {getPaymentStatusChip(fee.paymentStatus)}
+                        {getPaymentStatusChip(fee.status || fee.paymentStatus)}
                       </TableCell>
-                      <TableCell>{formatDate(fee.dueDate)}</TableCell>
                       <TableCell>
-                        {fee.lastPaymentDate ? formatDate(fee.lastPaymentDate) : 'Sin pagos'}
+                        <Typography variant="body2">
+                          {formatDate(fee.dueDate || fee.endDate)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color="text.secondary">
+                          {fee.lastPaymentDate ? formatDate(fee.lastPaymentDate) : 
+                           fee.payments && fee.payments.length > 0 ? 
+                           formatDate(fee.payments[fee.payments.length - 1].paymentDate) : 
+                           'Sin pagos'}
+                        </Typography>
                       </TableCell>
                     </TableRow>
                   ))}
