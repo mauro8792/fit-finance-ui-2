@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, Grid, Accordion, AccordionSummary, Typography, AccordionDetails, Divider } from '@mui/material';
+import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, Grid, Accordion, AccordionSummary, Typography, AccordionDetails } from '@mui/material';
 import { format } from 'date-fns';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useTheme } from '@emotion/react';
@@ -8,7 +8,19 @@ export const ViewFeeModal = ({ openModal, selectedFee, handleCloseModal }) => {
   const remainingPayment = parseInt(selectedFee.value) - parseInt(selectedFee.amountPaid);
 const theme = useTheme();
   return (
-    <Dialog open={openModal} onClose={handleCloseModal} fullWidth maxWidth='md' style={{ position: 'absolute' }}>
+    <Dialog 
+      open={openModal} 
+      onClose={handleCloseModal} 
+      maxWidth={false}
+      sx={{
+        '& .MuiDialog-paper': {
+          width: '700px',
+          minHeight: '500px',
+          maxHeight: '85vh',
+          margin: '20px',
+        }
+      }}
+    >
       <DialogTitle>Información de la cuota</DialogTitle>
       <DialogContent>
         <Grid container spacing={2}>

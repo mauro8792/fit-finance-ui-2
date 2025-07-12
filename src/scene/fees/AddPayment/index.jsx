@@ -145,7 +145,19 @@ export const AddPaymentModal = ({ openModal, selectedFee, handleCloseModal, hand
   };
 
   return (
-    <Dialog open={openModal} onClose={handleModalClose} fullWidth maxWidth='md' style={{ position: 'absolute' }}>
+    <Dialog 
+      open={openModal} 
+      onClose={handleModalClose} 
+      maxWidth={false}
+      sx={{
+        '& .MuiDialog-paper': {
+          width: '800px',
+          minHeight: '600px',
+          maxHeight: '90vh',
+          margin: '20px',
+        }
+      }}
+    >
       <DialogTitle>Ingresar pago : {selectedFee.nameStudent}</DialogTitle>
       <DialogContent>
         {/* Mostrar loading mientras se valida */}

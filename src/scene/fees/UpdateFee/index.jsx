@@ -50,7 +50,19 @@ export const UpdateFeeModal = ({ openModal, handleCloseModal, fee, handleUpdateF
   };
 
   return (
-    <Dialog open={openModal} onClose={handleCloseModal}>
+    <Dialog 
+      open={openModal} 
+      onClose={handleCloseModal}
+      maxWidth={false}
+      sx={{
+        '& .MuiDialog-paper': {
+          width: '650px',
+          minHeight: '550px',
+          maxHeight: '80vh',
+          margin: '20px',
+        }
+      }}
+    >
       <DialogTitle>Modificar Cuota</DialogTitle>
       <DialogContent>
         <FormControl fullWidth margin='normal'>

@@ -33,22 +33,44 @@ export const Fees = () => {
   const { findAllFees, fees } = useFeesStore();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const filteredFees = fees.filter((fee) => fee.nameStudent.toLowerCase().includes(searchTerm.toLowerCase()));
+  const [activeFilter, setActiveFilter] = useState('all'); // 'all', 'paid', 'partial', 'pending'
   
-  // Cálculo de estadísticas corregido - usando la misma lógica que las tarjetas
-  const totalFees = filteredFees.length;
-  const paidFees = filteredFees.filter(fee => {
+  // Filtrar por término de búsqueda
+  const searchFilteredFees = fees.filter((fee) => fee.nameStudent.toLowerCase().includes(searchTerm.toLowerCase()));
+  
+  // Filtrar por estado de pago
+  const filteredFees = searchFilteredFees.filter((fee) => {
+    if (activeFilter === 'all') return true;
+    
+    const feeValue = Number(fee.value) || 0;
+    const amountPaid = Number(fee.amountPaid) || 0;
+    const remainingPayment = Math.max(0, feeValue - amountPaid);
+    const isFullyPaid = remainingPayment <= 0 && amountPaid > 0;
+    const isPartialPaid = amountPaid > 0 && amountPaid < feeValue;
+    const isPending = amountPaid === 0;
+    
+    switch (activeFilter) {
+      case 'paid': return isFullyPaid;
+      case 'partial': return isPartialPaid;
+      case 'pending': return isPending;
+      default: return true;
+    }
+  });
+  
+  // Cálculo de estadísticas corregido - usando searchFilteredFees para estadísticas totales
+  const totalFees = searchFilteredFees.length;
+  const paidFees = searchFilteredFees.filter(fee => {
     const feeValue = Number(fee.value) || 0;
     const amountPaid = Number(fee.amountPaid) || 0;
     const remainingPayment = Math.max(0, feeValue - amountPaid);
     return remainingPayment <= 0 && amountPaid > 0;
   }).length;
-  const partialFees = filteredFees.filter(fee => {
+  const partialFees = searchFilteredFees.filter(fee => {
     const feeValue = Number(fee.value) || 0;
     const amountPaid = Number(fee.amountPaid) || 0;
     return amountPaid > 0 && amountPaid < feeValue;
   }).length;
-  const pendingFees = filteredFees.filter(fee => {
+  const pendingFees = searchFilteredFees.filter(fee => {
     const amountPaid = Number(fee.amountPaid) || 0;
     return amountPaid === 0;
   }).length;
@@ -265,7 +287,7 @@ export const Fees = () => {
   };
   return (
     <>
-     
+      
 
       {/* Panel de filtros mejorado */}
       <Box
@@ -447,7 +469,7 @@ export const Fees = () => {
           </Box>
         </Box>
         
-        {/* Panel de estadísticas */}
+        {/* Panel de filtros por estado - Botones interactivos */}
         <Box 
           sx={{
             display: 'flex',
@@ -457,62 +479,125 @@ export const Fees = () => {
             flexWrap: 'wrap',
           }}
         >
-          <Box sx={{
-            backgroundColor: 'rgba(76, 175, 80, 0.2)',
-            border: '1px solid rgba(76, 175, 80, 0.5)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
+          <Box 
+            component="button"
+            onClick={() => setActiveFilter('all')}
+            sx={{
+              backgroundColor: activeFilter === 'all' ? 'rgba(33, 150, 243, 0.4)' : 'rgba(33, 150, 243, 0.2)',
+              border: activeFilter === 'all' ? '2px solid #2196f3' : '1px solid rgba(33, 150, 243, 0.5)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(33, 150, 243, 0.3)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
+            <Typography variant="body2" color="#2196f3" fontWeight="bold">
+              📊 Todas: {totalFees}
+            </Typography>
+          </Box>
+
+          <Box 
+            component="button"
+            onClick={() => setActiveFilter('paid')}
+            sx={{
+              backgroundColor: activeFilter === 'paid' ? 'rgba(76, 175, 80, 0.4)' : 'rgba(76, 175, 80, 0.2)',
+              border: activeFilter === 'paid' ? '2px solid #4caf50' : '1px solid rgba(76, 175, 80, 0.5)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(76, 175, 80, 0.3)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
             <Typography variant="body2" color="#4caf50" fontWeight="bold">
               ✅ Pagadas: {paidFees}
             </Typography>
           </Box>
           
-          <Box sx={{
-            backgroundColor: 'rgba(255, 152, 0, 0.2)',
-            border: '1px solid rgba(255, 152, 0, 0.5)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
+          <Box 
+            component="button"
+            onClick={() => setActiveFilter('partial')}
+            sx={{
+              backgroundColor: activeFilter === 'partial' ? 'rgba(255, 152, 0, 0.4)' : 'rgba(255, 152, 0, 0.2)',
+              border: activeFilter === 'partial' ? '2px solid #ff9800' : '1px solid rgba(255, 152, 0, 0.5)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 152, 0, 0.3)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
             <Typography variant="body2" color="#ff9800" fontWeight="bold">
               ⏳ Parciales: {partialFees}
             </Typography>
           </Box>
           
-          <Box sx={{
-            backgroundColor: 'rgba(244, 67, 54, 0.2)',
-            border: '1px solid rgba(244, 67, 54, 0.5)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
+          <Box 
+            component="button"
+            onClick={() => setActiveFilter('pending')}
+            sx={{
+              backgroundColor: activeFilter === 'pending' ? 'rgba(244, 67, 54, 0.4)' : 'rgba(244, 67, 54, 0.2)',
+              border: activeFilter === 'pending' ? '2px solid #f44336' : '1px solid rgba(244, 67, 54, 0.5)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                backgroundColor: 'rgba(244, 67, 54, 0.3)',
+                transform: 'translateY(-2px)',
+              },
+            }}
+          >
             <Typography variant="body2" color="#f44336" fontWeight="bold">
               ❌ Pendientes: {pendingFees}
             </Typography>
           </Box>
-          
-          <Box sx={{
-            backgroundColor: 'rgba(33, 150, 243, 0.2)',
-            border: '1px solid rgba(33, 150, 243, 0.5)',
-            borderRadius: '8px',
-            padding: '8px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}>
-            <Typography variant="body2" color="#2196f3" fontWeight="bold">
-              📊 Total: {totalFees}
+        </Box>
+        
+        {/* Indicador de resultados filtrados */}
+        {activeFilter !== 'all' && (
+          <Box 
+            sx={{
+              mt: 2,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              borderRadius: '8px',
+              padding: '8px 16px',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
+          >
+            <Typography variant="body2" color="rgba(255,255,255,0.8)" fontWeight="bold">
+              🔍 Mostrando {filteredFees.length} de {totalFees} cuotas
+              {activeFilter === 'paid' && ' (Pagadas)'}
+              {activeFilter === 'partial' && ' (Parciales)'}
+              {activeFilter === 'pending' && ' (Pendientes)'}
             </Typography>
           </Box>
-        </Box>
+        )}
       </Box>
       {/* Contenedor de tarjetas mejorado */}
       <Box 
