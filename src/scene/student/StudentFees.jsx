@@ -8,13 +8,6 @@ import {
   Chip,
   LinearProgress,
   Alert,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   Button
 } from '@mui/material';
 import { 
@@ -92,11 +85,16 @@ export const StudentFees = () => {
 
   return (
     <Box m="20px">
-      <Box display="flex" alignItems="center" mb={2}>
+      <Box display="flex" alignItems="center" mb={3}>
         <Button 
           startIcon={<ArrowBack />} 
           onClick={() => navigate('/')}
-          sx={{ mr: 2 }}
+          variant="contained"
+          sx={{ 
+            mr: 3,
+            bgcolor: '#70d8bd',
+            '&:hover': { bgcolor: '#5cbaa3' }
+          }}
         >
           Volver al Dashboard
         </Button>
@@ -106,13 +104,28 @@ export const StudentFees = () => {
       {/* Resumen */}
       <Grid container spacing={3} mb={3}>
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#f5f5f5' }}>
-            <CardContent>
-              <Payment sx={{ fontSize: 40, color: '#666', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold">
+          <Card sx={{ 
+            background: 'linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%)',
+            color: 'white',
+            height: 140
+          }}>
+            <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Payment sx={{ fontSize: 40, mb: 1 }} />
+              <Typography 
+                variant="h4" 
+                fontWeight="bold"
+                sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+              >
                 {summary.total || 0}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.95,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontWeight: 500
+                }}
+              >
                 Total Cuotas
               </Typography>
             </CardContent>
@@ -120,13 +133,28 @@ export const StudentFees = () => {
         </Grid>
         
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#e8f5e8' }}>
-            <CardContent>
-              <CheckCircle sx={{ fontSize: 40, color: '#4caf50', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" color="#4caf50">
+          <Card sx={{ 
+            background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
+            color: 'white',
+            height: 140
+          }}>
+            <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <CheckCircle sx={{ fontSize: 40, mb: 1 }} />
+              <Typography 
+                variant="h4" 
+                fontWeight="bold"
+                sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+              >
                 {summary.paid || 0}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.95,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontWeight: 500
+                }}
+              >
                 Pagadas
               </Typography>
             </CardContent>
@@ -134,13 +162,28 @@ export const StudentFees = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#fff3e0' }}>
-            <CardContent>
-              <Warning sx={{ fontSize: 40, color: '#ff9800', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" color="#ff9800">
+          <Card sx={{ 
+            background: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)',
+            color: 'white',
+            height: 140
+          }}>
+            <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Warning sx={{ fontSize: 40, mb: 1 }} />
+              <Typography 
+                variant="h4" 
+                fontWeight="bold"
+                sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+              >
                 {summary.partial || 0}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.95,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontWeight: 500
+                }}
+              >
                 Parciales
               </Typography>
             </CardContent>
@@ -148,13 +191,28 @@ export const StudentFees = () => {
         </Grid>
 
         <Grid item xs={12} sm={6} md={3}>
-          <Card sx={{ textAlign: 'center', bgcolor: '#ffebee' }}>
-            <CardContent>
-              <Error sx={{ fontSize: 40, color: '#f44336', mb: 1 }} />
-              <Typography variant="h4" fontWeight="bold" color="#f44336">
+          <Card sx={{ 
+            background: 'linear-gradient(135deg, #e84393 0%, #fd79a8 100%)',
+            color: 'white',
+            height: 140
+          }}>
+            <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Error sx={{ fontSize: 40, mb: 1 }} />
+              <Typography 
+                variant="h4" 
+                fontWeight="bold"
+                sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
+              >
                 {summary.pending || 0}
               </Typography>
-              <Typography variant="body2" color="textSecondary">
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  opacity: 0.95,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontWeight: 500
+                }}
+              >
                 Pendientes
               </Typography>
             </CardContent>
@@ -165,109 +223,220 @@ export const StudentFees = () => {
       {/* Tabla de Cuotas */}
       <Card>
         <CardContent>
-          <Typography variant="h5" fontWeight="bold" mb={2}>
-            Detalle de Cuotas
-          </Typography>
+          <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+            <Box display="flex" alignItems="center">
+              <Payment sx={{ fontSize: 24, mr: 1, color: 'primary.main' }} />
+              <Typography variant="h5" fontWeight="bold">
+                Todas mis Cuotas
+              </Typography>
+            </Box>
+            <Typography variant="body2" color="text.secondary" fontStyle="italic">
+              💡 Toca una cuota pendiente para pagar
+            </Typography>
+          </Box>
           
           {fees.length > 0 ? (
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ bgcolor: '#f5f5f5' }}>
-                    <TableCell><strong>Período</strong></TableCell>
-                    <TableCell><strong>Monto</strong></TableCell>
-                    <TableCell><strong>Pagado</strong></TableCell>
-                    <TableCell><strong>Pendiente</strong></TableCell>
-                    <TableCell><strong>Estado</strong></TableCell>
-                    <TableCell><strong>Vencimiento</strong></TableCell>
-                    <TableCell><strong>Último Pago</strong></TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {fees.map((fee) => (
-                    <TableRow 
-                      key={fee.id} 
-                      sx={{ 
-                        '&:nth-of-type(odd)': { bgcolor: '#fafafa' },
-                        backgroundColor: 
-                          fee.status === 'paid' ? '#e8f5e8' :
-                          fee.status === 'partial' ? '#fff3e0' :
-                          fee.isOverdue ? '#ffebee' : 'inherit',
-                        '&:hover': {
-                          backgroundColor: 
-                            fee.status === 'paid' ? '#d4edda' :
-                            fee.status === 'partial' ? '#ffeaa7' :
-                            fee.isOverdue ? '#f8d7da' : '#f5f5f5',
-                        }
-                      }}
-                    >
-                      <TableCell>
-                        <Box>
-                          <Typography fontWeight="bold" color={fee.isCurrent ? 'primary.main' : 'text.primary'}>
-                            {fee.monthName || `${fee.month}/${fee.year}`}
-                          </Typography>
-                          {fee.isCurrent && (
-                            <Typography variant="caption" color="primary.main">
-                              Mes actual
-                            </Typography>
-                          )}
-                          {fee.isOverdue && (
-                            <Typography variant="caption" color="error.main">
-                              Vencida
-                            </Typography>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography fontWeight="bold">
-                          ${fee.value?.toLocaleString() || fee.amount?.toLocaleString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
+            <Grid container spacing={2}>
+              {fees.map((fee) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={fee.id}>
+                  <Card 
+                    sx={{
+                      height: 280, // Altura aumentada para mostrar todo el contenido
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderRadius: 3,
+                      cursor: (fee.status !== 'paid' && fee.paymentStatus !== 'paid') ? 'pointer' : 'default',
+                      transition: 'all 0.2s ease',
+                      overflow: 'hidden',
+                      position: 'relative',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      '&:hover': (fee.status !== 'paid' && fee.paymentStatus !== 'paid') ? { 
+                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
+                        transform: 'translateY(-2px)'
+                      } : {
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      },
+                      // Fondo base blanco limpio
+                      background: 'white',
+                      // Borde superior de color según estado
+                      borderTop: fee.status === 'paid' ? '4px solid #4caf50' : 
+                                fee.status === 'partial' ? '4px solid #ff9800' : 
+                                '4px solid #f44336'
+                    }}
+                    onClick={() => {
+                      if (fee.status !== 'paid' && fee.paymentStatus !== 'paid') {
+                        console.log('Abriendo opciones de pago para cuota:', fee.id);
+                        // TODO: Implementar modal de opciones de pago
+                      }
+                    }}
+                  >
+                    {/* Header con degradado sutil */}
+                    <Box sx={{
+                      background: fee.isCurrent ? 
+                        'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)' : 
+                        fee.isOverdue ? 
+                        'linear-gradient(135deg, #fff3e0 0%, #ffebee 100%)' : 
+                        'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
+                      p: 1.5, // Padding reducido para más espacio
+                      borderBottom: '1px solid rgba(0,0,0,0.05)'
+                    }}>
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
                         <Typography 
-                          color={fee.amountPaid > 0 ? 'success.main' : 'text.secondary'}
-                          fontWeight={fee.amountPaid > 0 ? 'bold' : 'normal'}
+                          variant="h6" 
+                          fontWeight="bold" 
+                          sx={{ 
+                            color: '#1565c0',
+                            fontSize: '1.1rem' // Tamaño reducido
+                          }}
                         >
-                          ${fee.amountPaid?.toLocaleString()}
+                          {fee.monthName || `${fee.month}/${fee.year}`}
                         </Typography>
-                        {fee.paymentCount > 0 && (
-                          <Typography variant="caption" display="block" color="text.secondary">
-                            {fee.paymentCount} pago{fee.paymentCount !== 1 ? 's' : ''}
-                          </Typography>
+                        
+                        {/* Chips de estado mejorados */}
+                        {fee.isCurrent && (
+                          <Chip 
+                            label="Actual" 
+                            size="small" 
+                            sx={{ 
+                              bgcolor: '#1976d2', 
+                              color: 'white',
+                              fontWeight: 'bold',
+                              fontSize: '0.7rem'
+                            }} 
+                          />
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <Typography 
-                          color={fee.remainingAmount > 0 ? 'error.main' : 'success.main'}
-                          fontWeight="bold"
-                        >
-                          ${fee.remainingAmount?.toLocaleString() || (fee.amount - fee.amountPaid)?.toLocaleString()}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {getPaymentStatusChip(fee.status || fee.paymentStatus)}
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {formatDate(fee.dueDate || fee.endDate)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" color="text.secondary">
-                          {fee.lastPaymentDate ? formatDate(fee.lastPaymentDate) : 
-                           fee.payments && fee.payments.length > 0 ? 
-                           formatDate(fee.payments[fee.payments.length - 1].paymentDate) : 
-                           'Sin pagos'}
-                        </Typography>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                        {fee.isOverdue && (
+                          <Chip 
+                            label="Vencida" 
+                            size="small" 
+                            sx={{ 
+                              bgcolor: '#d32f2f', 
+                              color: 'white',
+                              fontWeight: 'bold',
+                              fontSize: '0.7rem'
+                            }} 
+                          />
+                        )}
+                      </Box>
+                      
+                      {/* Monto principal destacado */}
+                      <Typography 
+                        variant="h5" 
+                        fontWeight="bold" 
+                        sx={{ 
+                          color: '#1565c0',
+                          fontSize: '1.3rem' // Tamaño ligeramente reducido
+                        }}
+                      >
+                        ${fee.value?.toLocaleString() || fee.amount?.toLocaleString()}
+                      </Typography>
+                    </Box>
+
+                    {/* Contenido financiero */}
+                    <CardContent sx={{ 
+                      flex: 1, 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      p: 1.5, // Padding reducido
+                      bgcolor: 'white'
+                    }}>
+                      {/* Información de pagos */}
+                      <Box mb={1.5}> {/* Margen reducido */}
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}> {/* Margen reducido */}
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#424242',
+                              fontWeight: 600,
+                              fontSize: '0.85rem' // Tamaño ligeramente reducido
+                            }}
+                          >
+                            Pagado
+                          </Typography>
+                          <Typography 
+                            variant="body1" 
+                            fontWeight="bold" 
+                            sx={{
+                              color: fee.amountPaid > 0 ? '#2e7d32' : '#9e9e9e',
+                              fontSize: '0.95rem' // Tamaño ligeramente reducido
+                            }}
+                          >
+                            ${fee.amountPaid?.toLocaleString()}
+                          </Typography>
+                        </Box>
+                        
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: '#424242',
+                              fontWeight: 600,
+                              fontSize: '0.85rem' // Tamaño ligeramente reducido
+                            }}
+                          >
+                            Pendiente
+                          </Typography>
+                          <Typography 
+                            variant="body1" 
+                            fontWeight="bold" 
+                            sx={{
+                              color: fee.remainingAmount > 0 ? '#d32f2f' : '#2e7d32',
+                              fontSize: '0.95rem' // Tamaño ligeramente reducido
+                            }}
+                          >
+                            ${fee.remainingAmount?.toLocaleString() || (fee.amount - fee.amountPaid)?.toLocaleString()}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      {/* Footer */}
+                      <Box>
+                        {/* Estado mejorado */}
+                        <Box display="flex" justifyContent="center" mb={0.5}> {/* Margen reducido */}
+                          <Chip 
+                            label={fee.status === 'paid' ? 'Pagado' : 
+                                  fee.status === 'partial' ? 'Parcial' : 'Pendiente'}
+                            color={fee.status === 'paid' ? 'success' : 
+                                  fee.status === 'partial' ? 'warning' : 'error'}
+                            size="small"
+                            sx={{ fontWeight: 'bold' }}
+                          />
+                        </Box>
+
+                        {/* Indicador de acción mejorado */}
+                        {(fee.status !== 'paid' && fee.paymentStatus !== 'paid') && (
+                          <Box 
+                            sx={{
+                              textAlign: 'center',
+                              bgcolor: 'primary.main',
+                              color: 'white',
+                              py: 0.3, // Padding vertical reducido
+                              px: 1,
+                              borderRadius: 1,
+                              mx: -1.5, // Ajustado al nuevo padding
+                              mb: -1.5 // Ajustado al nuevo padding
+                            }}
+                          >
+                            <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.7rem' }}>
+                              💳 Toca para pagar
+                            </Typography>
+                          </Box>
+                        )}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
           ) : (
-            <Alert severity="info">
-              No tienes cuotas registradas aún.
+            <Alert severity="info" sx={{ mt: 2 }}>
+              <Typography variant="h6" gutterBottom>
+                📋 No tienes cuotas registradas aún
+              </Typography>
+              <Typography variant="body2">
+                Las cuotas aparecerán aquí cuando se generen.
+              </Typography>
             </Alert>
           )}
         </CardContent>

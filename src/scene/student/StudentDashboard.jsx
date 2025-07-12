@@ -100,20 +100,52 @@ export const StudentDashboard = () => {
             }}>
               <Box display="flex" alignItems="center" mb={2}>
                 <AccountCircle sx={{ fontSize: 24, mr: 1 }} />
-                <Typography variant="h6" fontWeight="bold">
+                <Typography 
+                  variant="h6" 
+                  fontWeight="bold"
+                  sx={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                >
                   Información Personal
                 </Typography>
               </Box>
-              <Typography variant="body1" mb={1}>
+              <Typography 
+                variant="body1" 
+                mb={1}
+                sx={{ 
+                  fontWeight: 600,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontSize: '1.1rem'
+                }}
+              >
                 <strong>{studentData?.student?.firstName} {studentData?.student?.lastName}</strong>
               </Typography>
-              <Typography variant="body2" mb={1}>
+              <Typography 
+                variant="body2" 
+                mb={1}
+                sx={{ 
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontSize: '0.95rem'
+                }}
+              >
                 📧 {user?.email}
               </Typography>
-              <Typography variant="body2" mb={1}>
+              <Typography 
+                variant="body2" 
+                mb={1}
+                sx={{ 
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontSize: '0.95rem'
+                }}
+              >
                 📄 Doc: {studentData?.student?.document}
               </Typography>
-              <Typography variant="body2">
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontSize: '0.95rem'
+                }}
+              >
                 📞 {studentData?.student?.phone}
               </Typography>
             </CardContent>
@@ -137,17 +169,42 @@ export const StudentDashboard = () => {
             }}>
               <Box display="flex" alignItems="center" mb={2}>
                 <School sx={{ fontSize: 24, mr: 1 }} />
-                <Typography variant="h6" fontWeight="bold">
+                <Typography 
+                  variant="h6" 
+                  fontWeight="bold"
+                  sx={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                >
                   Deporte Inscrito
                 </Typography>
               </Box>
-              <Typography variant="body1" mb={1}>
+              <Typography 
+                variant="body1" 
+                mb={1}
+                sx={{ 
+                  fontWeight: 600,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontSize: '1.1rem'
+                }}
+              >
                 <strong>🏋️ {studentData?.sport?.name || 'No inscrito'}</strong>
               </Typography>
-              <Typography variant="body2" mb={1}>
+              <Typography 
+                variant="body2" 
+                mb={1}
+                sx={{ 
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontSize: '0.95rem'
+                }}
+              >
                 💰 Cuota: ${studentData?.sport?.monthlyFee?.toLocaleString() || 0}
               </Typography>
-              <Typography variant="body2">
+              <Typography 
+                variant="body2"
+                sx={{ 
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
+                  fontSize: '0.95rem'
+                }}
+              >
                 ⚡ Estado: {studentData?.student?.isActive ? '✅ Activo' : '❌ Inactivo'}
               </Typography>
             </CardContent>
@@ -171,7 +228,11 @@ export const StudentDashboard = () => {
             }}>
               <Box display="flex" alignItems="center" mb={2}>
                 <Payment sx={{ fontSize: 24, mr: 1 }} />
-                <Typography variant="h6" fontWeight="bold">
+                <Typography 
+                  variant="h6" 
+                  fontWeight="bold"
+                  sx={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                >
                   Resumen Financiero
                 </Typography>
               </Box>
@@ -179,26 +240,54 @@ export const StudentDashboard = () => {
               <Box>
                 {/* Total Pagado */}
                 <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                  <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+                    }}
+                  >
                     💳 Total Pagado:
                   </Typography>
-                  <Typography variant="h4" fontWeight="bold">
+                  <Typography 
+                    variant="h5" 
+                    fontWeight="bold"
+                    sx={{
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
+                      fontSize: '1.5rem'
+                    }}
+                  >
                     ${studentData?.feesSummary?.totalPaid?.toLocaleString() || 0}
                   </Typography>
                 </Box>
                 
                 {/* Línea divisoria */}
                 <Box sx={{ 
-                  borderBottom: '1px solid rgba(255,255,255,0.3)', 
+                  borderBottom: '2px solid rgba(255,255,255,0.8)', 
                   mb: 2 
                 }} />
                 
                 {/* Saldo Pendiente */}
                 <Box display="flex" justifyContent="space-between" alignItems="center">
-                  <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
+                  <Typography 
+                    variant="body1" 
+                    sx={{ 
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                      textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+                    }}
+                  >
                     ⏳ Saldo Pendiente:
                   </Typography>
-                  <Typography variant="h4" fontWeight="bold">
+                  <Typography 
+                    variant="h5" 
+                    fontWeight="bold"
+                    sx={{
+                      textShadow: '2px 2px 4px rgba(0,0,0,0.4)',
+                      fontSize: '1.5rem'
+                    }}
+                  >
                     ${studentData?.feesSummary?.currentPending?.toLocaleString() || 0}
                   </Typography>
                 </Box>
@@ -246,7 +335,7 @@ export const StudentDashboard = () => {
                             transform: 'translateY(-3px)',
                             transition: 'all 0.3s ease'
                           } : {},
-                          height: 320, // Altura fija para todas las cards
+                          height: 300, // Altura optimizada para mostrar todo el contenido
                           display: 'flex',
                           flexDirection: 'column'
                         }}
@@ -258,32 +347,68 @@ export const StudentDashboard = () => {
                         }}
                       >
                         <CardContent sx={{ 
-                          p: 2, 
+                          p: 1.5, // Padding reducido para más espacio
                           display: 'flex', 
                           flexDirection: 'column',
                           height: '100%',
                           justifyContent: 'space-between'
                         }}>
-                          <Typography variant="h5" fontWeight="bold" color="primary" mb={1}>
+                          <Typography 
+                            variant="h6" // Tamaño reducido para ahorrar espacio
+                            fontWeight="bold" 
+                            mb={0.5} // Margen reducido
+                            sx={{ 
+                              color: '#1565c0',
+                              fontSize: '1.1rem'
+                            }}
+                          >
                             {fee.monthName || getMonthName(fee.month)} {fee.year}
                           </Typography>
                           
-                          <Typography variant="body2" color="text.secondary" mb={2}>
+                          <Typography 
+                            variant="body2" 
+                            mb={1} // Margen reducido
+                            sx={{ 
+                              color: '#757575',
+                              fontSize: '0.75rem'
+                            }}
+                          >
                             Período: {fee.month}/{fee.year}
                           </Typography>
 
-                          <Box mb={2}>
-                            <Typography variant="h6" color="primary" fontWeight="bold">
+                          <Box mb={1}> // Margen reducido
+                            <Typography 
+                              variant="h6" 
+                              fontWeight="bold"
+                              sx={{ 
+                                color: '#1976d2',
+                                fontSize: '1.2rem'
+                              }}
+                            >
                               ${fee.amount?.toLocaleString()}
                             </Typography>
                           </Box>
 
-                          <Box mb={2}>
-                            <Typography variant="body2" color="success.main" fontWeight="bold">
+                          <Box mb={1}> // Margen reducido
+                            <Typography 
+                              variant="body2" 
+                              fontWeight="bold"
+                              sx={{ 
+                                color: '#2e7d32',
+                                fontSize: '0.8rem'
+                              }}
+                            >
                               ✅ Pagado: ${fee.amountPaid?.toLocaleString()}
                             </Typography>
                             {fee.remainingAmount > 0 && (
-                              <Typography variant="body2" color="error.main" fontWeight="bold">
+                              <Typography 
+                                variant="body2" 
+                                fontWeight="bold"
+                                sx={{ 
+                                  color: '#d32f2f',
+                                  fontSize: '0.8rem'
+                                }}
+                              >
                                 ⏳ Restante: ${fee.remainingAmount?.toLocaleString()}
                               </Typography>
                             )}
