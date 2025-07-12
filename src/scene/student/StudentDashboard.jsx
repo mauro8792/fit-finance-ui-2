@@ -175,15 +175,34 @@ export const StudentDashboard = () => {
                   Resumen Financiero
                 </Typography>
               </Box>
-              <Typography variant="body1" mb={1}>
-                <strong>💳 Total Pagado: ${studentData?.feesSummary?.totalPaid?.toLocaleString() || 0}</strong>
-              </Typography>
-              <Typography variant="body2" mb={1}>
-                ⏳ Pendiente: ${studentData?.feesSummary?.totalPending?.toLocaleString() || 0}
-              </Typography>
-              <Typography variant="body2">
-                📊 Cuotas al día: {studentData?.feesSummary?.paidFeesCount || 0}/{studentData?.feesSummary?.totalFeesCount || 0}
-              </Typography>
+              
+              <Box>
+                {/* Total Pagado */}
+                <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                  <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
+                    💳 Total Pagado:
+                  </Typography>
+                  <Typography variant="h4" fontWeight="bold">
+                    ${studentData?.feesSummary?.totalPaid?.toLocaleString() || 0}
+                  </Typography>
+                </Box>
+                
+                {/* Línea divisoria */}
+                <Box sx={{ 
+                  borderBottom: '1px solid rgba(255,255,255,0.3)', 
+                  mb: 2 
+                }} />
+                
+                {/* Saldo Pendiente */}
+                <Box display="flex" justifyContent="space-between" alignItems="center">
+                  <Typography variant="body1" sx={{ fontSize: '1.1rem' }}>
+                    ⏳ Saldo Pendiente:
+                  </Typography>
+                  <Typography variant="h4" fontWeight="bold">
+                    ${studentData?.feesSummary?.currentPending?.toLocaleString() || 0}
+                  </Typography>
+                </Box>
+              </Box>
             </CardContent>
           </Card>
         </Grid>
