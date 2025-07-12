@@ -1,72 +1,72 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { financeApi } from '../api';
-import { clearErrorMessage, onChecking, onLogin, onLogout } from '../store';
+import { useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  startLoginWithEmailPassword,
+  startLogout,
+  checkingAuthentication,
+  startClearErrorMessage,
+  getStudentDashboard,
+  getStudentFees,
+} from "../store/auth/thunks";
 
 export const useAuthStore = () => {
-  const { status, user, errorMessage } = useSelector((state) => state.auth);
+  const { status, user, student, userType, errorMessage, token } = useSelector(
+    (state) => state.auth
+  );
   const dispatch = useDispatch();
 
-  const startLogin = async ({ email, password }) => {
-    dispatch(onChecking());
+  const startLogin = useCallback(
+    ({ email, password }) => {
+      dispatch(startLoginWithEmailPassword({ email, password }));
+    },
+    [dispatch]
+  );
+
+  const startCheckingAuthentication = useCallback(() => {
+    dispatch(checkingAuthentication());
+  }, [dispatch]);
+
+  const startLogoutAuth = useCallback(() => {
+    dispatch(startLogout());
+  }, [dispatch]);
+
+  const clearErrorMsg = useCallback(() => {
+    dispatch(startClearErrorMessage());
+  }, [dispatch]);
+
+  const getStudentData = useCallback(async () => {
     try {
-      console.log(' email, password', email, password);
-      const { data } = await financeApi.post('/auth/login', { email, password });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('token-init-date', new Date().getTime());
-      dispatch(onLogin({ name: data.email, uid: data.id }));
+      return await dispatch(getStudentDashboard());
     } catch (error) {
-      dispatch(onLogout('Credenciales incorrectas'));
-      setTimeout(() => {
-        dispatch(clearErrorMessage());
-      }, 10);
+      console.error("Error obteniendo datos del estudiante:", error);
+      throw error;
     }
-  };
+  }, [dispatch]);
 
-  const startRegister = async ({ email, password, name }) => {
-    dispatch(onChecking());
+  const getStudentFeesData = useCallback(async () => {
     try {
-      const { data } = await financeApi.post('/auth/new', { email, password, name });
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('token-init-date', new Date().getTime());
-      dispatch(onLogin({ name: data.name, uid: data.id }));
+      return await dispatch(getStudentFees());
     } catch (error) {
-      dispatch(onLogout(error.response.data?.msg || '--'));
-      setTimeout(() => {
-        dispatch(clearErrorMessage());
-      }, 10);
+      console.error("Error obteniendo cuotas del estudiante:", error);
+      throw error;
     }
-  };
-
-  const checkAuthToken = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return dispatch(onLogout());
-
-    try {
-      const { data } = await financeApi.get('auth/check-status');
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('token-init-date', new Date().getTime());
-      dispatch(onLogin({ name: data.fullName, uid: data.id }));
-    } catch (error) {
-      localStorage.clear();
-      dispatch(onLogout());
-    }
-  };
-
-  const startLogout = () => {
-    localStorage.clear();
-    dispatch(onLogout());
-  };
+  }, [dispatch]);
 
   return {
-    //* Propiedades
-    errorMessage,
+    //* Properties
     status,
     user,
+    student,
+    userType,
+    errorMessage,
+    token,
 
-    //* Métodos
-    checkAuthToken,
+    //* Methods
     startLogin,
-    startLogout,
-    startRegister,
+    startCheckingAuthentication,
+    startLogout: startLogoutAuth,
+    clearErrorMessage: clearErrorMsg,
+    getStudentData,
+    getStudentFeesData,
   };
 };

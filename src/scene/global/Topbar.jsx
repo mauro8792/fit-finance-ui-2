@@ -1,5 +1,4 @@
-import React from 'react';
-import { Box, IconButton, Typography, useTheme } from '@mui/material';
+import { Box, IconButton, Typography, useTheme, Chip } from '@mui/material';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import { LogoutOutlined } from '@mui/icons-material';
 import { useAuthStore } from '../../hooks';
@@ -10,7 +9,8 @@ import { tokens } from '../../theme';
 const Topbar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { startLogout } = useAuthStore();
+  const { startLogout, user, student, userType } = useAuthStore();
+  
   return (
     <Box
       display='flex'
@@ -30,7 +30,30 @@ const Topbar = () => {
         <SportsMmaIcon fontSize='large' style={{ color: 'white' }} />
       </Box>
 
-      <Box display='flex'>
+      <Box display='flex' alignItems='center' gap={2}>
+        {userType && (
+          <Chip 
+            label={userType === 'student' ? 'Estudiante' : 'Administrador'}
+            color={userType === 'student' ? 'secondary' : 'primary'}
+            variant="outlined"
+            sx={{ 
+              color: 'white', 
+              borderColor: 'white',
+              fontWeight: 'bold'
+            }}
+          />
+        )}
+        
+        <Typography 
+          variant='body1' 
+          style={{ color: 'white', fontWeight: 'bold' }}
+        >
+          {userType === 'student' && student ? 
+            `${student.firstName} ${student.lastName}` : 
+            user?.fullName || user?.email
+          }
+        </Typography>
+        
         <IconButton color='inherit'>
           <PersonOutlinedIcon />
         </IconButton>

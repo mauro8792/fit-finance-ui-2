@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ColorModeContext, useMode } from './theme';
-import { Box, CssBaseline, ThemeProvider } from '@mui/material';
+import { Box, CssBaseline, ThemeProvider, CircularProgress, Typography } from '@mui/material';
 import Topbar from './scene/global/Topbar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { SidebarComponent } from './scene/global/SidebarComponent';
 import { Sports } from './scene/sports';
 import { Payments } from './scene/payments';
@@ -12,15 +12,46 @@ import { AuthRoutes } from './scene/auth/routes/AuthRoutes';
 import { useAuthStore } from './hooks';
 import { Students } from './scene/students';
 import { Fees } from './scene/fees';
+import { StudentDashboard } from './scene/student/StudentDashboard';
+import { StudentFees } from './scene/student/StudentFees';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
-  const { status, checkAuthToken } = useAuthStore();
+  const { status, userType, startCheckingAuthentication } = useAuthStore();
   const [isSidebar, setIsSidebar] = useState(true);
+  const hasCheckedAuth = useRef(false);
 
   useEffect(() => {
-    checkAuthToken();
-  }, []);
+    // Solo ejecutar una vez al montar el componente
+    if (!hasCheckedAuth.current) {
+      hasCheckedAuth.current = true;
+      startCheckingAuthentication();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar
+
+  // Pantalla de carga mientras se verifica la autenticación
+  if (status === 'checking') {
+    return (
+      <ColorModeContext.Provider value={colorMode}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Box 
+            display="flex" 
+            justifyContent="center" 
+            alignItems="center" 
+            height="100vh"
+            flexDirection="column"
+            gap={2}
+          >
+            <CircularProgress size={60} />
+            <Typography variant="h6">Verificando autenticación...</Typography>
+          </Box>
+        </ThemeProvider>
+      </ColorModeContext.Provider>
+    );
+  }
+
   return (
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
@@ -29,7 +60,7 @@ export const FitFinanceApp = () => {
           {status === 'authenticated' && <Topbar setIsSidebar={setIsSidebar} />}
 
           <main className='content' style={{ display: 'flex' }}>
-            {status === 'authenticated' && isSidebar && <SidebarComponent isSidebar={isSidebar} />}
+            {status === 'authenticated' && isSidebar && userType === 'admin' && <SidebarComponent isSidebar={isSidebar} />}
             <Box flexGrow={1}>
               <Routes>
                 {status === 'not-authenticated' ? (
@@ -37,7 +68,12 @@ export const FitFinanceApp = () => {
                     <Route path='/auth/*' element={<AuthRoutes />} />
                     <Route path='/*' element={<Navigate to='/auth/login' />} />
                   </>
-                ) : (
+                ) : status === 'authenticated' && userType === 'student' ? (
+                  <>
+                    <Route path='/student/fees' element={<StudentFees />} />
+                    <Route path='/*' element={<StudentDashboard />} />
+                  </>
+                ) : status === 'authenticated' ? (
                   <>
                     <Route path='/sports' element={<Sports />} />
                     <Route path='/usuarios' element={<Users />} />
@@ -46,6 +82,8 @@ export const FitFinanceApp = () => {
                     <Route path='/alumnos' element={<Students />} />
                     <Route path='/*' element={<Dashboard />} />
                   </>
+                ) : (
+                  <Route path='/*' element={<Navigate to='/auth/login' />} />
                 )}
               </Routes>
             </Box>

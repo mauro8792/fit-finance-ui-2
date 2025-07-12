@@ -1,50 +1,178 @@
-// import { loginWithEmailPassword, registerUserWithEmailPassword, singInWithGoogle, logoutFirebase } from '../../firebase/providers';
-// import { checkingCredentials, logout, login } from './';
+import { clearErrorMessage, onChecking, onLogin, onLogout } from "./authSlice";
 
-// export const checkingAuthentication = () => {
-//   return async (dispatch) => {
-//     dispatch(checkingCredentials());
-//   };
-// };
+const API_URL = "http://localhost:3000/api";
 
-// export const startGoogleSignIn = () => {
-//   return async (dispatch) => {
-//     dispatch(checkingCredentials());
+// Login para administradores y estudiantes
+export const startLoginWithEmailPassword = ({ email, password }) => {
+  return async (dispatch) => {
+    dispatch(onChecking());
 
-//     const result = await singInWithGoogle();
-//     if (!result.ok) return dispatch(logout(result.errorMessage));
+    try {
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-//     dispatch(login(result));
-//   };
-// };
+      const data = await response.json();
 
-// export const startCreatingUserWithEmailPassword = ({ email, password, displayName }) => {
-//   return async (dispatch) => {
-//     dispatch(checkingCredentials());
+      if (!response.ok) {
+        return dispatch(onLogout(data.message || "Error en la autenticación"));
+      }
 
-//     const result = await registerUserWithEmailPassword({ email, password, displayName });
-//     if (!result.ok) return dispatch(logout(result.errorMessage));
+      // Guardar token en localStorage
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userType", data.userType);
 
-//     dispatch(login(result));
-//   };
-// };
+      // Si es estudiante, obtener datos completos del estudiante
+      if (data.userType === "student") {
+        localStorage.setItem("studentId", data.student.id);
+        dispatch(
+          onLogin({
+            user: data.user,
+            student: data.student,
+            userType: "student",
+            token: data.token,
+          })
+        );
+      } else {
+        dispatch(
+          onLogin({
+            user: data.user,
+            userType: "admin",
+            token: data.token,
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error en login:", error);
+      dispatch(onLogout("Error de conexión"));
+    }
+  };
+};
 
-// export const startLoginWithEmailPassword = ({ email, password }) => {
-//   return async (dispatch) => {
-//     dispatch(checkingCredentials());
+// Verificar autenticación al cargar la app
+export const checkingAuthentication = () => {
+  return async (dispatch) => {
+    dispatch(onChecking());
 
-//     const result = await loginWithEmailPassword({ email, password });
-//     console.log(result);
+    try {
+      const token = localStorage.getItem("token");
+      const userType = localStorage.getItem("userType");
 
-//     if (!result.ok) return dispatch(logout(result));
-//     dispatch(login(result));
-//   };
-// };
+      if (!token) {
+        return dispatch(onLogout());
+      }
 
-// export const startLogout = () => {
-//   return async (dispatch) => {
-//     await logoutFirebase();
+      // Verificar si el token es válido
+      const response = await fetch(`${API_URL}/auth/verify`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-//     dispatch(logout());
-//   };
-// };
+      if (!response.ok) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userType");
+        localStorage.removeItem("studentId");
+        return dispatch(onLogout());
+      }
+
+      const data = await response.json();
+
+      if (userType === "student") {
+        const studentId = localStorage.getItem("studentId");
+        dispatch(
+          onLogin({
+            user: data.user,
+            student: { id: studentId, ...data.student },
+            userType: "student",
+            token,
+          })
+        );
+      } else {
+        dispatch(
+          onLogin({
+            user: data.user,
+            userType: "admin",
+            token,
+          })
+        );
+      }
+    } catch (error) {
+      console.error("Error verificando autenticación:", error);
+      localStorage.removeItem("token");
+      localStorage.removeItem("userType");
+      localStorage.removeItem("studentId");
+      dispatch(onLogout());
+    }
+  };
+};
+
+// Logout
+export const startLogout = () => {
+  return async (dispatch) => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userType");
+    localStorage.removeItem("studentId");
+    dispatch(onLogout());
+  };
+};
+
+// Obtener datos del estudiante
+export const getStudentDashboard = () => {
+  return async (dispatch, getState) => {
+    try {
+      const { token } = getState().auth;
+
+      const response = await fetch(`${API_URL}/auth/student-dashboard`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Error obteniendo datos del estudiante");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error obteniendo dashboard del estudiante:", error);
+      throw error;
+    }
+  };
+};
+
+// Obtener cuotas del estudiante
+export const getStudentFees = () => {
+  return async (dispatch, getState) => {
+    try {
+      const { token } = getState().auth;
+
+      const response = await fetch(`${API_URL}/fee/my-fees`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Error obteniendo cuotas del estudiante");
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error obteniendo cuotas del estudiante:", error);
+      throw error;
+    }
+  };
+};
+
+export const startClearErrorMessage = () => {
+  return async (dispatch) => {
+    dispatch(clearErrorMessage());
+  };
+};
