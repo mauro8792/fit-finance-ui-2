@@ -104,7 +104,7 @@ export const StudentFees = () => {
         >
           Volver al Dashboard
         </Button>
-        <Header title="Historial de pagos y cuotas pendientes"  />
+        <Header title="📊 Historial de Cuotas"  />
       </Box>
 
       {/* Resumen */}
@@ -233,11 +233,11 @@ export const StudentFees = () => {
             <Box display="flex" alignItems="center">
               <Payment sx={{ fontSize: 24, mr: 1, color: 'primary.main' }} />
               <Typography variant="h5" fontWeight="bold">
-                Todas mis Cuotas
+                📋 Historial de Cuotas
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" fontStyle="italic">
-              💡 Toca una cuota pendiente para pagar
+              📊 Solo consulta - Para pagar ve al Dashboard
             </Typography>
           </Box>
           
@@ -247,24 +247,20 @@ export const StudentFees = () => {
                 <Grid item xs={12} sm={6} md={4} lg={3} key={fee.id}>
                   <Card 
                     sx={{
-                      height: 280, // Altura aumentada para mostrar todo el contenido
+                      height: 280,
                       display: 'flex',
                       flexDirection: 'column',
                       borderRadius: 3,
-                      cursor: (fee.status !== 'paid' && fee.paymentStatus !== 'paid') ? 'pointer' : 'default',
+                      cursor: 'default', // Sin hover para pago
                       transition: 'all 0.2s ease',
                       overflow: 'hidden',
                       position: 'relative',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                      '&:hover': (fee.status !== 'paid' && fee.paymentStatus !== 'paid') ? { 
-                        boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                        transform: 'translateY(-2px)'
-                      } : {
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                      '&:hover': {
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        transform: 'translateY(-1px)' // Hover más sutil
                       },
-                      // Fondo base blanco limpio
                       background: 'white',
-                      // Borde superior de color según estado
                       borderTop: fee.status === 'paid' ? '4px solid #4caf50' : 
                                 fee.status === 'partial' ? '4px solid #ff9800' : 
                                 '4px solid #f44336'
@@ -399,10 +395,10 @@ export const StudentFees = () => {
                       {/* Footer */}
                       <Box>
                         {/* Estado mejorado */}
-                        <Box display="flex" justifyContent="center" mb={0.5}> {/* Margen reducido */}
+                        <Box display="flex" justifyContent="center" mb={0.5}>
                           <Chip 
-                            label={fee.status === 'paid' ? 'Pagado' : 
-                                  fee.status === 'partial' ? 'Parcial' : 'Pendiente'}
+                            label={fee.status === 'paid' ? '✅ Pagado' : 
+                                  fee.status === 'partial' ? '⚠️ Parcial' : '❌ Pendiente'}
                             color={fee.status === 'paid' ? 'success' : 
                                   fee.status === 'partial' ? 'warning' : 'error'}
                             size="small"
@@ -410,22 +406,22 @@ export const StudentFees = () => {
                           />
                         </Box>
 
-                        {/* Indicador de acción mejorado */}
+                        {/* Mensaje informativo en lugar de botón de pago */}
                         {(fee.status !== 'paid' && fee.paymentStatus !== 'paid') && (
                           <Box 
                             sx={{
                               textAlign: 'center',
-                              bgcolor: 'primary.main',
+                              bgcolor: 'info.main',
                               color: 'white',
-                              py: 0.3, // Padding vertical reducido
+                              py: 0.3,
                               px: 1,
                               borderRadius: 1,
-                              mx: -1.5, // Ajustado al nuevo padding
-                              mb: -1.5 // Ajustado al nuevo padding
+                              mx: -1.5,
+                              mb: -1.5
                             }}
                           >
                             <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.7rem' }}>
-                              💳 Toca para pagar
+                              � Ve al Dashboard para pagar
                             </Typography>
                           </Box>
                         )}
