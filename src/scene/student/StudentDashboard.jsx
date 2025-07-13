@@ -21,6 +21,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
 import { Header, PaymentModal } from '../../components';
+import Swal from 'sweetalert2';
 
 export const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -77,7 +78,71 @@ export const StudentDashboard = () => {
     }
   };
 
+  // Función para determinar si una cuota es la próxima a pagar
+  const getNextPayableFee = () => {
+    const pendingFees = studentData?.feesSummary?.recentFees?.filter(f => f.paymentStatus !== 'paid') || [];
+    
+    if (pendingFees.length === 0) return null;
+
+    return pendingFees.reduce((oldest, current) => {
+      const oldestDate = new Date(oldest.year, oldest.month - 1);
+      const currentDate = new Date(current.year, current.month - 1);
+      return currentDate < oldestDate ? current : oldest;
+    });
+  };
+
+  const isNextPayableFee = (fee) => {
+    const nextFee = getNextPayableFee();
+    return nextFee && fee.id === nextFee.id;
+  };
+
   const handleOpenPaymentModal = (fee) => {
+    // Validar pago secuencial
+    const pendingFees = studentData?.feesSummary?.recentFees?.filter(f => f.paymentStatus !== 'paid') || [];
+    
+    if (pendingFees.length === 0) {
+      return;
+    }
+
+    // Encontrar la cuota más antigua pendiente
+    const oldestPendingFee = pendingFees.reduce((oldest, current) => {
+      const oldestDate = new Date(oldest.year, oldest.month - 1);
+      const currentDate = new Date(current.year, current.month - 1);
+      return currentDate < oldestDate ? current : oldest;
+    });
+
+    // Si la cuota seleccionada no es la más antigua pendiente, mostrar advertencia
+    if (fee.id !== oldestPendingFee.id) {
+      const oldestMonthName = getMonthName(oldestPendingFee.month);
+      const selectedMonthName = getMonthName(fee.month);
+      
+      Swal.fire({
+        title: '⚠️ Pago Secuencial Requerido',
+        html: `
+          <div style="text-align: left; font-size: 14px; line-height: 1.6;">
+            <p><strong>No puedes pagar la cuota de ${selectedMonthName}</strong></p>
+            <p>Debes pagar primero la cuota de <strong>${oldestMonthName}</strong> que está pendiente.</p>
+            <br>
+            <p style="color: #666;">💡 <em>Los pagos deben realizarse en orden cronológico para mantener el registro correcto.</em></p>
+          </div>
+        `,
+        icon: 'warning',
+        confirmButtonText: `Pagar ${oldestMonthName}`,
+        showCancelButton: true,
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#70d8bd',
+        cancelButtonColor: '#d33'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          // Si acepta, abrir modal para la cuota más antigua
+          setSelectedFee(oldestPendingFee);
+          setPaymentModalOpen(true);
+        }
+      });
+      return;
+    }
+
+    // Si es la cuota correcta, proceder normalmente
     setSelectedFee(fee);
     setPaymentModalOpen(true);
   };
@@ -378,17 +443,22 @@ export const StudentDashboard = () => {
                           sx={{
                             border: fee.paymentStatus === 'paid' ? '2px solid #4caf50' : 
                                    fee.paymentStatus === 'partial' ? '2px solid #ff9800' : 
+                                   isNextPayableFee(fee) ? '3px solid #70d8bd' : // Destacar próxima a pagar
                                    '2px solid #f44336',
                             cursor: fee.paymentStatus !== 'paid' ? 'pointer' : 'default',
+                            position: 'relative',
                             '&:hover': fee.paymentStatus !== 'paid' ? { 
                               boxShadow: 4,
                               transform: 'translateY(-3px)',
                               transition: 'all 0.3s ease'
                             } : {},
-                            height: { xs: 'auto', sm: 280, md: 300 }, // Altura automática en mobile
-                            minHeight: { xs: 200 }, // Altura mínima en mobile
+                            height: { xs: 'auto', sm: 280, md: 300 },
+                            minHeight: { xs: 200 },
                             display: 'flex',
-                            flexDirection: 'column'
+                            flexDirection: 'column',
+                            // Fondo especial para la próxima cuota a pagar
+                            background: isNextPayableFee(fee) && fee.paymentStatus !== 'paid' ? 
+                              'linear-gradient(135deg, #f0fdf9 0%, #e6fffa 100%)' : 'white'
                           }}
                           onClick={() => {
                             if (fee.paymentStatus !== 'paid') {
@@ -403,8 +473,30 @@ export const StudentDashboard = () => {
                           height: '100%',
                           justifyContent: 'space-between'
                         }}>
+                          {/* Indicador de próxima cuota a pagar */}
+                          {isNextPayableFee(fee) && fee.paymentStatus !== 'paid' && (
+                            <Box
+                              sx={{
+                                position: 'absolute',
+                                top: 8,
+                                right: 8,
+                                background: 'linear-gradient(135deg, #70d8bd 0%, #5cbaa3 100%)',
+                                color: 'white',
+                                px: 1,
+                                py: 0.5,
+                                borderRadius: 1,
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold',
+                                boxShadow: 2,
+                                zIndex: 1
+                              }}
+                            >
+                              💳 PRÓXIMO
+                            </Box>
+                          )}
+
                           <Typography 
-                            variant="h6" // Tamaño reducido para ahorrar espacio
+                            variant="h6"
                             fontWeight="bold" 
                             mb={{ xs: 0.5, sm: 0.5 }}
                             sx={{ 
