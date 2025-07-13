@@ -59,12 +59,27 @@ export const FitFinanceApp = () => {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className='app' style={{height:'100%'}}>
+        <div className='app' style={{ 
+          height: window.innerWidth < 900 ? 'auto' : '100%',
+          minHeight: '100vh'
+        }}>
           {status === 'authenticated' && <Topbar setIsSidebar={setIsSidebar} />}
 
-          <main className='content' style={{ display: 'flex' }}>
+          <main className='content' style={{ 
+            display: 'flex',
+            flexDirection: window.innerWidth < 900 ? 'column' : 'row',
+            minHeight: window.innerWidth < 900 ? 'auto' : '100vh'
+          }}>
             {status === 'authenticated' && isSidebar && userType === 'admin' && <SidebarComponent isSidebar={isSidebar} />}
-            <Box flexGrow={1}>
+            <Box 
+              flexGrow={1}
+              sx={{
+                height: { xs: 'auto', md: '100vh' },
+                maxHeight: { xs: 'none', md: '100vh' },
+                overflow: { xs: 'visible', md: 'auto' },
+                paddingBottom: { xs: '100px', md: 0 } // Mucho más padding extra en mobile
+              }}
+            >
               <Routes>
                 {status === 'not-authenticated' ? (
                   <>

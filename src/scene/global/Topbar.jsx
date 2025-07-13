@@ -16,37 +16,61 @@ const Topbar = () => {
       display='flex'
       justifyContent='space-between'
       alignItems='center'
-      p={2}
+      p={{ xs: 1, sm: 2 }} // Padding responsivo
       boxShadow={3}
       sx={{
-        background: `linear-gradient(to right, ${colors.primary[900]},  ${colors.orangeAccent[500]})`, // Agrega un tono más negro al principio
+        background: `linear-gradient(to right, ${colors.primary[900]},  ${colors.orangeAccent[500]})`,
       }}
     >
       <Box display='flex' alignItems='center'>
-        <Typography variant='h4' style={{ paddingRight: '10px', color: 'white' }}>
+        <Typography 
+          variant='h4' 
+          sx={{ 
+            pr: { xs: 1, sm: 2 }, 
+            color: 'white',
+            fontSize: { xs: '1.2rem', sm: '1.5rem', md: '2rem' }
+          }}
+        >
           Round 22
         </Typography>
-        <SportsMartialArtsIcon fontSize='large' style={{ color: 'white' }} />
-        <SportsMmaIcon fontSize='large' style={{ color: 'white' }} />
+        <SportsMartialArtsIcon 
+          sx={{ 
+            color: 'white',
+            fontSize: { xs: 'medium', sm: 'large' }
+          }} 
+        />
+        <SportsMmaIcon 
+          sx={{ 
+            color: 'white',
+            fontSize: { xs: 'medium', sm: 'large' }
+          }} 
+        />
       </Box>
 
-      <Box display='flex' alignItems='center' gap={2}>
+      <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }}>
         {userType && (
           <Chip 
             label={userType === 'student' ? 'Estudiante' : 'Administrador'}
             color={userType === 'student' ? 'secondary' : 'primary'}
             variant="outlined"
+            size={window.innerWidth < 600 ? 'small' : 'medium'} // Tamaño responsivo
             sx={{ 
               color: 'white', 
               borderColor: 'white',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              fontSize: { xs: '0.7rem', sm: '0.8rem' }
             }}
           />
         )}
         
         <Typography 
           variant='body1' 
-          style={{ color: 'white', fontWeight: 'bold' }}
+          sx={{ 
+            color: 'white', 
+            fontWeight: 'bold',
+            fontSize: { xs: '0.8rem', sm: '1rem' },
+            display: { xs: 'none', sm: 'block' } // Ocultar en mobile muy pequeño
+          }}
         >
           {userType === 'student' && student ? 
             `${student.firstName} ${student.lastName}` : 

@@ -100,11 +100,13 @@ export const StudentDashboard = () => {
 
   return (
     <Box 
-      m="20px" 
+      className="student-dashboard"
       sx={{ 
-        height: { xs: 'auto', md: 'calc(100vh - 120px)' }, // Altura calculada dinámicamente
-        overflowY: 'auto', // Scroll vertical para todo el dashboard
-        overflowX: 'hidden' // Sin scroll horizontal
+        p: { xs: 1, sm: 2, md: 3 }, // Padding responsivo
+        maxWidth: '100vw', // Evitar overflow horizontal
+        overflowX: 'hidden',
+        minHeight: { xs: '100vh', md: 'auto' }, // Altura mínima completa en mobile
+        pb: { xs: 15, sm: 10, md: 3 } // Mucho más padding bottom para que la última tarjeta se vea completa
       }}
     >
       <Header 
@@ -112,28 +114,33 @@ export const StudentDashboard = () => {
         subtitle="Dashboard del estudiante" 
       />
 
-      <Grid container spacing={3}>
+      <Grid container spacing={{ xs: 2, sm: 3 }}>
         {/* Información Personal */}
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            height: { xs: 180, md: 200 }, // Altura responsiva
+            height: { xs: 'auto', sm: 180, md: 200 }, // Altura automática en mobile
+            minHeight: { xs: 140 }, // Altura mínima en mobile
             display: 'flex',
             flexDirection: 'column'
           }}>
             <CardContent sx={{ 
               color: 'white',
+              p: { xs: 1.5, sm: 2 }, // Padding responsivo
               display: 'flex',
               flexDirection: 'column',
               height: '100%',
               justifyContent: 'space-between'
             }}>
-              <Box display="flex" alignItems="center" mb={2}>
-                <AccountCircle sx={{ fontSize: 24, mr: 1 }} />
+              <Box display="flex" alignItems="center" mb={{ xs: 1, sm: 2 }}>
+                <AccountCircle sx={{ fontSize: { xs: 20, sm: 24 }, mr: 1 }} />
                 <Typography 
                   variant="h6" 
                   fontWeight="bold"
-                  sx={{ textShadow: '1px 1px 2px rgba(0,0,0,0.3)' }}
+                  sx={{ 
+                    textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                    fontSize: { xs: '1rem', sm: '1.25rem' }
+                  }}
                 >
                   Información Personal
                 </Typography>
@@ -186,12 +193,14 @@ export const StudentDashboard = () => {
         <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            height: { xs: 180, md: 200 }, // Altura responsiva
+            height: { xs: 'auto', sm: 180, md: 200 }, // Altura automática en mobile
+            minHeight: { xs: 140 }, // Altura mínima en mobile
             display: 'flex',
             flexDirection: 'column'
           }}>
             <CardContent sx={{ 
               color: 'white',
+              p: { xs: 1.5, sm: 2 }, // Padding responsivo
               display: 'flex',
               flexDirection: 'column',
               height: '100%',
@@ -245,12 +254,14 @@ export const StudentDashboard = () => {
         <Grid item xs={12} sm={12} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            height: { xs: 180, md: 200 }, // Altura responsiva
+            height: { xs: 'auto', sm: 180, md: 200 }, // Altura automática en mobile
+            minHeight: { xs: 140 }, // Altura mínima en mobile
             display: 'flex',
             flexDirection: 'column'
           }}>
             <CardContent sx={{ 
               color: 'white',
+              p: { xs: 1.5, sm: 2 }, // Padding responsivo
               display: 'flex',
               flexDirection: 'column',
               height: '100%',
@@ -352,13 +363,14 @@ export const StudentDashboard = () => {
               {studentData?.feesSummary?.recentFees && studentData.feesSummary.recentFees.length > 0 ? (
                 <Box 
                   sx={{ 
-                    maxHeight: { xs: '400px', md: '500px' }, // Altura máxima responsiva
-                    overflowY: 'auto', // Scroll vertical
-                    overflowX: 'hidden', // Sin scroll horizontal
-                    pr: 1 // Padding derecho para el scrollbar
+                    // Sin restricciones de altura en mobile para permitir scroll natural
+                    maxHeight: { xs: 'none', sm: 'none', md: '500px' },
+                    overflowY: { xs: 'visible', sm: 'visible', md: 'auto' },
+                    overflowX: 'hidden',
+                    pr: { xs: 0, sm: 0, md: 1 }
                   }}
                 >
-                  <Grid container spacing={2}>
+                  <Grid container spacing={{ xs: 1.5, sm: 2 }}>
                     {studentData.feesSummary.recentFees.map((fee) => (
                       <Grid item xs={12} sm={6} md={4} lg={3} key={fee.id}>
                         <Card 
@@ -373,7 +385,8 @@ export const StudentDashboard = () => {
                               transform: 'translateY(-3px)',
                               transition: 'all 0.3s ease'
                             } : {},
-                            height: { xs: 280, sm: 300 }, // Altura responsiva
+                            height: { xs: 'auto', sm: 280, md: 300 }, // Altura automática en mobile
+                            minHeight: { xs: 200 }, // Altura mínima en mobile
                             display: 'flex',
                             flexDirection: 'column'
                           }}
@@ -384,7 +397,7 @@ export const StudentDashboard = () => {
                           }}
                         >
                         <CardContent sx={{ 
-                          p: 1.5, // Padding reducido para más espacio
+                          p: { xs: 1, sm: 1.5 }, // Padding más pequeño en mobile
                           display: 'flex', 
                           flexDirection: 'column',
                           height: '100%',
@@ -393,10 +406,10 @@ export const StudentDashboard = () => {
                           <Typography 
                             variant="h6" // Tamaño reducido para ahorrar espacio
                             fontWeight="bold" 
-                            mb={0.5} 
+                            mb={{ xs: 0.5, sm: 0.5 }}
                             sx={{ 
                               color: '#1565c0',
-                              fontSize: '1.1rem'
+                              fontSize: { xs: '0.95rem', sm: '1.1rem' }
                             }}
                           >
                             {fee.monthName || getMonthName(fee.month)} {fee.year}

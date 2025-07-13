@@ -84,7 +84,13 @@ export const StudentFees = () => {
   }
 
   return (
-    <Box m="20px">
+    <Box 
+      sx={{ 
+        p: { xs: 1, sm: 2, md: 3 }, // Padding responsivo
+        maxWidth: '100vw', // Evitar overflow horizontal
+        overflowX: 'hidden'
+      }}
+    >
       <Box display="flex" alignItems="center" mb={3}>
         <Button 
           startIcon={<ArrowBack />} 
