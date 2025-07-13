@@ -99,7 +99,14 @@ export const StudentDashboard = () => {
   };
 
   return (
-    <Box m="20px">
+    <Box 
+      m="20px" 
+      sx={{ 
+        height: { xs: 'auto', md: 'calc(100vh - 120px)' }, // Altura calculada dinámicamente
+        overflowY: 'auto', // Scroll vertical para todo el dashboard
+        overflowX: 'hidden' // Sin scroll horizontal
+      }}
+    >
       <Header 
         title={`Bienvenido, ${studentData?.student?.firstName || student?.firstName || user?.fullName}`} 
         subtitle="Dashboard del estudiante" 
@@ -107,10 +114,10 @@ export const StudentDashboard = () => {
 
       <Grid container spacing={3}>
         {/* Información Personal */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            height: 200, // Altura fija
+            height: { xs: 180, md: 200 }, // Altura responsiva
             display: 'flex',
             flexDirection: 'column'
           }}>
@@ -176,10 +183,10 @@ export const StudentDashboard = () => {
         </Grid>
 
         {/* Información del Deporte */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={6} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-            height: 200, // Altura fija
+            height: { xs: 180, md: 200 }, // Altura responsiva
             display: 'flex',
             flexDirection: 'column'
           }}>
@@ -235,10 +242,10 @@ export const StudentDashboard = () => {
         </Grid>
 
         {/* Resumen Financiero */}
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} sm={12} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-            height: 200, // Altura fija
+            height: { xs: 180, md: 200 }, // Altura responsiva
             display: 'flex',
             flexDirection: 'column'
           }}>
@@ -343,31 +350,39 @@ export const StudentDashboard = () => {
               </Box>
 
               {studentData?.feesSummary?.recentFees && studentData.feesSummary.recentFees.length > 0 ? (
-                <Grid container spacing={2}>
-                  {studentData.feesSummary.recentFees.map((fee) => (
-                    <Grid item xs={12} sm={6} md={3} key={fee.id}>
-                      <Card 
-                        variant="outlined"
-                        sx={{
-                          border: fee.paymentStatus === 'paid' ? '2px solid #4caf50' : 
-                                 fee.paymentStatus === 'partial' ? '2px solid #ff9800' : 
-                                 '2px solid #f44336',
-                          cursor: fee.paymentStatus !== 'paid' ? 'pointer' : 'default',
-                          '&:hover': fee.paymentStatus !== 'paid' ? { 
-                            boxShadow: 4,
-                            transform: 'translateY(-3px)',
-                            transition: 'all 0.3s ease'
-                          } : {},
-                          height: 300, // Altura optimizada para mostrar todo el contenido
-                          display: 'flex',
-                          flexDirection: 'column'
-                        }}
-                        onClick={() => {
-                          if (fee.paymentStatus !== 'paid') {
-                            handleOpenPaymentModal(fee);
-                          }
-                        }}
-                      >
+                <Box 
+                  sx={{ 
+                    maxHeight: { xs: '400px', md: '500px' }, // Altura máxima responsiva
+                    overflowY: 'auto', // Scroll vertical
+                    overflowX: 'hidden', // Sin scroll horizontal
+                    pr: 1 // Padding derecho para el scrollbar
+                  }}
+                >
+                  <Grid container spacing={2}>
+                    {studentData.feesSummary.recentFees.map((fee) => (
+                      <Grid item xs={12} sm={6} md={4} lg={3} key={fee.id}>
+                        <Card 
+                          variant="outlined"
+                          sx={{
+                            border: fee.paymentStatus === 'paid' ? '2px solid #4caf50' : 
+                                   fee.paymentStatus === 'partial' ? '2px solid #ff9800' : 
+                                   '2px solid #f44336',
+                            cursor: fee.paymentStatus !== 'paid' ? 'pointer' : 'default',
+                            '&:hover': fee.paymentStatus !== 'paid' ? { 
+                              boxShadow: 4,
+                              transform: 'translateY(-3px)',
+                              transition: 'all 0.3s ease'
+                            } : {},
+                            height: { xs: 280, sm: 300 }, // Altura responsiva
+                            display: 'flex',
+                            flexDirection: 'column'
+                          }}
+                          onClick={() => {
+                            if (fee.paymentStatus !== 'paid') {
+                              handleOpenPaymentModal(fee);
+                            }
+                          }}
+                        >
                         <CardContent sx={{ 
                           p: 1.5, // Padding reducido para más espacio
                           display: 'flex', 
@@ -443,7 +458,8 @@ export const StudentDashboard = () => {
                       </Card>
                     </Grid>
                   ))}
-                </Grid>
+                  </Grid>
+                </Box>
               ) : (
                 <Alert severity="info">
                   No tienes cuotas registradas aún.

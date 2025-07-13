@@ -77,6 +77,7 @@ export const FitFinanceApp = () => {
                     <Route path='/student/payment-success' element={<PaymentSuccess />} />
                     <Route path='/student/payment-failure' element={<PaymentFailure />} />
                     <Route path='/student/payment-pending' element={<PaymentPending />} />
+                    <Route path='/auth/*' element={<Navigate to='/student' />} />
                     <Route path='/*' element={<StudentDashboard />} />
                   </>
                 ) : status === 'authenticated' ? (
@@ -86,6 +87,7 @@ export const FitFinanceApp = () => {
                     <Route path='/cuotas' element={<Fees />} />
                     <Route path='/pagos' element={<Payments />} />
                     <Route path='/alumnos' element={<Students />} />
+                    <Route path='/auth/*' element={<Navigate to='/' />} />
                     <Route path='/*' element={<Dashboard />} />
                   </>
                 ) : (
