@@ -104,7 +104,7 @@ export const StudentFees = () => {
         >
           Volver al Dashboard
         </Button>
-        <Header title="Mis Cuotas" subtitle="Historial de pagos y cuotas pendientes" />
+        <Header title="Historial de pagos y cuotas pendientes"  />
       </Box>
 
       {/* Resumen */}

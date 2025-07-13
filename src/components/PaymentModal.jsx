@@ -15,8 +15,6 @@ import {
   CardContent
 } from '@mui/material';
 import {
-  CreditCard,
-  AccountBalance,
   QrCode,
   Close
 } from '@mui/icons-material';
@@ -30,16 +28,14 @@ export const PaymentModal = ({
   studentData
 }) => {
   const [loading, setLoading] = useState(false);
-  const [loadingMethod, setLoadingMethod] = useState(null); // Nuevo estado para método específico
   const [error, setError] = useState(null);
 
-  const handlePayment = async (paymentMethod) => {
+  const handlePayment = async () => {
     try {
       setLoading(true);
-      setLoadingMethod(paymentMethod); // Marcar qué método está cargando
       setError(null);
 
-      // Configurar datos adicionales según el método de pago
+      // Configurar datos para transferencia bancaria
       const paymentData = {
         feeId: fee.id,
         amount: fee.remainingAmount || fee.amount,
@@ -49,19 +45,15 @@ export const PaymentModal = ({
         payerFirstName: studentData?.student?.firstName || "Test", 
         payerLastName: studentData?.student?.lastName || "User",
         payerDocument: studentData?.student?.document || "12345678",
-        // Método de pago preferido
-        preferredPaymentMethod: paymentMethod
-      };
-
-      // Agregar datos específicos para transferencia bancaria
-      if (paymentMethod === 'bank_transfer') {
-        paymentData.bankTransferData = {
+        // Método de pago fijo: transferencia bancaria
+        preferredPaymentMethod: 'bank_transfer',
+        bankTransferData: {
           alias: BANK_CONFIG.alias,
           cbu: BANK_CONFIG.cbu,
           accountHolder: BANK_CONFIG.accountHolder,
           bankName: BANK_CONFIG.bankName
-        };
-      }
+        }
+      };
 
       // Crear preferencia de pago en MercadoPago
       const response = await financeApi.post('/mercadopago/create-preference', paymentData);
@@ -82,43 +74,15 @@ export const PaymentModal = ({
       onClose();
       
       // Opcional: Mostrar mensaje de que se abrió la ventana de pago
-      alert('Se abrió la ventana de MercadoPago. Complete el pago y regrese para ver la actualización.');
+      alert(`Se abrió MercadoPago. Transferí al alias: ${BANK_CONFIG.alias} y el pago se acreditará automáticamente.`);
 
     } catch (error) {
       console.error('Error al crear preferencia de pago:', error);
       setError('Error al procesar el pago. Intente nuevamente.');
     } finally {
       setLoading(false);
-      setLoadingMethod(null); // Limpiar el método que estaba cargando
     }
   };
-
-  const paymentMethods = [
-    {
-      id: 'credit_card',
-      name: 'Tarjeta de Crédito',
-      description: 'Pago inmediato con tarjeta de crédito',
-      icon: <CreditCard sx={{ fontSize: { xs: 32, sm: 40 }, color: '#1976d2' }} />,
-      color: '#e3f2fd',
-      border: '#bbdefb'
-    },
-    {
-      id: 'debit_card', 
-      name: 'Tarjeta de Débito',
-      description: 'Pago inmediato con tarjeta de débito',
-      icon: <AccountBalance sx={{ fontSize: { xs: 32, sm: 40 }, color: '#388e3c' }} />,
-      color: '#e8f5e8',
-      border: '#c8e6c9'
-    },
-    {
-      id: 'bank_transfer',
-      name: 'Transferencia Bancaria',
-      description: `${BANK_CONFIG.instructions}`,
-      icon: <QrCode sx={{ fontSize: { xs: 32, sm: 40 }, color: '#f57c00' }} />,
-      color: '#fff3e0',
-      border: '#ffcc02'
-    }
-  ];
 
   if (!fee) return null;
 
@@ -160,7 +124,7 @@ export const PaymentModal = ({
             fontSize: { xs: '1.1rem', sm: '1.25rem' }
           }}
         >
-          💳 Opciones de Pago
+          � Pagar Cuota - Transferencia
         </Typography>
         <Button 
           onClick={onClose}
@@ -176,14 +140,15 @@ export const PaymentModal = ({
       </DialogTitle>
 
       <DialogContent sx={{ 
-        p: { xs: 2, sm: 3 }, 
+        p: { xs: 1.5, sm: 3 }, 
         bgcolor: 'white',
         flexGrow: 1, // Para ocupar el espacio disponible en mobile
-        overflowY: 'auto' // Scroll si es necesario
+        overflowY: 'auto', // Scroll si es necesario
+        maxHeight: { xs: 'calc(100vh - 180px)', sm: 'auto' } // Altura máxima en mobile
       }}>
         {/* Información de la cuota */}
         <Card sx={{ 
-          mb: { xs: 2, sm: 3 }, 
+          mb: { xs: 1.5, sm: 3 }, 
           bgcolor: '#f8f9fa', 
           border: '1px solid #e9ecef',
           borderRadius: { xs: 2, sm: 3 }
@@ -198,111 +163,132 @@ export const PaymentModal = ({
             >
               {fee.monthName || `${fee.month}/${fee.year}`}
             </Typography>
-            <Typography 
-              variant="body1" 
-              mb={1} 
-              color="#333"
-              sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}
-            >
-              <strong>Monto total:</strong> ${fee.amount?.toLocaleString()}
-            </Typography>
-            <Typography 
-              variant="body1" 
-              mb={1} 
-              color="#333"
-              sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}
-            >
-              <strong>Ya pagado:</strong> ${fee.amountPaid?.toLocaleString()}
-            </Typography>
-            <Typography 
-              variant="h6" 
-              color="#2e7d32" 
-              fontWeight="bold"
-              sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
-            >
-              <strong>A pagar:</strong> ${(fee.remainingAmount || fee.amount)?.toLocaleString()}
-            </Typography>
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography 
+                variant="body2" 
+                color="#333"
+                sx={{ fontSize: { xs: '0.85rem', sm: '1rem' } }}
+              >
+                <strong>A pagar:</strong>
+              </Typography>
+              <Typography 
+                variant="h6" 
+                color="#2e7d32" 
+                fontWeight="bold"
+                sx={{ fontSize: { xs: '1.1rem', sm: '1.25rem' } }}
+              >
+                ${(fee.remainingAmount || fee.amount)?.toLocaleString()}
+              </Typography>
+            </Box>
           </CardContent>
         </Card>
 
-        <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
+        <Divider sx={{ mb: { xs: 1.5, sm: 3 } }} />
 
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert severity="error" sx={{ mb: { xs: 1.5, sm: 2 } }}>
             {error}
           </Alert>
         )}
 
-        {/* Métodos de pago */}
+        {/* Botón de Pago Único */}
         <Typography 
           variant="h6" 
           fontWeight="bold" 
-          mb={2} 
+          mb={{ xs: 2, sm: 3 }} 
           color="#333"
+          textAlign="center"
           sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
         >
-          Selecciona tu método de pago:
+          💳 Pagar con Transferencia Bancaria
         </Typography>
 
-        <Box display="flex" flexDirection="column" gap={{ xs: 1.5, sm: 2 }}>
-          {paymentMethods.map((method) => (
-            <Card 
-              key={method.id}
-              sx={{ 
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s ease',
-                bgcolor: method.color,
-                border: `2px solid ${method.border}`,
-                borderRadius: { xs: 2, sm: 3 },
-                minHeight: { xs: 80, sm: 'auto' }, // Altura mínima para touch en mobile
-                opacity: loading && loadingMethod !== method.id ? 0.5 : 1, // Opacidad reducida para métodos no seleccionados
-                '&:hover': loading ? {} : {
-                  transform: 'translateY(-2px)',
-                  boxShadow: 3,
-                  borderColor: '#1976d2'
-                },
-                '&:active': { // Efecto al tocar en mobile
-                  transform: 'scale(0.98)'
-                }
-              }}
-              onClick={() => !loading && handlePayment(method.id)}
+        <Card 
+          sx={{ 
+            cursor: loading ? 'not-allowed' : 'pointer',
+            transition: 'all 0.3s ease',
+            bgcolor: '#fff3e0',
+            border: `3px solid #ffcc02`,
+            borderRadius: { xs: 2, sm: 3 },
+            minHeight: { xs: 'auto', sm: 120 },
+            '&:hover': loading ? {} : {
+              transform: 'translateY(-4px)',
+              boxShadow: 6,
+              borderColor: '#f57c00'
+            },
+            '&:active': {
+              transform: 'scale(0.98)'
+            }
+          }}
+          onClick={() => !loading && handlePayment()}
+        >
+          <CardContent sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: { xs: 1, sm: 2 },
+            py: { xs: 1.5, sm: 3 },
+            px: { xs: 1.5, sm: 2 },
+            textAlign: 'center'
+          }}>
+            <Box display="flex" alignItems="center" gap={1.5}>
+              <QrCode sx={{ fontSize: { xs: 32, sm: 48 }, color: '#f57c00' }} />
+              {loading && (
+                <CircularProgress size={24} sx={{ color: '#f57c00' }} />
+              )}
+            </Box>
+            
+            <Typography 
+              variant="h5" 
+              fontWeight="bold" 
+              color="#333"
+              sx={{ fontSize: { xs: '1.1rem', sm: '1.5rem' } }}
             >
-              <CardContent sx={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: { xs: 1.5, sm: 2 },
-                py: { xs: 1.5, sm: 2 },
-                px: { xs: 1.5, sm: 2 }
-              }}>
-                {method.icon}
-                <Box flex={1}>
-                  <Typography 
-                    variant="h6" 
-                    fontWeight="bold" 
-                    color="#333"
-                    sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
-                  >
-                    {method.name}
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    color="#666"
-                    sx={{ fontSize: { xs: '0.85rem', sm: '0.875rem' } }}
-                  >
-                    {method.description}
-                  </Typography>
-                </Box>
-                {loading && loadingMethod === method.id && (
-                  <CircularProgress size={24} />
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </Box>
+              Transferir al Alias
+            </Typography>
+            
+            <Typography 
+              variant="h6" 
+              fontWeight="bold" 
+              color="#f57c00"
+              sx={{ 
+                fontSize: { xs: '1rem', sm: '1.3rem' },
+                backgroundColor: 'rgba(245, 124, 0, 0.1)',
+                padding: '6px 12px',
+                borderRadius: '8px'
+              }}
+            >
+              {BANK_CONFIG.alias}
+            </Typography>
+            
+            <Typography 
+              variant="body2" 
+              color="#666"
+              sx={{ 
+                fontSize: { xs: '0.8rem', sm: '1rem' },
+                display: { xs: 'none', sm: 'block' } // Ocultar en mobile para ahorrar espacio
+              }}
+            >
+              {BANK_CONFIG.instructions}
+            </Typography>
+
+            {loading && (
+              <Typography 
+                variant="body2" 
+                color="#f57c00"
+                fontWeight="bold"
+                sx={{ fontSize: { xs: '0.75rem', sm: '0.9rem' } }}
+              >
+                Abriendo MercadoPago...
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
 
         <Box 
-          mt={{ xs: 2, sm: 3 }} 
-          p={{ xs: 1.5, sm: 2 }} 
+          mt={{ xs: 1.5, sm: 3 }} 
+          p={{ xs: 1, sm: 2 }} 
           bgcolor="#f0f7ff" 
           borderRadius={2} 
           border="1px solid #bbdefb"
@@ -312,16 +298,28 @@ export const PaymentModal = ({
             color="#1976d2" 
             textAlign="center" 
             fontWeight="500"
-            sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
           >
-            🔒 Pago seguro procesado por MercadoPago
+            🔒 Transferencia segura procesada por MercadoPago
+          </Typography>
+          <Typography 
+            variant="body2" 
+            color="#1976d2" 
+            textAlign="center" 
+            sx={{ 
+              fontSize: { xs: '0.7rem', sm: '0.8rem' }, 
+              mt: 0.5,
+              display: { xs: 'none', sm: 'block' } // Ocultar en mobile
+            }}
+          >
+            Tu pago se acreditará automáticamente
           </Typography>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ 
-        p: { xs: 2, sm: 3 }, 
-        pt: { xs: 1, sm: 0 }, 
+        p: { xs: 1.5, sm: 3 }, 
+        pt: { xs: 0.5, sm: 0 }, 
         bgcolor: 'white',
         borderTop: { xs: '1px solid #e0e0e0', sm: 'none' }, // Separador en mobile
         position: { xs: 'sticky', sm: 'static' }, // Sticky en mobile
@@ -333,8 +331,8 @@ export const PaymentModal = ({
           variant="outlined"
           fullWidth
           sx={{
-            minHeight: { xs: 48, sm: 36 }, // Altura mínima para touch en mobile
-            fontSize: { xs: '1rem', sm: '0.875rem' },
+            minHeight: { xs: 44, sm: 36 }, // Altura mínima para touch en mobile
+            fontSize: { xs: '0.9rem', sm: '0.875rem' },
             fontWeight: 'bold'
           }}
         >

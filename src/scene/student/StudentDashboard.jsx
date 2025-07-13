@@ -111,7 +111,7 @@ export const StudentDashboard = () => {
     >
       <Header 
         title={`Bienvenido, ${studentData?.student?.firstName || student?.firstName || user?.fullName}`} 
-        subtitle="Dashboard del estudiante" 
+        // subtitle="Dashboard del estudiante" 
       />
 
       <Grid container spacing={{ xs: 2, sm: 3 }}>

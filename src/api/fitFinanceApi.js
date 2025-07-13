@@ -3,12 +3,16 @@ import { getEnvVariables } from "../helpers";
 
 const { VITE_API_URL } = getEnvVariables();
 
+console.log("🌐 API URL en fitFinanceApi:", VITE_API_URL);
+
 const financeApi = axios.create({
   baseURL: VITE_API_URL,
 });
 
 // Todo: configurar interceptores
 financeApi.interceptors.request.use((config) => {
+  console.log("📤 Request interceptor - URL:", config.baseURL + config.url);
+
   const token = localStorage.getItem("token");
 
   if (token) {

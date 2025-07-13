@@ -1,13 +1,21 @@
 import { clearErrorMessage, onChecking, onLogin, onLogout } from "./authSlice";
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+
+console.log("🌐 API_URL configurada en thunks:", API_URL);
 
 // Login para administradores y estudiantes
 export const startLoginWithEmailPassword = ({ email, password }) => {
   return async (dispatch) => {
     dispatch(onChecking());
 
+    console.log("🚀 Iniciando login en thunks...");
+    console.log("📧 Email:", email);
+    console.log("🌐 URL de login:", `${API_URL}/auth/login`);
+
     try {
+      console.log("📤 Haciendo fetch a:", `${API_URL}/auth/login`);
+
       const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: {
@@ -16,9 +24,13 @@ export const startLoginWithEmailPassword = ({ email, password }) => {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log("📥 Respuesta recibida:", response.status, response.ok);
+
       const data = await response.json();
+      console.log("📄 Datos de respuesta:", data);
 
       if (!response.ok) {
+        console.log("❌ Error en respuesta:", data.message);
         return dispatch(onLogout(data.message || "Error en la autenticación"));
       }
 
