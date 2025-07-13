@@ -1,0 +1,11 @@
+{
+  "build": {
+    "builder": "@vercel/static-build",
+    "config": {
+      "distDir": "dist"
+    }
+  },
+  "install": {
+    "modules": ["vite"]
+  }
+}
