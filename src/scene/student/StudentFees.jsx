@@ -102,7 +102,7 @@ export const StudentFees = () => {
             '&:hover': { bgcolor: '#5cbaa3' }
           }}
         >
-          Volver al Dashboard
+          Volver a Inicio
         </Button>
         <Header title="📊 Historial de Cuotas"  />
       </Box>
@@ -237,7 +237,7 @@ export const StudentFees = () => {
               </Typography>
             </Box>
             <Typography variant="body2" color="text.secondary" fontStyle="italic">
-              📊 Solo consulta - Para pagar ve al Dashboard
+              📊 Solo consulta - Para pagar ve a Inicio
             </Typography>
           </Box>
           
@@ -421,7 +421,7 @@ export const StudentFees = () => {
                             }}
                           >
                             <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.7rem' }}>
-                              � Ve al Dashboard para pagar
+                              💳 Ve a Inicio para pagar
                             </Typography>
                           </Box>
                         )}
