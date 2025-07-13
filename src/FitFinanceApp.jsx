@@ -14,6 +14,9 @@ import { Students } from './scene/students';
 import { Fees } from './scene/fees';
 import { StudentDashboard } from './scene/student/StudentDashboard';
 import { StudentFees } from './scene/student/StudentFees';
+import { PaymentSuccess } from './scene/payments/PaymentSuccess';
+import { PaymentFailure } from './scene/payments/PaymentFailure';
+import { PaymentPending } from './scene/payments/PaymentPending';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
@@ -71,6 +74,9 @@ export const FitFinanceApp = () => {
                 ) : status === 'authenticated' && userType === 'student' ? (
                   <>
                     <Route path='/student/fees' element={<StudentFees />} />
+                    <Route path='/student/payment-success' element={<PaymentSuccess />} />
+                    <Route path='/student/payment-failure' element={<PaymentFailure />} />
+                    <Route path='/student/payment-pending' element={<PaymentPending />} />
                     <Route path='/*' element={<StudentDashboard />} />
                   </>
                 ) : status === 'authenticated' ? (

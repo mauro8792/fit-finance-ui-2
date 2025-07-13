@@ -20,13 +20,15 @@ import {
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
-import { Header } from '../../components';
+import { Header, PaymentModal } from '../../components';
 
 export const StudentDashboard = () => {
   const navigate = useNavigate();
   const { user, student, getStudentData } = useAuthStore();
   const [studentData, setStudentData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedFee, setSelectedFee] = useState(null);
 
   useEffect(() => {
     const loadStudentData = async () => {
@@ -73,6 +75,27 @@ export const StudentDashboard = () => {
       default:
         return <Chip label="Sin información" color="default" />;
     }
+  };
+
+  const handleOpenPaymentModal = (fee) => {
+    setSelectedFee(fee);
+    setPaymentModalOpen(true);
+  };
+
+  const handleClosePaymentModal = () => {
+    setPaymentModalOpen(false);
+    setSelectedFee(null);
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Recargar datos del estudiante después de un pago exitoso
+    try {
+      const data = await getStudentData();
+      setStudentData(data);
+    } catch (error) {
+      console.error('Error recargando datos:', error);
+    }
+    handleClosePaymentModal();
   };
 
   return (
@@ -341,8 +364,7 @@ export const StudentDashboard = () => {
                         }}
                         onClick={() => {
                           if (fee.paymentStatus !== 'paid') {
-                            console.log('Abriendo opciones de pago para cuota:', fee.id);
-                            // TODO: Implementar modal de opciones de pago
+                            handleOpenPaymentModal(fee);
                           }
                         }}
                       >
@@ -356,7 +378,7 @@ export const StudentDashboard = () => {
                           <Typography 
                             variant="h6" // Tamaño reducido para ahorrar espacio
                             fontWeight="bold" 
-                            mb={0.5} // Margen reducido
+                            mb={0.5} 
                             sx={{ 
                               color: '#1565c0',
                               fontSize: '1.1rem'
@@ -367,7 +389,7 @@ export const StudentDashboard = () => {
                           
                           <Typography 
                             variant="body2" 
-                            mb={1} // Margen reducido
+                            mb={1} 
                             sx={{ 
                               color: '#757575',
                               fontSize: '0.75rem'
@@ -376,7 +398,7 @@ export const StudentDashboard = () => {
                             Período: {fee.month}/{fee.year}
                           </Typography>
 
-                          <Box mb={1}> // Margen reducido
+                          <Box mb={1}> 
                             <Typography 
                               variant="h6" 
                               fontWeight="bold"
@@ -389,7 +411,7 @@ export const StudentDashboard = () => {
                             </Typography>
                           </Box>
 
-                          <Box mb={1}> // Margen reducido
+                          <Box mb={1}> 
                             <Typography 
                               variant="body2" 
                               fontWeight="bold"
@@ -431,6 +453,15 @@ export const StudentDashboard = () => {
           </Card>
         </Grid>
       </Grid>
+
+      {/* Modal de Pago */}
+      <PaymentModal
+        open={paymentModalOpen}
+        onClose={handleClosePaymentModal}
+        fee={selectedFee}
+        studentData={studentData}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </Box>
   );
 };
