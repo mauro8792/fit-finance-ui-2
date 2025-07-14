@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { financeApi } from "../api";
 import { clearErrorMessage, onLoadFee } from "../store";
 
-const url = "/fees";
+const url = "/fee/by-period";
 
 export const useFeesStore = () => {
   const { fees, errorMessage } = useSelector((state) => state.fee);
@@ -22,7 +22,11 @@ export const useFeesStore = () => {
 
       const { data } = await financeApi.get(urlPayload);
 
-      dispatch(onLoadFee({ data }));
+      // El backend devuelve { fees: [...], statistics: {...}, period: {...} }
+      // Extraemos solo el array de fees para el slice
+      const feesData = data.fees || data; // Fallback por si data es directamente el array
+
+      dispatch(onLoadFee({ data: feesData }));
     } catch (error) {
       setTimeout(() => {
         dispatch(clearErrorMessage());
