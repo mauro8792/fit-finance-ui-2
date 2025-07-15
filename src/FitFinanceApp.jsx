@@ -13,6 +13,7 @@ import { useAuthStore } from './hooks';
 import { Students } from './scene/students';
 import { Fees } from './scene/fees';
 import { StudentDashboard } from './scene/student/StudentDashboard';
+import { StudentRoutine } from './scene/student/StudentRoutine';
 import { StudentFees } from './scene/student/StudentFees';
 import { PaymentSuccess } from './scene/payments/PaymentSuccess';
 import { PaymentFailure } from './scene/payments/PaymentFailure';
@@ -88,12 +89,13 @@ export const FitFinanceApp = () => {
                   </>
                 ) : status === 'authenticated' && userType === 'student' ? (
                   <>
-                    <Route path='/student/fees' element={<StudentFees />} />
-                    <Route path='/student/payment-success' element={<PaymentSuccess />} />
-                    <Route path='/student/payment-failure' element={<PaymentFailure />} />
-                    <Route path='/student/payment-pending' element={<PaymentPending />} />
-                    <Route path='/auth/*' element={<Navigate to='/student' />} />
-                    <Route path='/*' element={<StudentDashboard />} />
+                  <Route path='/student/fees' element={<StudentFees />} />
+                  <Route path='/student/routine' element={<StudentRoutine />} />
+                  <Route path='/student/payment-success' element={<PaymentSuccess />} />
+                  <Route path='/student/payment-failure' element={<PaymentFailure />} />
+                  <Route path='/student/payment-pending' element={<PaymentPending />} />
+                  <Route path='/auth/*' element={<Navigate to='/student' />} />
+                  <Route path='/*' element={<StudentDashboard />} />
                   </>
                 ) : status === 'authenticated' ? (
                   <>

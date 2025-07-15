@@ -21,6 +21,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
 import { Header, PaymentModal } from '../../components';
+import { RoutineTable } from '../../components/RoutineTable';
 import Swal from 'sweetalert2';
 
 export const StudentDashboard = () => {
@@ -30,6 +31,7 @@ export const StudentDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedFee, setSelectedFee] = useState(null);
+  const [showRoutine, setShowRoutine] = useState(false);
 
   useEffect(() => {
     const loadStudentData = async () => {
@@ -163,6 +165,7 @@ export const StudentDashboard = () => {
   };
 
   return (
+
     <Box 
       className="student-dashboard"
       sx={{ 
@@ -177,13 +180,14 @@ export const StudentDashboard = () => {
         title={`Bienvenido, ${studentData?.student?.firstName || student?.firstName || user?.fullName}`} 
       />
 
+      {/* Cards principales y cuotas */}
       <Grid container spacing={{ xs: 1.5, sm: 2 }}>
         {/* Fila 1: Información Compacta - Todas en una fila */}
         <Grid item xs={12} sm={4} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            height: { xs: 'auto', sm: 140, md: 140 },
-            minHeight: { xs: 120 },
+            height: { xs: 180, sm: 180, md: 180 },
+            minHeight: { xs: 180, sm: 180, md: 180 },
             display: 'flex',
             flexDirection: 'column'
           }}>
@@ -236,8 +240,8 @@ export const StudentDashboard = () => {
         <Grid item xs={12} sm={4} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%)',
-            height: { xs: 'auto', sm: 140, md: 140 },
-            minHeight: { xs: 120 },
+            height: { xs: 180, sm: 180, md: 180 },
+            minHeight: { xs: 180, sm: 180, md: 180 },
             display: 'flex',
             flexDirection: 'column'
           }}>
@@ -284,6 +288,17 @@ export const StudentDashboard = () => {
                 📅 Desde: {studentData?.student?.startDate ? 
                   new Date(studentData.student.startDate).toLocaleDateString('es-ES') : 'N/A'}
               </Typography>
+              {/* Info del Profesor debajo del deporte */}
+              {studentData?.coach && (
+                <Box mt={1.5} textAlign="center">
+                  <Typography variant="subtitle2" fontWeight="bold" sx={{ color: 'white', opacity: 0.95 }}>
+                    Profesor: {studentData.coach.firstName} {studentData.coach.lastName}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'white', opacity: 0.85, fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>
+                    📧 {studentData.coach.email}
+                  </Typography>
+                </Box>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -291,8 +306,8 @@ export const StudentDashboard = () => {
         <Grid item xs={12} sm={4} md={4}>
           <Card sx={{ 
             background: 'linear-gradient(135deg, #00cec9 0%, #55efc4 100%)',
-            height: { xs: 'auto', sm: 140, md: 140 },
-            minHeight: { xs: 120 },
+            height: { xs: 180, sm: 180, md: 180 },
+            minHeight: { xs: 180, sm: 180, md: 180 },
             display: 'flex',
             flexDirection: 'column'
           }}>
@@ -547,6 +562,18 @@ export const StudentDashboard = () => {
         </Grid>
       </Grid>
 
+
+      {/* Botón para ir a la rutina */}
+      <Box mt={3} mb={2}>
+        <Button
+          variant="contained"
+          color="primary"
+          onClick={() => navigate('/student/routine')}
+        >
+          Ver rutina
+        </Button>
+      </Box>
+
       {/* Modal de Pago */}
       <PaymentModal
         open={paymentModalOpen}
@@ -557,4 +584,4 @@ export const StudentDashboard = () => {
       />
     </Box>
   );
-};
+}
