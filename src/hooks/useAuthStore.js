@@ -52,6 +52,31 @@ export const useAuthStore = () => {
     }
   }, [dispatch]);
 
+  // Obtener alumnos del coach
+  const getCoachStudentsData = useCallback(async (coachUserId) => {
+    try {
+      // Usar el método de la API directamente, ya que no hay thunk
+      return await import("../api/fitFinanceApi").then((mod) =>
+        mod.getCoachStudents(coachUserId)
+      );
+    } catch (error) {
+      console.error("Error obteniendo alumnos del coach:", error);
+      throw error;
+    }
+  }, []);
+
+  // Obtener datos de un alumno por id
+  const getStudentById = useCallback(async (studentId) => {
+    try {
+      return await import("../api/fitFinanceApi").then((mod) =>
+        mod.getStudentById(studentId)
+      );
+    } catch (error) {
+      console.error("Error obteniendo datos del alumno:", error);
+      throw error;
+    }
+  }, []);
+
   return {
     //* Properties
     status,
@@ -68,5 +93,7 @@ export const useAuthStore = () => {
     clearErrorMessage: clearErrorMsg,
     getStudentData,
     getStudentFeesData,
+    getCoachStudentsData,
+    getStudentById,
   };
 };

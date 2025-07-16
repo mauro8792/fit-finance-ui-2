@@ -43,17 +43,23 @@ export const startLoginWithEmailPassword = ({ email, password }) => {
         localStorage.setItem("studentId", data.student.id);
         dispatch(
           onLogin({
-            user: data.user,
+            user: { ...data.user, id: data.id }, // Asegura que el id esté siempre presente
             student: data.student,
             userType: "student",
             token: data.token,
           })
         );
       } else {
+        // Para coach y admin, aseguramos que user tenga id, email, fullName, roles
         dispatch(
           onLogin({
-            user: data.user,
-            userType: "admin",
+            user: {
+              id: data.id,
+              email: data.email,
+              fullName: data.fullName,
+              roles: data.roles,
+            },
+            userType: data.userType,
             token: data.token,
           })
         );

@@ -10,6 +10,7 @@ import { Users } from './scene/users';
 import {Dashboard} from './scene/dashboard'
 import { AuthRoutes } from './scene/auth/routes/AuthRoutes';
 import { useAuthStore } from './hooks';
+import CoachDashboard from './scene/coach/CoachDashboard';
 import { Students } from './scene/students';
 import { Fees } from './scene/fees';
 import { StudentDashboard } from './scene/student/StudentDashboard';
@@ -18,10 +19,11 @@ import { StudentFees } from './scene/student/StudentFees';
 import { PaymentSuccess } from './scene/payments/PaymentSuccess';
 import { PaymentFailure } from './scene/payments/PaymentFailure';
 import { PaymentPending } from './scene/payments/PaymentPending';
+import StudentDetail from './scene/coach/StudentDetail';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
-  const { status, userType, startCheckingAuthentication } = useAuthStore();
+  const { status, userType, user, startCheckingAuthentication } = useAuthStore();
   const [isSidebar, setIsSidebar] = useState(true);
   const hasCheckedAuth = useRef(false);
 
@@ -96,6 +98,13 @@ export const FitFinanceApp = () => {
                   <Route path='/student/payment-pending' element={<PaymentPending />} />
                   <Route path='/auth/*' element={<Navigate to='/student' />} />
                   <Route path='/*' element={<StudentDashboard />} />
+                  </>
+                ) : status === 'authenticated' && userType === 'coach' ? (
+                  <>
+                    <Route path='/coach/dashboard' element={<CoachDashboard coachUserId={user?.id} />} />
+                    <Route path='/coach/alumno/:id' element={<StudentDetail />} />
+                    <Route path='/auth/*' element={<Navigate to='/coach/dashboard' />} />
+                    <Route path='/*' element={<CoachDashboard coachUserId={user?.id} />} />
                   </>
                 ) : status === 'authenticated' ? (
                   <>

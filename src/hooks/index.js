@@ -5,3 +5,5 @@ export * from "./useStudentsStore";
 export * from "./useFeesStore";
 export * from "./usePaymentsStore";
 export * from "./useSequentialPaymentValidation";
+
+export * from "./useRoutineStore";

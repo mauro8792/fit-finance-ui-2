@@ -1,3 +1,13 @@
+// Obtener datos de un alumno por id
+export const getStudentById = async (studentId) => {
+  try {
+    const response = await financeApi.get(`/students/${studentId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener datos del alumno:", error);
+    throw error;
+  }
+};
 import axios from "axios";
 import { getEnvVariables } from "../helpers";
 
@@ -40,5 +50,16 @@ financeApi.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Obtener alumnos por coach userId
+export const getCoachStudents = async (coachUserId) => {
+  try {
+    const response = await financeApi.get(`/students/coach/${coachUserId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener alumnos del coach:", error);
+    throw error;
+  }
+};
 
 export default financeApi;

@@ -50,8 +50,20 @@ const Topbar = () => {
       <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }}>
         {userType && (
           <Chip 
-            label={userType === 'student' ? 'Estudiante' : 'Administrador'}
-            color={userType === 'student' ? 'secondary' : 'primary'}
+            label={
+              userType === 'student'
+                ? 'Estudiante'
+                : userType === 'coach'
+                  ? 'Coach'
+                  : 'Administrador'
+            }
+            color={
+              userType === 'student'
+                ? 'secondary'
+                : userType === 'coach'
+                  ? 'success'
+                  : 'primary'
+            }
             variant="outlined"
             size={window.innerWidth < 600 ? 'small' : 'medium'} // Tamaño responsivo
             sx={{ 
