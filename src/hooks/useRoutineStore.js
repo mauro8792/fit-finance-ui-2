@@ -20,8 +20,27 @@ export const useRoutineStore = () => {
     return response.data;
   }, []);
 
+  // Crear mesociclo
+  const createMesocycle = useCallback(async (macrocycleId, mesoData) => {
+    const response = await fitFinanceApi.post(`/mesocycle/${macrocycleId}`, {
+      ...mesoData,
+      name: mesoData.name || mesoData.objetivo,
+    });
+    return response.data;
+  }, []);
+
+  // Obtener todos los mesociclos de un macro
+  const getMesocyclesByMacro = useCallback(async (macrocycleId) => {
+    const response = await fitFinanceApi.get(
+      `/mesocycle/macrocycle/${macrocycleId}`
+    );
+    return response.data;
+  }, []);
+
   return {
     createMacroCycle,
     getAllMacroCycles,
+    createMesocycle,
+    getMesocyclesByMacro,
   };
 };

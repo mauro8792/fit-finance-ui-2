@@ -20,6 +20,7 @@ import { PaymentSuccess } from './scene/payments/PaymentSuccess';
 import { PaymentFailure } from './scene/payments/PaymentFailure';
 import { PaymentPending } from './scene/payments/PaymentPending';
 import StudentDetail from './scene/coach/StudentDetail';
+import MacrocycleDetail from './scene/coach/MacrocycleDetail';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
@@ -103,6 +104,7 @@ export const FitFinanceApp = () => {
                   <>
                     <Route path='/coach/dashboard' element={<CoachDashboard coachUserId={user?.id} />} />
                     <Route path='/coach/alumno/:id' element={<StudentDetail />} />
+                    <Route path='/coach/macrocycle/:id' element={<MacrocycleDetail />} />
                     <Route path='/auth/*' element={<Navigate to='/coach/dashboard' />} />
                     <Route path='/*' element={<CoachDashboard coachUserId={user?.id} />} />
                   </>
