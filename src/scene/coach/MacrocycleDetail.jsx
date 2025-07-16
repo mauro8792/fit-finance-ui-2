@@ -50,9 +50,14 @@ const MacrocycleDetail = () => {
               <div style={{ fontWeight: 700, fontSize: 20, color: '#ffd700', marginBottom: 8 }}>{meso.name}</div>
               <div style={{ fontSize: 15, marginBottom: 4 }}><b>Inicio:</b> {meso.startDate ? new Date(meso.startDate).toLocaleDateString() : '-'}</div>
               <div style={{ fontSize: 15, marginBottom: 4 }}><b>Fin:</b> {meso.endDate ? new Date(meso.endDate).toLocaleDateString() : '-'}</div>
-              <div style={{ fontSize: 14, marginTop: 8, color: '#ccc' }}><b>Objetivo:</b> {meso.objetivo}</div>
+              <div style={{ fontSize: 14, marginTop: 8, color: '#ccc' }}><b>Objetivo:</b> {meso.name}</div>
               <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                <button style={{ background: '#ffd700', color: '#222', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 700, cursor: 'pointer' }}>Editar</button>
+                <button
+                  style={{ background: '#ffd700', color: '#222', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 700, cursor: 'pointer' }}
+                  onClick={() => navigate(`/coach/mesocycle/${meso.id}/microcycles`)}
+                >
+                  Editar
+                </button>
                 <button style={{ background: '#ff4d4f', color: '#fff', border: 'none', borderRadius: 6, padding: '6px 14px', fontWeight: 700, cursor: 'not-allowed', opacity: 0.6 }}>Eliminar</button>
               </div>
             </div>

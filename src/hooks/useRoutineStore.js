@@ -1,7 +1,20 @@
 import { useCallback } from "react";
-import fitFinanceApi from "../api/fitFinanceApi";
+import fitFinanceApi, { getMicrocyclesByMesocycle } from "../api/fitFinanceApi";
 
 export const useRoutineStore = () => {
+  // Crear microciclo para un mesociclo
+  const createMicrocycle = useCallback(async (mesocycleId, microcycleData) => {
+    const response = await fitFinanceApi.post(
+      `/microcycle/${mesocycleId}/`,
+      microcycleData
+    );
+    return response.data;
+  }, []);
+
+  // Obtener microciclos de un mesociclo
+  const fetchMicrocyclesByMesocycle = useCallback(async (mesocycleId) => {
+    return await getMicrocyclesByMesocycle(mesocycleId);
+  }, []);
   // Crear macro-ciclo
   const createMacroCycle = useCallback(async (studentId, macroData) => {
     const response = await fitFinanceApi.post(`/macrocycle`, {
@@ -37,10 +50,29 @@ export const useRoutineStore = () => {
     return response.data;
   }, []);
 
+  // Obtener un microciclo por id
+  const getMicrocycleById = useCallback(async (microcycleId) => {
+    const response = await fitFinanceApi.get(`/microcycle/${microcycleId}`);
+    return response.data;
+  }, []);
+
+  // Actualizar un microciclo existente
+  const updateMicrocycle = useCallback(async (microcycleId, microcycleData) => {
+    const response = await fitFinanceApi.put(
+      `/microcycle/${microcycleId}`,
+      microcycleData
+    );
+    return response.data;
+  }, []);
+
   return {
     createMacroCycle,
     getAllMacroCycles,
     createMesocycle,
     getMesocyclesByMacro,
+    createMicrocycle,
+    fetchMicrocyclesByMesocycle,
+    getMicrocycleById,
+    updateMicrocycle,
   };
 };

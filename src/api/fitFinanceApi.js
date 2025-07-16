@@ -1,3 +1,15 @@
+// Obtener microciclos de un mesociclo
+export const getMicrocyclesByMesocycle = async (mesocycleId) => {
+  try {
+    const response = await financeApi.get(
+      `/microcycle/mesocycle/${mesocycleId}`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener microciclos:", error);
+    throw error;
+  }
+};
 // Obtener datos de un alumno por id
 export const getStudentById = async (studentId) => {
   try {

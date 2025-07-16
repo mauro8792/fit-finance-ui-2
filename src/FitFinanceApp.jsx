@@ -21,6 +21,10 @@ import { PaymentFailure } from './scene/payments/PaymentFailure';
 import { PaymentPending } from './scene/payments/PaymentPending';
 import StudentDetail from './scene/coach/StudentDetail';
 import MacrocycleDetail from './scene/coach/MacrocycleDetail';
+import MicrocycleManager from './scene/coach/MicrocycleManager';
+
+import MicrocycleEdit from './scene/coach/MicrocycleEdit';
+import MicrocycleDetail from './components/MicrocycleDetail';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
@@ -105,6 +109,10 @@ export const FitFinanceApp = () => {
                     <Route path='/coach/dashboard' element={<CoachDashboard coachUserId={user?.id} />} />
                     <Route path='/coach/alumno/:id' element={<StudentDetail />} />
                     <Route path='/coach/macrocycle/:id' element={<MacrocycleDetail />} />
+                    <Route path='/coach/microcycle/:id' element={<MicrocycleDetail />} />
+                    <Route path='/coach/mesocycle/:mesocycleId/microcycles' element={<MicrocycleManager />} />
+                    <Route path='/coach/mesocycle/:mesocycleId/microcycle/new' element={<MicrocycleEdit />} />
+                    <Route path='/coach/mesocycle/:mesocycleId/microcycle/:microcycleId/edit' element={<MicrocycleEdit />} />
                     <Route path='/auth/*' element={<Navigate to='/coach/dashboard' />} />
                     <Route path='/*' element={<CoachDashboard coachUserId={user?.id} />} />
                   </>
