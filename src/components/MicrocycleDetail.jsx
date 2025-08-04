@@ -1,17 +1,36 @@
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import fitFinanceApi from "../api/fitFinanceApi";
+import EditSetModal from "./EditSetModal";
 
 const MicrocycleDetail = () => {
   const { id } = useParams();
   const [microcycle, setMicrocycle] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedSet, setSelectedSet] = useState(null);
 
   useEffect(() => {
     fitFinanceApi.get(`/microcycle/${id}`)
       .then((res) => setMicrocycle(res.data))
       .finally(() => setLoading(false));
   }, [id]);
+
+  const handleEditSet = (set) => {
+    setSelectedSet(set);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveSet = async (form) => {
+    // Llama al backend para actualizar el set
+    const token = localStorage.getItem('token');
+    await fitFinanceApi.patch(`/set/${selectedSet.id}`, form, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    // Refresca el microciclo
+    const res = await fitFinanceApi.get(`/microcycle/${id}`);
+    setMicrocycle(res.data);
+  };
 
   if (loading) return <div>Cargando...</div>;
   if (!microcycle) return <div>No se encontró el microciclo.</div>;
@@ -47,7 +66,7 @@ const MicrocycleDetail = () => {
                     <tbody>
                       {ex.sets && ex.sets.length > 0 ? (
                         ex.sets.map((set) => (
-                          <tr key={set.id}>
+                          <tr key={set.id} style={{ cursor: 'pointer' }} onClick={() => handleEditSet(set)}>
                             <td style={{ textAlign: 'center' }}>{ex.repRange}</td>
                             <td style={{ textAlign: 'center' }}>{set.reps}</td>
                             <td style={{ textAlign: 'center' }}>{set.load}</td>
@@ -71,6 +90,12 @@ const MicrocycleDetail = () => {
       ) : (
         <div>Sin días cargados</div>
       )}
+      <EditSetModal
+        open={editModalOpen}
+        set={selectedSet || {}}
+        onSave={handleSaveSet}
+        onClose={() => setEditModalOpen(false)}
+      />
     </div>
   );
 };

@@ -1,6 +1,3 @@
-
-
-
 import { Box, Typography, CircularProgress, Button, Tabs, Tab, IconButton, Stack } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
@@ -9,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../hooks';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
+import EditSetModal from '../../components/EditSetModal';
 
 
 
@@ -26,6 +24,8 @@ export const StudentRoutine = () => {
   const [mesoIdx, setMesoIdx] = useState(0);
   const [microIdx, setMicroIdx] = useState(0);
   const [diaIdx, setDiaIdx] = useState(0);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedSet, setSelectedSet] = useState(null);
 
   useEffect(() => {
     const fetchMacros = async () => {
@@ -97,6 +97,52 @@ export const StudentRoutine = () => {
     };
     fetchMicros();
   }, [selectedMesoId, fetchMicrocyclesByMesocycle]);
+
+  const handleEditSet = (set) => {
+    setSelectedSet(set);
+    setEditModalOpen(true);
+  };
+
+  const handleSaveSet = async (form) => {
+    const token = localStorage.getItem('token');
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    try {
+      const response = await fetch(`${apiUrl}/set/${selectedSet.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(form),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Error al guardar');
+      }
+      
+      // Actualizar el estado local en lugar de recargar todo
+      setMicros(prevMicros => 
+        prevMicros.map(micro => 
+          micro.id === micros[microIdx].id ? {
+            ...micro,
+            days: micro.days.map(day => 
+              day.id === micros[microIdx].days[diaIdx].id ? {
+                ...day,
+                exercises: day.exercises.map(exercise => ({
+                  ...exercise,
+                  sets: exercise.sets.map(set => 
+                    set.id === selectedSet.id ? { ...set, ...form } : set
+                  )
+                }))
+              } : day
+            )
+          } : micro
+        )
+      );
+    } catch (err) {
+      throw err;
+    }
+  };
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 3 }, maxWidth: '100vw', minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -247,7 +293,7 @@ export const StudentRoutine = () => {
                               </thead>
                               <tbody>
                                 {ej.sets && ej.sets.map((serie, j) => (
-                                  <tr key={serie.id || j}>
+                                  <tr key={serie.id || j} style={{ cursor: 'pointer' }} onClick={() => handleEditSet(serie)}>
                                     <td>{ej.repRange}</td>
                                     <td>{serie.reps}</td>
                                     <td>{serie.load}</td>
@@ -270,6 +316,12 @@ export const StudentRoutine = () => {
           )}
         </Box>
       )}
+      <EditSetModal
+        open={editModalOpen}
+        set={selectedSet || {}}
+        onSave={handleSaveSet}
+        onClose={() => setEditModalOpen(false)}
+      />
     </Box>
   );
 };

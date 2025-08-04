@@ -78,7 +78,15 @@ export default function MicrocycleEditor({ initialStructure, onSubmit, mesocycle
   const handleSubmit = async (e) => {
     e.preventDefault();
     // Armar el payload incluyendo los campos extra si existen
-    const basePayload = { name, days };
+    // Agregar el campo 'order' a cada set
+    const daysWithOrderedSets = days.map(day => ({
+      ...day,
+      exercises: day.exercises.map(ex => ({
+        ...ex,
+        sets: ex.sets.map((set, idx) => ({ ...set, order: idx + 1 }))
+      }))
+    }));
+    const basePayload = { name, days: daysWithOrderedSets };
     if (startDate) basePayload.startDate = startDate;
     if (endDate) basePayload.endDate = endDate;
     if (objetivo) basePayload.objetivo = objetivo;
