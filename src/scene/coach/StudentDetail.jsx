@@ -222,7 +222,23 @@ const StudentDetail = () => {
             mesocycleId={currentMesocycleId}
             onCreated={(micro) => {
               alert('Microciclo creado: ' + micro.name);
-              setShowMicrocycleForm(false); // O dejarlo en true para crear más
+              setShowMicrocycleForm(false);
+              // Refresca los datos del alumno y macro-ciclos
+              setLoading(true);
+              getStudentById(id)
+                .then((data) => {
+                  setStudent(data);
+                })
+                .catch((err) => {
+                  setError(err);
+                })
+                .finally(() => setLoading(false));
+              setLoadingMacros(true);
+              getAllMacroCycles()
+                .then((allMacros) => {
+                  setMacros(allMacros.filter(m => m.studentId == id));
+                })
+                .finally(() => setLoadingMacros(false));
             }}
             onCancel={() => setShowMicrocycleForm(false)}
           />

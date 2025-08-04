@@ -19,14 +19,32 @@ const MesocycleForm = ({ macrocycleId, onCreated, onCancel }) => {
     setLoading(true);
     setError(null);
     try {
-      // Aquí deberías llamar a tu store/hook para crear el mesociclo
-      // Por ahora simula la creación
-      setTimeout(() => {
+      const token = localStorage.getItem('token');
+      const body = {
+        name: form.name,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        objetivo: form.objetivo,
+      };
+      const response = await fetch(`http://localhost:3000/api/mesocycle/${macrocycleId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (response.ok) {
+        const meso = await response.json();
         setLoading(false);
-        onCreated({ ...form, macrocycleId });
-      }, 800);
+        onCreated(meso);
+      } else {
+        const error = await response.json();
+        setError(error.message || 'Error al crear mesociclo');
+        setLoading(false);
+      }
     } catch (err) {
-      setError('Error al crear mesociclo');
+      setError('Error de red o servidor');
       setLoading(false);
     }
   };

@@ -19,13 +19,32 @@ const MicrocycleForm = ({ mesocycleId, onCreated, onCancel }) => {
     setLoading(true);
     setError(null);
     try {
-      // Simula la creación
-      setTimeout(() => {
+      const token = localStorage.getItem('token');
+      const body = {
+        name: form.name,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        objetivo: form.objetivo,
+      };
+      const response = await fetch(`http://localhost:3000/api/microcycle/${mesocycleId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (response.ok) {
+        const micro = await response.json();
         setLoading(false);
-        onCreated({ ...form, mesocycleId });
-      }, 800);
+        onCreated(micro);
+      } else {
+        const error = await response.json();
+        setError(error.message || 'Error al crear microciclo');
+        setLoading(false);
+      }
     } catch (err) {
-      setError('Error al crear microciclo');
+      setError('Error de red o servidor');
       setLoading(false);
     }
   };
