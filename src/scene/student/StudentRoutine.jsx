@@ -104,8 +104,8 @@ export const StudentRoutine = () => {
   };
 
   const handleSaveSet = async (form) => {
-    const token = localStorage.getItem('token');
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    const token = localStorage.getItem('token');
     try {
       const response = await fetch(`${apiUrl}/set/${selectedSet.id}`, {
         method: 'PATCH',
