@@ -1,8 +1,10 @@
 
+
 import React from 'react';
 import BrandingHeader from './BrandingHeader';
 import SidebarComponent from '../scene/global/SidebarComponent';
 import { useAuthStore } from '../hooks';
+import { InstallPWAAlert } from './InstallPWAAlert';
 
 export default function Layout({ children, showFooter = false }) {
   const { userType } = useAuthStore();
@@ -12,6 +14,7 @@ export default function Layout({ children, showFooter = false }) {
   return (
     <div style={{ minHeight: '100vh', background: '#232323', display: 'flex', flexDirection: 'column' }}>
       <BrandingHeader />
+      <InstallPWAAlert />
       <div style={{ display: 'flex', flex: 1 }}>
         {showSidebar && (
           <SidebarComponent isSidebar={true} />
