@@ -33,9 +33,10 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
       <Link to={to} />
     </MenuItem>
   );
+
 };
 
-export const SidebarComponent = () => {
+const SidebarComponent = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -95,7 +96,6 @@ export const SidebarComponent = () => {
 
           <Box paddingLeft={isCollapsed ? undefined : '10%'}>
             <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
-
             <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
             <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
             <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
@@ -107,3 +107,5 @@ export const SidebarComponent = () => {
     </Box>
   );
 };
+
+export default SidebarComponent;

@@ -1,9 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { ColorModeContext, useMode } from './theme';
 import { Box, CssBaseline, ThemeProvider, CircularProgress, Typography } from '@mui/material';
-import Topbar from './scene/global/Topbar';
 import { useEffect, useState, useRef } from 'react';
-import { SidebarComponent } from './scene/global/SidebarComponent';
+import SidebarComponent from './scene/global/SidebarComponent';
 import { Sports } from './scene/sports';
 import { Payments } from './scene/payments';
 import { Users } from './scene/users';
@@ -23,6 +22,7 @@ import StudentDetail from './scene/coach/StudentDetail';
 import MacrocycleDetail from './scene/coach/MacrocycleDetail';
 import MicrocycleManager from './scene/coach/MicrocycleManager';
 
+import BrandingHeader from './components/BrandingHeader';
 import MicrocycleEdit from './scene/coach/MicrocycleEdit';
 import MicrocycleDetail from './components/MicrocycleDetail';
 
@@ -71,14 +71,13 @@ export const FitFinanceApp = () => {
           height: window.innerWidth < 900 ? 'auto' : '100%',
           minHeight: '100vh'
         }}>
-          {status === 'authenticated' && <Topbar setIsSidebar={setIsSidebar} />}
 
           <main className='content' style={{ 
             display: 'flex',
             flexDirection: window.innerWidth < 900 ? 'column' : 'row',
             minHeight: window.innerWidth < 900 ? 'auto' : '100vh'
           }}>
-            {status === 'authenticated' && isSidebar && userType === 'admin' && <SidebarComponent isSidebar={isSidebar} />}
+            {/* SidebarComponent removido para evitar doble render. El dashboard o el componente hijo lo renderiza internamente. */}
             <Box 
               flexGrow={1}
               sx={{

@@ -1,0 +1,26 @@
+{
+  "name": "Fit Finance",
+  "short_name": "FitFinance",
+  "description": "Gestión de pagos y rutinas para gimnasios",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#222",
+  "theme_color": "#222",
+  "icons": [
+    {
+      "src": "/assets/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/assets/logo192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/icon-round.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
