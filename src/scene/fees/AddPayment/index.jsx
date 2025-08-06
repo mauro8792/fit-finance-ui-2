@@ -1,5 +1,5 @@
 /* eslint-disable react/prop-types */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, Grid, InputAdornment, Typography, InputLabel, Select, MenuItem, CircularProgress, Box } from '@mui/material';
 import { format } from 'date-fns';
 import { useFeesStore } from '../../../hooks/useFeesStore';
@@ -26,7 +26,8 @@ export const AddPaymentModal = ({ openModal, selectedFee, handleCloseModal, hand
 
   const [paymentDate, setPaymentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
 
-  // Validar pagos secuenciales cuando se abre el modal
+  // Validar pagos secuenciales cuando se abre el modal (con flag para evitar loop)
+  const hasValidatedRef = useRef(false);
   useEffect(() => {
     const validatePaymentSequence = async () => {
       if (!selectedFee?.student?.id || !selectedFee?.id) {
@@ -39,22 +40,16 @@ export const AddPaymentModal = ({ openModal, selectedFee, handleCloseModal, hand
 
       setValidationLoading(true);
       setError(null);
-      
       try {
         const result = await validateSequentialPayment(selectedFee.student.id, selectedFee.id);
-        
         setValidationResult(result);
         setCanProceedWithPayment(result.isValid);
-        
         if (!result.isValid) {
           setError(result.message);
         }
       } catch (error) {
         console.error('Error validating payment sequence:', error);
-        
-        // Mensaje más específico según el tipo de error
         let errorMessage = 'Error al validar el orden de pagos. Por favor, intente nuevamente.';
-        
         if (error.response?.status === 404) {
           errorMessage = 'No se encontró el estudiante o la cuota especificada.';
         } else if (error.response?.status === 500) {
@@ -64,7 +59,6 @@ export const AddPaymentModal = ({ openModal, selectedFee, handleCloseModal, hand
         } else if (error.code === 'ERR_NETWORK') {
           errorMessage = 'No se puede conectar al servidor. Verifique que el backend esté funcionando.';
         }
-        
         setError(errorMessage);
         setCanProceedWithPayment(false);
       } finally {
@@ -72,8 +66,12 @@ export const AddPaymentModal = ({ openModal, selectedFee, handleCloseModal, hand
       }
     };
 
-    if (openModal && selectedFee) {
+    if (openModal && selectedFee && !hasValidatedRef.current) {
+      hasValidatedRef.current = true;
       validatePaymentSequence();
+    }
+    if (!openModal) {
+      hasValidatedRef.current = false;
     }
   }, [openModal, selectedFee, validateSequentialPayment]);
 

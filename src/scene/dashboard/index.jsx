@@ -15,7 +15,7 @@ export const Dashboard = () => {
         overflow='hidden'
         className='animate__animated animate__fadeIn animate__faster'
       >
-        <img src={'../../assets/icon-round.png'} alt='Dashboard' style={{ maxWidth: '90%', maxHeight: '90%' }} />
+        {/* <img src={'../../assets/icon-round.png'} alt='Dashboard' style={{ maxWidth: '90%', maxHeight: '90%' }} /> */}
       </Box>
     </Layout>
   );

@@ -2,7 +2,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { financeApi } from "../api";
 import { clearErrorMessage, onLoadFee } from "../store";
 
-const url = "/fee/by-period";
+const url = "/fee";
 
 export const useFeesStore = () => {
   const { fees, errorMessage } = useSelector((state) => state.fee);

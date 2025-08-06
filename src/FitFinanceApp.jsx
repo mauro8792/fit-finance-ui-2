@@ -67,24 +67,22 @@ export const FitFinanceApp = () => {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className='app' style={{ 
-          height: window.innerWidth < 900 ? 'auto' : '100%',
+        <div className='app' style={{
           minHeight: '100vh'
         }}>
 
-          <main className='content' style={{ 
+          <main className='content' style={{
             display: 'flex',
             flexDirection: window.innerWidth < 900 ? 'column' : 'row',
-            minHeight: window.innerWidth < 900 ? 'auto' : '100vh'
+            height: window.innerWidth < 900 ? 'auto' : '100vh'
           }}>
             {/* SidebarComponent removido para evitar doble render. El dashboard o el componente hijo lo renderiza internamente. */}
-            <Box 
+            <Box
               flexGrow={1}
               sx={{
-                height: { xs: 'auto', md: '100vh' },
-                maxHeight: { xs: 'none', md: '100vh' },
+                height: '100%',
                 overflow: { xs: 'visible', md: 'auto' },
-                paddingBottom: { xs: '100px', md: 0 } // Mucho más padding extra en mobile
+                paddingBottom: { xs: '100px', md: 0 }
               }}
             >
               <Routes>

@@ -12,19 +12,19 @@ export default function Layout({ children, showFooter = false }) {
   const showSidebar = userType === 'admin' || userType === 'superadmin';
 
   return (
-    <div style={{ minHeight: '100vh', background: '#232323', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <BrandingHeader />
       <InstallPWAAlert />
-      <div style={{ display: 'flex', flex: 1 }}>
+      <div style={{ display: 'flex', flex: 1, minHeight: '100vh' }}>
         {showSidebar && (
           <SidebarComponent isSidebar={true} />
         )}
-        <main style={{ flexGrow: 1, padding: 24 }}>
+        <main style={{ flexGrow: 1,  overflow: 'auto', minHeight: '100vh',  }}>
           {children}
         </main>
       </div>
       {showFooter && (
-        <footer style={{ background: '#181818', color: '#FFD700', textAlign: 'center', padding: 12 }}>
+        <footer style={{ background: '#181818ff', color: '#FFD700', textAlign: 'center', padding: 12 }}>
           © {new Date().getFullYear()} Fit Finance
         </footer>
       )}
