@@ -20,6 +20,21 @@ export const getStudentById = async (studentId) => {
     throw error;
   }
 };
+
+// 🚀 NUEVA API: Crear rutina completa desde wizard
+export const createCompleteRoutine = async (wizardData) => {
+  try {
+    console.log("📤 Enviando datos del wizard al backend:", wizardData);
+    const response = await financeApi.post(
+      "/routine/create-complete",
+      wizardData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error al crear rutina completa:", error);
+    throw error;
+  }
+};
 import axios from "axios";
 import { getEnvVariables } from "../helpers";
 
