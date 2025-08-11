@@ -6,7 +6,6 @@ import './styles.css';
 
 export const Dashboard = () => {
   return (
-    <Layout>
       <Box
         display='flex'
         justifyContent='center'
@@ -17,6 +16,5 @@ export const Dashboard = () => {
       >
         {/* <img src={'../../assets/icon-round.png'} alt='Dashboard' style={{ maxWidth: '90%', maxHeight: '90%' }} /> */}
       </Box>
-    </Layout>
   );
 };

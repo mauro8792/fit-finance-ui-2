@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
-import Layout from '../../components/Layout';
+import { Box } from '@mui/material';
 
 const CoachDashboard = () => {
   const { user, getCoachStudentsData, status } = useAuthStore();
@@ -28,7 +28,7 @@ const CoachDashboard = () => {
   if (error) return <div>Error al cargar alumnos</div>;
 
   return (
-    <Layout>
+    <Box>
       <h2>Mis Alumnos</h2>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
         {students.map((student) => (
@@ -43,7 +43,7 @@ const CoachDashboard = () => {
           </div>
         ))}
       </div>
-    </Layout>
+    </Box>
   );
 };
 

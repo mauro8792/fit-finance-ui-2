@@ -147,7 +147,6 @@ export const StudentRoutine = () => {
   };
 
   return (
-    <Layout>
       <>
         <Header title="Rutina de Entrenamiento" subtitle="Visualiza y edita tu rutina" />
         <Box mb={2}>
@@ -330,5 +329,4 @@ export const StudentRoutine = () => {
           onClose={() => setEditModalOpen(false)}
         />
       </>
-    </Layout>
   )}
