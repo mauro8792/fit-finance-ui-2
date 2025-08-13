@@ -14,7 +14,8 @@ import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PaidIcon from '@mui/icons-material/Paid';
 import FeedIcon from '@mui/icons-material/Feed';
-
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import PaymentIcon from '@mui/icons-material/Payment';
 import 'react-pro-sidebar/dist/css/styles.css';
 import { tokens } from '../../theme';
 import { useSidebar } from '../../contexts/SideBarContext'; 
@@ -40,25 +41,57 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 
 };
 
+
 const SidebarComponent = () => {
+
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { user } = useAuthStore();
+  const { user,userType } = useAuthStore();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isCollapsed, setIsCollapsed } = useSidebar(); // ← USAR EL CONTEX
+
+
+
+   // Función para renderizar los items según el tipo de usuario
+  const renderMenuItems = () => {
+    if (userType === 'student') {
+      return (
+        <Box paddingLeft={isCollapsed ? undefined : '10%'}>
+          <Item title='Home' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Mi Rutina' to='/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Mis Cuotas' to='/fees' icon={<PaymentIcon />} selected={selected} setSelected={setSelected} />
+        </Box>
+      );
+    } else if (userType === 'coach') {
+      return (
+        <Box paddingLeft={isCollapsed ? undefined : '10%'}>
+          <Item title='Dashboard' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Mis Alumnos' to='/coach/dashboard' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
+        </Box>
+      );
+    } else {
+      // Admin o superadmin
+      return (
+        <Box paddingLeft={isCollapsed ? undefined : '10%'}>
+          <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
+        </Box>
+      );
+    }
+  };
+
+
   // Drawer para mobile
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState('dashboard');
-
  if (isMobile) {
     return (
       <>
-        <IconButton
-          sx={{ position: 'fixed', top: 18, left: 18, zIndex: 1300, color: colors.orangeAccent[500] }}
-          onClick={() => setDrawerOpen(true)}
-        >
-          <MenuOutlinedIcon />
-        </IconButton>
+        
         <Box
           sx={{
      
@@ -148,45 +181,45 @@ const SidebarComponent = () => {
         },
       }}
     >
-      <ProSidebar collapsed={isCollapsed} style={{ height: '100vh' }}>
+    <ProSidebar collapsed={isCollapsed}>
         <Menu iconShape='square'>
           <MenuItem
             onClick={() => setIsCollapsed(!isCollapsed)}
-            icon={<MenuOutlinedIcon style={{ color: colors.orangeAccent[500] }} />}
+            icon={isCollapsed ? <MenuOutlinedIcon /> : undefined}
             style={{
-              margin: '10px 0 20px 0',
               color: colors.grey[100],
-              background: 'none',
-              cursor: 'pointer',
             }}
           >
             {!isCollapsed && (
-              <Box display='flex' alignItems='center' ml='5px'>
-                <Typography
-                  variant='h5'
-                  sx={{
-                    color: colors.orangeAccent[500],
-                    fontWeight: 700,
-                    fontSize: { xs: '1rem', sm: '1.2rem' },
-                    maxWidth: 160,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {user?.fullName || user?.name || user?.username || 'Usuario'}
-                </Typography>
-              </Box>
+             <Box display='flex' alignItems='center' justifyContent='space-between' p={2}>
+              <Typography
+                variant='h5'
+                sx={{
+                  color: colors.orangeAccent[500],
+                  fontWeight: 700,
+                  maxWidth: 160,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {user?.fullName || user?.name || user?.username || 'Usuario'}
+              </Typography>
+              <IconButton onClick={() => setDrawerOpen(false)}>
+                <MenuOutlinedIcon sx={{ color: colors.orangeAccent[500] }} />
+              </IconButton>
+
+              
+            </Box>
+
+            
             )}
           </MenuItem>
-          <Box paddingLeft={isCollapsed ? undefined : '10%'}>
-            <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
-          </Box>
+
+      
+
+          {/* Menu Items */}
+          {renderMenuItems()}
         </Menu>
       </ProSidebar>
     </Box>

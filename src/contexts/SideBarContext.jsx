@@ -12,13 +12,15 @@ export const useSidebar = () => {
 export const SidebarProvider = ({ children }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const sidebarWidth = isCollapsed ? 80 : 250;
-
+  const [drawerOpen, setDrawerOpen] = useState(false);
   return (
     <SidebarContext.Provider value={{ 
       isCollapsed, 
       setIsCollapsed, 
       sidebarWidth,
-      toggleSidebar: () => setIsCollapsed(!isCollapsed)
+      toggleSidebar: () => setIsCollapsed(!isCollapsed),
+        drawerOpen,
+          setDrawerOpen
     }}>
       {children}
     </SidebarContext.Provider>

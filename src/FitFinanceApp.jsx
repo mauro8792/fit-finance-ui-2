@@ -77,14 +77,13 @@ export const FitFinanceApp = () => {
             <Route element={<Layout showFooter={false} />}>
               {userType === 'student' && (
                 <>
-                  <Route path="/" element={<DashboardMock />} />
-                  <Route path="/student" element={<StudentDashboard />} />
-                  <Route path="/student/fees" element={<StudentFees />} />
-                  <Route path="/student/routine" element={<StudentRoutine />} />
-                  <Route path="/student/payment-success" element={<PaymentSuccess />} />
-                  <Route path="/student/payment-failure" element={<PaymentFailure />} />
-                  <Route path="/student/payment-pending" element={<PaymentPending />} />
-                  <Route path="*" element={<Navigate to="/student" />} />
+           <Route path="/" element={<StudentDashboard />} />
+    <Route path="/fees" element={<StudentFees />} />
+    <Route path="/routine" element={<StudentRoutine />} />
+    <Route path="/payment-success" element={<PaymentSuccess />} />
+    <Route path="/payment-failure" element={<PaymentFailure />} />
+    <Route path="/payment-pending" element={<PaymentPending />} />
+    <Route path="*" element={<Navigate to="/" />} />
                 </>
               )}
               

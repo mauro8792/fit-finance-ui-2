@@ -168,22 +168,6 @@ export const StudentDashboard = () => {
                     Estado de Cuotas
                   </Typography>
                 </Box>
-                <Button 
-                  variant="contained"
-                  onClick={() => navigate('/student/fees')}
-                  sx={{ 
-                    bgcolor: '#70d8bd',
-                    '&:hover': { bgcolor: '#5cbaa3' },
-                    fontSize: { xs: '0.9rem', sm: '1rem' },
-                    px: { xs: 2, sm: 3 },
-                    py: { xs: 1, sm: 1.2 },
-                    borderRadius: 2,
-                    width: { xs: '100%', sm: 'auto' },
-                    mt: { xs: 1, sm: 0 }
-                  }}
-                >
-                  VER TODAS
-                </Button>
               </Box>
 
               {studentData?.feesSummary?.recentFees && studentData.feesSummary.recentFees.length > 0 ? (
@@ -350,17 +334,7 @@ export const StudentDashboard = () => {
         </Grid>
         </Grid>
         
-        {/* Botón para ir a la rutina */}
-        <Box mt={3} mb={2}>
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate('/student/routine')}
-            sx={{ width: { xs: '100%', sm: 'auto' } }}
-          >
-            Ver rutina
-          </Button>
-        </Box>
+     
         {/* Modal de Pago */}
         <PaymentModal
           open={paymentModalOpen}

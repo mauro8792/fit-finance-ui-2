@@ -149,11 +149,6 @@ export const StudentRoutine = () => {
   return (
       <>
         <Header title="Rutina de Entrenamiento" subtitle="Visualiza y edita tu rutina" />
-        <Box mb={2}>
-          <button onClick={() => navigate(-1)} style={{ padding: 8, borderRadius: 4, background: '#70d8bd', color: '#fff', border: 'none', cursor: 'pointer', width: '100%', maxWidth: 320 }}>
-            Volver al Dashboard
-          </button>
-        </Box>
         {loading ? (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
             <CircularProgress />

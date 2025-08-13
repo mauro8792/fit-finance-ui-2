@@ -8,18 +8,16 @@ import {
   Chip,
   LinearProgress,
   Alert,
-  Button
 } from '@mui/material';
 import { 
   CheckCircle, 
   Warning, 
   Error,
   Payment,
-  ArrowBack
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
-import { Header, Layout } from '../../components';
+import { Header } from '../../components';
 
 export const StudentFees = () => {
   const navigate = useNavigate();
@@ -62,18 +60,6 @@ export const StudentFees = () => {
   return (
       <Box m={{ xs: 1, sm: 2 }}>
         <Box display="flex" alignItems="center" mb={3}>
-          <Button 
-            startIcon={<ArrowBack />} 
-            onClick={() => navigate('/')}
-            variant="contained"
-            sx={{ 
-              mr: 3,
-              bgcolor: '#70d8bd',
-              '&:hover': { bgcolor: '#5cbaa3' }
-            }}
-          >
-            Volver a Inicio
-          </Button>
           <Header title="📊 Historial de Cuotas"  />
         </Box>
 

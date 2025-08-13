@@ -13,7 +13,7 @@ import { Box ,useMediaQuery} from '@mui/material';
 export default function Layout({  showFooter = false }) {
   const { userType } = useAuthStore();
   // Sidebar solo para admin/superadmin (puedes agregar coach si lo deseas)
-  const showSidebar = userType === 'admin' || userType === 'superadmin';
+  const showSidebar = userType === 'admin' || userType === 'superadmin'|| userType === 'coach' || userType === 'student';
   const isMobile = useMediaQuery('(max-width:600px)');
   return (
    <Box sx={{ display: 'flex', flexDirection: 'column',  height: '100vh',overflow: 'hidden' }}>
