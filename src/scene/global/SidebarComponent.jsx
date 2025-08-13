@@ -109,19 +109,6 @@ const SidebarComponent = () => {
           }}
         >
         <Box display='flex' alignItems='center' justifyContent='space-between' p={2}>
-            <Typography
-              variant='h5'
-              sx={{
-                color: colors.orangeAccent[500],
-                fontWeight: 700,
-                maxWidth: 160,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {user?.fullName || user?.name || user?.username || 'Usuario'}
-            </Typography>
             <IconButton onClick={() => setDrawerOpen(false)}>
               <MenuOutlinedIcon sx={{ color: colors.orangeAccent[500] }} />
             </IconButton>
@@ -192,19 +179,7 @@ const SidebarComponent = () => {
           >
             {!isCollapsed && (
              <Box display='flex' alignItems='center' justifyContent='space-between' p={2}>
-              <Typography
-                variant='h5'
-                sx={{
-                  color: colors.orangeAccent[500],
-                  fontWeight: 700,
-                  maxWidth: 160,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {user?.fullName || user?.name || user?.username || 'Usuario'}
-              </Typography>
+            
               <IconButton onClick={() => setDrawerOpen(false)}>
                 <MenuOutlinedIcon sx={{ color: colors.orangeAccent[500] }} />
               </IconButton>
