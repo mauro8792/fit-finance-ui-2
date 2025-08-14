@@ -25,6 +25,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useCoachesStore, useSportsStore } from '../../hooks';
 import CoachWizard from './CoachWizard';
+import NewCoachWizard from './NewCoachWizard';
 import ViewCoach from './ViewCoach';
 import UpdateCoach from './UpdateCoach';
 
@@ -32,6 +33,7 @@ const AdminCoaches = () => {
   const theme = useTheme();
   const [searchTerm, setSearchTerm] = useState('');
   const [openWizard, setOpenWizard] = useState(false);
+  const [openNewWizard, setOpenNewWizard] = useState(false);
   const [openView, setOpenView] = useState(false);
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedCoachId, setSelectedCoachId] = useState(null);
@@ -267,7 +269,7 @@ const AdminCoaches = () => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => setOpenWizard(true)}
+          onClick={() => setOpenNewWizard(true)}
           sx={{ 
             minWidth: { xs: '100%', sm: 'auto' },
             py: 1.5
@@ -319,7 +321,7 @@ const AdminCoaches = () => {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setOpenWizard(true)}
+              onClick={() => setOpenNewWizard(true)}
               sx={{ mt: 2 }}
             >
               Crear Primer Coach
@@ -336,6 +338,11 @@ const AdminCoaches = () => {
       <CoachWizard
         open={openWizard}
         onClose={() => setOpenWizard(false)}
+      />
+
+      <NewCoachWizard
+        open={openNewWizard}
+        onClose={() => setOpenNewWizard(false)}
       />
 
       <ViewCoach

@@ -159,7 +159,7 @@ export const SportWizard = ({ open, onClose, onComplete }) => {
 
   const isStepValid = useCallback(() => {
     if (activeStep === 0) {
-      return sportData.name && sportData.monthlyFee;
+      return sportData.name; // Solo requiere el nombre para el primer paso
     } else if (activeStep === 1) {
       return sportPlans.some(plan => 
         plan.name && plan.monthlyFee && plan.weeklyFrequency

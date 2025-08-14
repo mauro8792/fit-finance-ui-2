@@ -72,6 +72,22 @@ export const useCoachesStore = () => {
     [dispatch]
   );
 
+  const createCompleteCoach = useCallback(
+    async (coachData) => {
+      try {
+        dispatch(setLoading(true));
+        const { data } = await financeApi.post("/coaches/complete", coachData);
+        dispatch(onCreateCoach(data));
+        return data;
+      } catch (error) {
+        console.error("Error creating complete coach:", error);
+        dispatch(setError(error.response?.data?.message || error.message));
+        throw error;
+      }
+    },
+    [dispatch]
+  );
+
   const updateCoach = useCallback(
     async (id, coachData) => {
       try {
@@ -138,6 +154,7 @@ export const useCoachesStore = () => {
     fetchAvailableUsers,
     fetchCoach,
     createCoach,
+    createCompleteCoach,
     updateCoach,
     toggleCoachActive,
     deleteCoach,
