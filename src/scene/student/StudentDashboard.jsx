@@ -1,4 +1,89 @@
-  // Chip de estado de pago
+  import { useEffect, useState } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Card, 
+  CardContent, 
+  Grid, 
+  Chip,
+  Button,
+  LinearProgress,
+  Alert
+} from '@mui/material';
+import { 
+  AccountCircle, 
+  School, 
+  Payment, 
+  Warning,
+  CheckCircle,
+  Error
+} from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../hooks';
+import { Header, PaymentModal } from '../../components';
+import { RoutineTable } from '../../components/RoutineTable';
+import Swal from 'sweetalert2';
+  
+  
+  
+export const StudentDashboard = () => {
+  const navigate = useNavigate();
+  const { user, student, getStudentData } = useAuthStore();
+  const [studentData, setStudentData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedFee, setSelectedFee] = useState(null);
+  const [showRoutine, setShowRoutine] = useState(false);
+
+  useEffect(() => {
+    const loadStudentData = async () => {
+      try {
+        setLoading(true);
+        const data = await getStudentData();
+        setStudentData(data);
+      } catch (error) {
+        console.error('Error cargando datos del estudiante:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStudentData();
+  }, [getStudentData]);
+
+  if (loading) {
+    return (
+      <Box m="20px">
+        <Header title="Dashboard Estudiante" subtitle="Cargando información..." />
+        <LinearProgress sx={{ mt: 2 }} />
+      </Box>
+    );
+  }
+
+
+  const getMonthName = (month) => {
+    const months = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    ];
+    return months[month] || '';
+  };
+
+  // Función para determinar si una cuota es la próxima a pagar
+  const getNextPayableFee = () => {
+    const pendingFees = studentData?.feesSummary?.recentFees?.filter(f => f.paymentStatus !== 'paid') || [];
+    if (pendingFees.length === 0) return null;
+    return pendingFees.reduce((oldest, current) => {
+      const oldestDate = new Date(oldest.year, oldest.month - 1);
+      const currentDate = new Date(current.year, current.month - 1);
+      return currentDate < oldestDate ? current : oldest;
+    });
+  };
+
+  const isNextPayableFee = (fee) => {
+    const nextFee = getNextPayableFee();
+    return nextFee && fee.id === nextFee.id;
+  };
+// Chip de estado de pago
   const getPaymentStatusChip = (status) => {
     switch (status) {
       case 'paid':
@@ -66,94 +151,11 @@
     }
     handleClosePaymentModal();
   };
-import { useEffect, useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Card, 
-  CardContent, 
-  Grid, 
-  Chip,
-  Button,
-  LinearProgress,
-  Alert
-} from '@mui/material';
-import { 
-  AccountCircle, 
-  School, 
-  Payment, 
-  Warning,
-  CheckCircle,
-  Error
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../../hooks';
-import { Header, PaymentModal } from '../../components';
-import Layout from '../../components/Layout';
-import { RoutineTable } from '../../components/RoutineTable';
-import Swal from 'sweetalert2';
 
-export const StudentDashboard = () => {
-  const navigate = useNavigate();
-  const { user, student, getStudentData } = useAuthStore();
-  const [studentData, setStudentData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
-  const [selectedFee, setSelectedFee] = useState(null);
-  const [showRoutine, setShowRoutine] = useState(false);
-
-  useEffect(() => {
-    const loadStudentData = async () => {
-      try {
-        setLoading(true);
-        const data = await getStudentData();
-        setStudentData(data);
-      } catch (error) {
-        console.error('Error cargando datos del estudiante:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadStudentData();
-  }, [getStudentData]);
-
-  if (loading) {
-    return (
-      <Box m="20px">
-        <Header title="Dashboard Estudiante" subtitle="Cargando información..." />
-        <LinearProgress sx={{ mt: 2 }} />
-      </Box>
-    );
-  }
-
-
-  const getMonthName = (month) => {
-    const months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    ];
-    return months[month] || '';
-  };
-
-  // Función para determinar si una cuota es la próxima a pagar
-  const getNextPayableFee = () => {
-    const pendingFees = studentData?.feesSummary?.recentFees?.filter(f => f.paymentStatus !== 'paid') || [];
-    if (pendingFees.length === 0) return null;
-    return pendingFees.reduce((oldest, current) => {
-      const oldestDate = new Date(oldest.year, oldest.month - 1);
-      const currentDate = new Date(current.year, current.month - 1);
-      return currentDate < oldestDate ? current : oldest;
-    });
-  };
-
-  const isNextPayableFee = (fee) => {
-    const nextFee = getNextPayableFee();
-    return nextFee && fee.id === nextFee.id;
-  };
 
   return (
-    <Layout>
-      <Box m={{ xs: 1, sm: 2 }}>
+
+      <Box>
         <Header title="Dashboard Estudiante" subtitle="Bienvenido" />
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -369,6 +371,6 @@ export const StudentDashboard = () => {
         />
       </Box>
 
-    </Layout>
+    
   )
  }

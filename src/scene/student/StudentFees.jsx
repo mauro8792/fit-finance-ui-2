@@ -52,17 +52,14 @@ export const StudentFees = () => {
 
   if (loading) {
     return (
-      <Layout>
         <Box m={{ xs: 1, sm: 2 }}>
           <Header title="Mis Cuotas" subtitle="Cargando información..." />
           <LinearProgress sx={{ mt: 2 }} />
         </Box>
-      </Layout>
     );
   }
 
   return (
-    <Layout>
       <Box m={{ xs: 1, sm: 2 }}>
         <Box display="flex" alignItems="center" mb={3}>
           <Button 
@@ -393,7 +390,6 @@ export const StudentFees = () => {
           </CardContent>
         </Card>
       </Box>
-    </Layout>
   );
   //     <Grid container spacing={3} mb={3}>
   //       <Grid item xs={12} sm={6} md={3}>

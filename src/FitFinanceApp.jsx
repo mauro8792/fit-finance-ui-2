@@ -3,7 +3,7 @@ import { ColorModeContext, useMode } from './theme';
 import { Box, CssBaseline, ThemeProvider, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState, useRef } from 'react';
 import SidebarComponent from './scene/global/SidebarComponent';
-import { SportsMainView } from './scene/sports';
+import { Sports, SportsMainView } from './scene/sports';
 import { Payments } from './scene/payments';
 import { Users } from './scene/users';
 import {Dashboard} from './scene/dashboard'
@@ -23,14 +23,14 @@ import StudentDetail from './scene/coach/StudentDetail';
 import MacrocycleDetail from './scene/coach/MacrocycleDetail';
 import MicrocycleManager from './scene/coach/MicrocycleManager';
 
-import BrandingHeader from './components/BrandingHeader';
 import MicrocycleEdit from './scene/coach/MicrocycleEdit';
 import MicrocycleDetail from './components/MicrocycleDetail';
+import DashboardMock from './components/DashboardMock';
+import Layout from './components/Layout';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
   const { status, userType, user, startCheckingAuthentication } = useAuthStore();
-  const [isSidebar, setIsSidebar] = useState(true);
   const hasCheckedAuth = useRef(false);
 
   useEffect(() => {
@@ -68,70 +68,57 @@ export const FitFinanceApp = () => {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <div className='app' style={{
-          minHeight: '100vh'
-        }}>
-
-          <main className='content' style={{
-            display: 'flex',
-            flexDirection: window.innerWidth < 900 ? 'column' : 'row',
-            height: window.innerWidth < 900 ? 'auto' : '100vh'
-          }}>
-            {/* SidebarComponent removido para evitar doble render. El dashboard o el componente hijo lo renderiza internamente. */}
-            <Box
-              flexGrow={1}
-              sx={{
-                height: '100%',
-                overflow: { xs: 'visible', md: 'auto' },
-                paddingBottom: { xs: '100px', md: 0 }
-              }}
-            >
-              <Routes>
-                {status === 'not-authenticated' ? (
-                  <>
-                    <Route path='/auth/*' element={<AuthRoutes />} />
-                    <Route path='/*' element={<Navigate to='/auth/login' />} />
-                  </>
-                ) : status === 'authenticated' && userType === 'student' ? (
-                  <>
-                  <Route path='/student/fees' element={<StudentFees />} />
-                  <Route path='/student/routine' element={<StudentRoutine />} />
-                  <Route path='/student/payment-success' element={<PaymentSuccess />} />
-                  <Route path='/student/payment-failure' element={<PaymentFailure />} />
-                  <Route path='/student/payment-pending' element={<PaymentPending />} />
-                  <Route path='/auth/*' element={<Navigate to='/student' />} />
-                  <Route path='/*' element={<StudentDashboard />} />
-                  </>
-                ) : status === 'authenticated' && userType === 'coach' ? (
-                  <>
-                    <Route path='/coach/dashboard' element={<CoachDashboard coachUserId={user?.id} />} />
-                    <Route path='/coach/alumno/:id' element={<StudentDetail />} />
-                    <Route path='/coach/macrocycle/:id' element={<MacrocycleDetail />} />
-                    <Route path='/coach/microcycle/:id' element={<MicrocycleDetail />} />
-                    <Route path='/coach/mesocycle/:mesocycleId/microcycles' element={<MicrocycleManager />} />
-                    <Route path='/coach/mesocycle/:mesocycleId/microcycle/new' element={<MicrocycleEdit />} />
-                    <Route path='/coach/mesocycle/:mesocycleId/microcycle/:microcycleId/edit' element={<MicrocycleEdit />} />
-                    <Route path='/auth/*' element={<Navigate to='/coach/dashboard' />} />
-                    <Route path='/*' element={<CoachDashboard coachUserId={user?.id} />} />
-                  </>
-                ) : status === 'authenticated' ? (
-                  <>
-                    <Route path='/sports' element={<SportsMainView />} />
-                    <Route path='/usuarios' element={<Users />} />
-                    <Route path='/cuotas' element={<Fees />} />
-                    <Route path='/pagos' element={<Payments />} />
-                    <Route path='/alumnos' element={<Students />} />
-                    <Route path='/coaches' element={<AdminCoaches />} />
-                    <Route path='/auth/*' element={<Navigate to='/' />} />
-                    <Route path='/*' element={<Dashboard />} />
-                  </>
-                ) : (
-                  <Route path='/*' element={<Navigate to='/auth/login' />} />
-                )}
-              </Routes>
-            </Box>
-          </main>
-        </div>
+        <Routes>
+          {status === 'not-authenticated' ? (
+            <>
+              <Route path="/auth/*" element={<AuthRoutes />} />
+              <Route path="*" element={<Navigate to="/auth/login" />} />
+            </>
+          ) : (
+            <Route element={<Layout showFooter={false} />}>
+              {userType === 'student' && (
+                <>
+                  <Route path="/" element={<DashboardMock />} />
+                  <Route path="/student" element={<StudentDashboard />} />
+                  <Route path="/student/fees" element={<StudentFees />} />
+                  <Route path="/student/routine" element={<StudentRoutine />} />
+                  <Route path="/student/payment-success" element={<PaymentSuccess />} />
+                  <Route path="/student/payment-failure" element={<PaymentFailure />} />
+                  <Route path="/student/payment-pending" element={<PaymentPending />} />
+                  <Route path="*" element={<Navigate to="/student" />} />
+                </>
+              )}
+              
+              {userType === 'coach' && (
+                <>
+                  <Route path="/" element={<DashboardMock />} />
+                  <Route path="/coach/dashboard" element={<CoachDashboard coachUserId={user?.id} />} />
+                  <Route path="/coach/alumno/:id" element={<StudentDetail />} />
+                  <Route path="/coach/macrocycle/:id" element={<MacrocycleDetail />} />
+                  <Route path="/coach/microcycle/:id" element={<MicrocycleDetail />} />
+                  <Route path="/coach/mesocycle/:mesocycleId/microcycles" element={<MicrocycleManager />} />
+                  <Route path="/coach/mesocycle/:mesocycleId/microcycle/new" element={<MicrocycleEdit />} />
+                  <Route path="/coach/mesocycle/:mesocycleId/microcycle/:microcycleId/edit" element={<MicrocycleEdit />} />
+                  <Route path="*" element={<Navigate to="/coach/dashboard" />} />
+                </>
+              )}
+              
+              {(userType === 'admin' || userType === 'superadmin') && (
+                <>
+                  <Route path="/" element={<DashboardMock />} />
+                  <Route path="/sports" element={<Sports />} />
+                  <Route path="/usuarios" element={<Users />} />
+                  <Route path="/cuotas" element={<Fees />} />
+                  <Route path="/pagos" element={<Payments />} />
+                  <Route path="/alumnos" element={<Students />} />
+                   <Route path="/coaches" element={<AdminCoaches />} />
+                  <Route path="*" element={<Navigate to="/" />} />
+                 
+                </>
+              )}
+            </Route>
+          )}
+        </Routes>
       </ThemeProvider>
     </ColorModeContext.Provider>
   );
