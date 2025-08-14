@@ -9,6 +9,7 @@ export const useSportsStore = () => {
 
   const findAllSports = useCallback(async () => {
     try {
+      console.log("🏃‍♀️ Fetching sports..."); // Debug log
       const timestamp = Date.now();
       const { data } = await financeApi.get(
         `/sports?limit=100&_t=${timestamp}`

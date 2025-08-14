@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
@@ -118,10 +114,37 @@ const StudentDetail = () => {
           {typeof student.isActive === 'boolean' && <div style={{ fontSize: 16, marginBottom: 8 }}><b>Estado:</b> {student.isActive ? 'Activo' : 'Inactivo'}</div>}
         </div>
         {/* Card Deporte */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#ffb86c 60%,#ff7e5f)', borderRadius: 18, color: '#222', padding: 28, minWidth: 260, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Deporte</div>
-          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>{student.sport?.name || '-'}</div>
-          {/* Puedes agregar más info del deporte aquí */}
+        <div style={{ flex: 1, background: 'linear-gradient(135deg,#f093fb 60%,#f5576c)', borderRadius: 18, color: '#fff', padding: 28, minWidth: 260, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Información Deportiva</div>
+          
+          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
+            Disciplina: {student.sport?.name || '-'}
+          </div>
+          
+          {student.sportPlan ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 16, marginBottom: 4 }}>
+                <b>Plan:</b> {student.sportPlan.name}
+              </div>
+              <div style={{ fontSize: 14, marginBottom: 4 }}>
+                <b>Precio:</b> ${student.sportPlan.monthlyFee}/mes
+              </div>
+              <div style={{ fontSize: 14, marginBottom: 4 }}>
+                <b>Frecuencia:</b> {student.sportPlan.weeklyFrequency}x por semana
+              </div>
+              {student.sportPlan.description && (
+                <div style={{ fontSize: 12, marginTop: 8, fontStyle: 'italic' }}>
+                  {student.sportPlan.description}
+                </div>
+              )}
+            </div>
+          ) : student.sport ? (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 14, fontStyle: 'italic' }}>
+                Usando precio base: ${student.sport.monthlyFee}/mes
+              </div>
+            </div>
+          ) : null}
         </div>
         {/* Card vacía */}
         <div style={{ flex: 1, background: 'linear-gradient(135deg,#43e97b 60%,#38f9d7)', borderRadius: 18, color: '#222', padding: 28, minWidth: 260, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>

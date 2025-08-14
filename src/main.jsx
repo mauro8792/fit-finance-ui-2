@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { FitFinanceApp } from './FitFinanceApp.jsx';
 import { BrowserRouter } from 'react-router-dom';
@@ -11,15 +10,13 @@ import { SidebarProvider } from './contexts/SideBarContext';
 import ThemeProvider from './theme/ThemeProvider';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <ThemeProvider>
-        <BrowserRouter>
-         <SidebarProvider>
-           <FitFinanceApp />
-         </SidebarProvider>
-        </BrowserRouter>
-      </ThemeProvider>
-    </Provider>
-  </React.StrictMode>
+  <Provider store={store}>
+    <ThemeProvider>
+      <BrowserRouter>
+       <SidebarProvider>
+         <FitFinanceApp />
+       </SidebarProvider>
+      </BrowserRouter>
+    </ThemeProvider>
+  </Provider>
 );

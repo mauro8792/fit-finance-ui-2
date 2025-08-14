@@ -1,4 +1,5 @@
 import { useDispatch, useSelector } from "react-redux";
+import { useCallback } from "react";
 import { financeApi } from "../api";
 import { onLoadSportPlans, clearErrorMessage } from "../store/sportPlanSlice";
 
@@ -8,7 +9,7 @@ export const useSportPlansStore = () => {
   );
   const dispatch = useDispatch();
 
-  const findAllSportPlans = async () => {
+  const findAllSportPlans = useCallback(async () => {
     try {
       const timestamp = Date.now();
       const { data } = await financeApi.get(
@@ -22,9 +23,9 @@ export const useSportPlansStore = () => {
         dispatch(clearErrorMessage());
       }, 10);
     }
-  };
+  }, [dispatch]);
 
-  const findSportPlansBySport = async (sportId) => {
+  const findSportPlansBySport = useCallback(async (sportId) => {
     try {
       const { data } = await financeApi.get(`/sports/${sportId}/plans`);
       return data.sportPlans || data;
@@ -32,106 +33,117 @@ export const useSportPlansStore = () => {
       console.error("Error fetching sport plans by sport:", error);
       return [];
     }
-  };
+  }, []);
 
-  const create = async (sportPlan) => {
-    try {
-      // Validar que sportId sea un número válido
-      const sportId = parseInt(sportPlan.sportId);
-      if (isNaN(sportId)) {
-        throw new Error(`sportId inválido: ${sportPlan.sportId}`);
+  const create = useCallback(
+    async (sportPlan) => {
+      try {
+        // Validar que sportId sea un número válido
+        const sportId = parseInt(sportPlan.sportId);
+        if (isNaN(sportId)) {
+          throw new Error(`sportId inválido: ${sportPlan.sportId}`);
+        }
+
+        // Validar que monthlyFee sea un número válido
+        const monthlyFee = parseFloat(sportPlan.monthlyFee);
+        if (isNaN(monthlyFee)) {
+          throw new Error(`monthlyFee inválido: ${sportPlan.monthlyFee}`);
+        }
+
+        // Validar que weeklyFrequency sea un número válido
+        const weeklyFrequency = parseInt(sportPlan.weeklyFrequency);
+        if (isNaN(weeklyFrequency)) {
+          throw new Error(
+            `weeklyFrequency inválido: ${sportPlan.weeklyFrequency}`
+          );
+        }
+
+        const payload = {
+          ...sportPlan,
+          sportId,
+          monthlyFee,
+          weeklyFrequency,
+          isActive:
+            sportPlan.isActive !== undefined ? sportPlan.isActive : true,
+        };
+
+        console.log("Creating sport plan with payload:", payload); // Para debug
+
+        const { data } = await financeApi.post("/sports/plans", payload);
+        return data.sportPlan; // Devolver el plan creado
+      } catch (error) {
+        console.error("Error creating sport plan:", error);
+        setTimeout(() => {
+          dispatch(clearErrorMessage());
+        }, 10);
+        throw error; // Re-lanzar el error para que el componente pueda manejarlo
       }
+    },
+    [dispatch]
+  );
 
-      // Validar que monthlyFee sea un número válido
-      const monthlyFee = parseFloat(sportPlan.monthlyFee);
-      if (isNaN(monthlyFee)) {
-        throw new Error(`monthlyFee inválido: ${sportPlan.monthlyFee}`);
-      }
+  const update = useCallback(
+    async (payload) => {
+      const { id, ...sportPlan } = payload;
+      try {
+        // Validar que monthlyFee sea un número válido
+        const monthlyFee = parseFloat(sportPlan.monthlyFee);
+        if (isNaN(monthlyFee)) {
+          throw new Error(`monthlyFee inválido: ${sportPlan.monthlyFee}`);
+        }
 
-      // Validar que weeklyFrequency sea un número válido
-      const weeklyFrequency = parseInt(sportPlan.weeklyFrequency);
-      if (isNaN(weeklyFrequency)) {
-        throw new Error(
-          `weeklyFrequency inválido: ${sportPlan.weeklyFrequency}`
+        // Validar que weeklyFrequency sea un número válido
+        const weeklyFrequency = parseInt(sportPlan.weeklyFrequency);
+        if (isNaN(weeklyFrequency)) {
+          throw new Error(
+            `weeklyFrequency inválido: ${sportPlan.weeklyFrequency}`
+          );
+        }
+
+        const updatePayload = {
+          name: sportPlan.name,
+          monthlyFee,
+          weeklyFrequency,
+          description: sportPlan.description || "",
+          isActive:
+            sportPlan.isActive !== undefined ? sportPlan.isActive : true,
+          sportId: parseInt(sportPlan.sportId),
+        };
+
+        console.log("Updating sport plan with payload:", {
+          id,
+          ...updatePayload,
+        }); // Para debug
+
+        const { data } = await financeApi.patch(
+          `/sports/plans/${id}`,
+          updatePayload
         );
+        return data.sportPlan; // Devolver el plan actualizado
+      } catch (error) {
+        console.error("Error updating sport plan:", error);
+        setTimeout(() => {
+          dispatch(clearErrorMessage());
+        }, 10);
+        throw error; // Re-lanzar el error para que el componente pueda manejarlo
       }
+    },
+    [dispatch]
+  );
 
-      const payload = {
-        ...sportPlan,
-        sportId,
-        monthlyFee,
-        weeklyFrequency,
-        isActive: sportPlan.isActive !== undefined ? sportPlan.isActive : true,
-      };
-
-      console.log("Creating sport plan with payload:", payload); // Para debug
-
-      const { data } = await financeApi.post("/sports/plans", payload);
-      return data.sportPlan; // Devolver el plan creado
-    } catch (error) {
-      console.error("Error creating sport plan:", error);
-      setTimeout(() => {
-        dispatch(clearErrorMessage());
-      }, 10);
-      throw error; // Re-lanzar el error para que el componente pueda manejarlo
-    }
-  };
-
-  const update = async (payload) => {
-    const { id, ...sportPlan } = payload;
-    try {
-      // Validar que monthlyFee sea un número válido
-      const monthlyFee = parseFloat(sportPlan.monthlyFee);
-      if (isNaN(monthlyFee)) {
-        throw new Error(`monthlyFee inválido: ${sportPlan.monthlyFee}`);
+  const deleteSportPlan = useCallback(
+    async (id) => {
+      try {
+        await financeApi.delete(`/sports/plans/${id}`);
+      } catch (error) {
+        console.error("Error deleting sport plan:", error);
+        setTimeout(() => {
+          dispatch(clearErrorMessage());
+        }, 10);
       }
-
-      // Validar que weeklyFrequency sea un número válido
-      const weeklyFrequency = parseInt(sportPlan.weeklyFrequency);
-      if (isNaN(weeklyFrequency)) {
-        throw new Error(
-          `weeklyFrequency inválido: ${sportPlan.weeklyFrequency}`
-        );
-      }
-
-      const updatePayload = {
-        name: sportPlan.name,
-        monthlyFee,
-        weeklyFrequency,
-        description: sportPlan.description || "",
-        isActive: sportPlan.isActive !== undefined ? sportPlan.isActive : true,
-        sportId: parseInt(sportPlan.sportId),
-      };
-
-      console.log("Updating sport plan with payload:", {
-        id,
-        ...updatePayload,
-      }); // Para debug
-
-      const { data } = await financeApi.patch(
-        `/sports/plans/${id}`,
-        updatePayload
-      );
-      return data.sportPlan; // Devolver el plan actualizado
-    } catch (error) {
-      console.error("Error updating sport plan:", error);
-      setTimeout(() => {
-        dispatch(clearErrorMessage());
-      }, 10);
-      throw error; // Re-lanzar el error para que el componente pueda manejarlo
-    }
-  };
-
-  const deleteSportPlan = async (id) => {
-    try {
-      await financeApi.delete(`/sports/plans/${id}`);
-    } catch (error) {
-      console.error("Error deleting sport plan:", error);
-      setTimeout(() => {
-        dispatch(clearErrorMessage());
-      }, 10);
-    }
-  };
+    },
+    [dispatch]
+  );
 
   return {
     //* Propiedades

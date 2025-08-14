@@ -19,7 +19,7 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import Header from "../../components/Header";
 import { useSportsStore, useStudentsStore } from "../../hooks";
@@ -41,7 +41,7 @@ export const Students = () => {
   const [openUpdateModal, setOpenUpdateModal] = useState(false);
   const [openAddModal, setOpenAddModal] = useState(false);
 
-  const fetchStudents = async () => {
+  const fetchStudents = useCallback(async () => {
     try {
       await findAll();
       setLoading(false);
@@ -49,36 +49,37 @@ export const Students = () => {
       setLoading(false);
       console.error("Error al obtener los estudiantes:", error);
     }
-  };
-  const fetchSports = async () => {
+  }, [findAll]);
+
+  const fetchSports = useCallback(async () => {
     try {
       await findAllSports();
     } catch (error) {
-      console.error("Error al obtener los estudiantes:", error);
+      console.error("Error al obtener los deportes:", error);
     }
-  };
+  }, [findAllSports]);
 
-  const handleSaveChanges = async (updatedStudent) => {
+  const handleSaveChanges = useCallback(async (updatedStudent) => {
     await update(updatedStudent);
     setLoading(true);
     await fetchStudents();
-  };
+  }, [update, fetchStudents]);
 
-  const handleOpenViewModal = (user) => {
+  const handleOpenViewModal = useCallback((user) => {
     setSelectedUser(user);
     setOpenViewModal(true);
-  };
+  }, []);
 
-  const handleOpenUpdateModal = (user) => {
+  const handleOpenUpdateModal = useCallback((user) => {
     setSelectedUser(user);
     setOpenUpdateModal(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setSelectedUser(null);
     setOpenViewModal(false);
     setOpenUpdateModal(false);
-  };
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -86,10 +87,7 @@ export const Students = () => {
       await fetchSports();
     };
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {}, [students]);
+  }, [fetchStudents, fetchSports]);
 
   /* eslint-disable react/prop-types */
   const StudentCard = ({ student }) => (
@@ -149,9 +147,20 @@ export const Students = () => {
             <SportsIcon
               sx={{ color: colors.orangeAccent[500], mr: 1, fontSize: 18 }}
             />
-            <Typography variant="body2" color={colors.grey[200]}>
-              {student.sportName || "Sin deporte"}
-            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+              <Typography variant="body2" color={colors.grey[200]}>
+                {student.sport?.name || student.sportName || "Sin deporte"}
+              </Typography>
+              {student.sportPlan ? (
+                <Typography variant="caption" color={colors.grey[300]} sx={{ fontStyle: 'italic' }}>
+                  Plan: {student.sportPlan.name} - ${student.sportPlan.monthlyFee}/mes
+                </Typography>
+              ) : student.sport ? (
+                <Typography variant="caption" color={colors.grey[300]} sx={{ fontStyle: 'italic' }}>
+                  Precio base: ${student.sport.monthlyFee}/mes
+                </Typography>
+              ) : null}
+            </Box>
           </Box>
 
           <Box display="flex" alignItems="center" mb={1}>
