@@ -8,6 +8,7 @@ import { useAuthStore } from '../../hooks';
 import MacroCycleForm from './MacroCycleForm';
 import MesocycleForm from './MesocycleForm';
 import MicrocycleForm from './MicrocycleForm';
+import RoutineWizard from './RoutineWizard';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
 
 const StudentDetail = () => {
@@ -24,6 +25,7 @@ const StudentDetail = () => {
   const [currentMacroId, setCurrentMacroId] = useState(null);
   const [showMicrocycleForm, setShowMicrocycleForm] = useState(false);
   const [currentMesocycleId, setCurrentMesocycleId] = useState(null);
+  const [showRoutineWizard, setShowRoutineWizard] = useState(false);
   const { getAllMacroCycles } = useRoutineStore();
 
   useEffect(() => {
@@ -175,11 +177,17 @@ const StudentDetail = () => {
             Ver Rutina
           </button>
         ) : (
-          !showMacroForm && (
-            <button style={buttonStyle}
-              onClick={() => setShowMacroForm(true)}>
-              Crear Rutina
-            </button>
+          !showMacroForm && !showRoutineWizard && (
+            <>
+              <button style={{...buttonStyle, background: '#667eea'}}
+                onClick={() => setShowRoutineWizard(true)}>
+                🧙‍♂️ Crear Rutina Completa
+              </button>
+              <button style={{...buttonStyle, background: '#888'}}
+                onClick={() => setShowMacroForm(true)}>
+                📝 Crear Paso a Paso
+              </button>
+            </>
           )
         )}
       </div>
@@ -243,6 +251,29 @@ const StudentDetail = () => {
             onCancel={() => setShowMicrocycleForm(false)}
           />
         </div>
+      )}
+
+      {/* Nuevo Wizard Completo */}
+      {showRoutineWizard && (
+        <RoutineWizard
+          studentId={student.id}
+          studentName={student.user?.fullName || `${student.firstName} ${student.lastName}`}
+          onCancel={() => setShowRoutineWizard(false)}
+          onComplete={() => {
+            setShowRoutineWizard(false);
+            // Recargar datos
+            setLoading(true);
+            getStudentById(id)
+              .then((data) => setStudent(data))
+              .catch((err) => setError(err))
+              .finally(() => setLoading(false));
+            
+            setLoadingMacros(true);
+            getAllMacroCycles()
+              .then((allMacros) => setMacros(allMacros.filter(m => m.studentId == id)))
+              .finally(() => setLoadingMacros(false));
+          }}
+        />
       )}
     </div>
   );

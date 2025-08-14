@@ -1,6 +1,17 @@
 /* eslint-disable react/prop-types */
 import { useEffect, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField, useTheme } from '@mui/material';
+import { 
+  Button, 
+  Dialog, 
+  DialogActions, 
+  DialogContent, 
+  DialogTitle, 
+  TextField, 
+  useTheme,
+  Typography,
+  Box,
+  Alert
+} from '@mui/material';
 
 import { useSportsStore } from '../../../hooks';
 
@@ -45,9 +56,15 @@ export const AddSportModal = ({ openModal, setOpenModal, fetchSports }) => {
   };
 
   const handleSaveChanges = async () => {
-    await create(formData);
-    handleCloseModal();
-    fetchSports();
+    try {
+      await create(formData);
+      handleCloseModal();
+      if (fetchSports) {
+        await fetchSports(); // Recargar la lista
+      }
+    } catch (error) {
+      console.error("Error creating sport:", error);
+    }
   };
 
   return (
@@ -58,19 +75,75 @@ export const AddSportModal = ({ openModal, setOpenModal, fetchSports }) => {
       fullWidth
       style={{ width: modalWidth, position: modalPosition, top: topPosition, left: leftPosition, transform }}
     >
-      <DialogTitle>Agregar Disciplina</DialogTitle>
+      <DialogTitle>
+        <Typography variant="h6" component="div">
+          Agregar Nueva Disciplina
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Crea una nueva disciplina deportiva base
+        </Typography>
+      </DialogTitle>
+      
       <DialogContent>
-        <TextField label='Nombre' name='name' value={formData.name} onChange={handleInputChange} fullWidth margin='normal' variant='outlined' />
-        <TextField label='Valor de cuota' name='monthlyFee' value={formData.monthlyFee} onChange={handleInputChange} fullWidth margin='normal' variant='outlined' />
+        <Box sx={{ mt: 1 }}>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            <Typography variant="body2">
+              Después de crear la disciplina, podrás agregar diferentes planes de precios y frecuencias en la sección de &ldquo;Gestión de Planes&rdquo;.
+            </Typography>
+          </Alert>
 
-        <TextField label='Descripcion' name='description' value={formData.description} onChange={handleInputChange} fullWidth margin='normal' variant='outlined' />
+          <TextField 
+            label="Nombre de la Disciplina" 
+            name="name" 
+            value={formData.name} 
+            onChange={handleInputChange} 
+            fullWidth 
+            margin="normal" 
+            variant="outlined"
+            placeholder="ej: Boxeo, Yoga, Crossfit"
+            helperText="Nombre de la disciplina deportiva"
+          />
+          
+          <TextField 
+            label="Precio Base Mensual" 
+            name="monthlyFee" 
+            type="number"
+            value={formData.monthlyFee} 
+            onChange={handleInputChange} 
+            fullWidth 
+            margin="normal" 
+            variant="outlined"
+            inputProps={{ min: 0, step: "0.01" }}
+            helperText="Precio base de referencia (podrás crear planes específicos después)"
+          />
+
+          <TextField 
+            label="Descripción" 
+            name="description" 
+            value={formData.description} 
+            onChange={handleInputChange} 
+            fullWidth 
+            margin="normal" 
+            variant="outlined"
+            multiline
+            rows={3}
+            placeholder="Describe la disciplina deportiva..."
+            helperText="Información general sobre la disciplina"
+          />
+        </Box>
       </DialogContent>
+      
       <DialogActions>
-        <Button onClick={handleCloseModal} color='primary'>
+        <Button onClick={handleCloseModal} color="primary">
           Cancelar
         </Button>
-        <Button onClick={handleSaveChanges} color='primary'>
-          Guardar
+        <Button 
+          onClick={handleSaveChanges} 
+          color="primary" 
+          variant="contained"
+          disabled={!formData.name || !formData.monthlyFee}
+        >
+          Crear Disciplina
         </Button>
       </DialogActions>
     </Dialog>

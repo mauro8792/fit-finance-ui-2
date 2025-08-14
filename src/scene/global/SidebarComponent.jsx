@@ -14,6 +14,7 @@ import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PaidIcon from '@mui/icons-material/Paid';
 import FeedIcon from '@mui/icons-material/Feed';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 
 import 'react-pro-sidebar/dist/css/styles.css';
 import { tokens } from '../../theme';
@@ -186,6 +187,7 @@ const SidebarComponent = () => {
             <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
             <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
             <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
+            <Item title='Coaches' to='/coaches' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
           </Box>
         </Menu>
       </ProSidebar>

@@ -1,19 +1,21 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 export const paymentSlice = createSlice({
-  name: 'fee',
+  name: "payment",
   initialState: {
     payments: [],
     errorMessage: undefined,
   },
   reducers: {
     onLoadPayment: (state, { payload }) => {
-      
-      state.fees = [...payload.data];
+      state.payments = [...payload.data];
+      state.errorMessage = undefined;
+    },
+    clearErrorMessage: (state) => {
       state.errorMessage = undefined;
     },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { onLoadPayment } = paymentSlice.actions;
+export const { onLoadPayment, clearErrorMessage } = paymentSlice.actions;

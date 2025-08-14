@@ -1,7 +1,7 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit";
 
 export const studentSlice = createSlice({
-  name: 'student',
+  name: "student",
   initialState: {
     students: [],
     errorMessage: undefined,
@@ -12,14 +12,17 @@ export const studentSlice = createSlice({
         return {
           ...s,
           sportName: s.sport.name,
-          sportId: s.sport.id
+          sportId: s.sport.id,
         };
       });
       state.students = [...studentsArray];
+      state.errorMessage = undefined;
+    },
+    clearErrorMessage: (state) => {
       state.errorMessage = undefined;
     },
   },
 });
 
 // Action creators are generated for each case reducer function
-export const { onLoad } = studentSlice.actions;
+export const { onLoad, clearErrorMessage } = studentSlice.actions;
