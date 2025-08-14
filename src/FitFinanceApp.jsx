@@ -3,7 +3,7 @@ import { ColorModeContext, useMode } from './theme';
 import { Box, CssBaseline, ThemeProvider, CircularProgress, Typography } from '@mui/material';
 import { useEffect, useState, useRef } from 'react';
 import SidebarComponent from './scene/global/SidebarComponent';
-import { Sports } from './scene/sports';
+import { SportsMainView } from './scene/sports';
 import { Payments } from './scene/payments';
 import { Users } from './scene/users';
 import {Dashboard} from './scene/dashboard'
@@ -12,6 +12,7 @@ import { useAuthStore } from './hooks';
 import CoachDashboard from './scene/coach/CoachDashboard';
 import { Students } from './scene/students';
 import { Fees } from './scene/fees';
+import AdminCoaches from './scene/admin-coaches';
 import { StudentDashboard } from './scene/student/StudentDashboard';
 import { StudentRoutine } from './scene/student/StudentRoutine';
 import { StudentFees } from './scene/student/StudentFees';
@@ -115,11 +116,12 @@ export const FitFinanceApp = () => {
                   </>
                 ) : status === 'authenticated' ? (
                   <>
-                    <Route path='/sports' element={<Sports />} />
+                    <Route path='/sports' element={<SportsMainView />} />
                     <Route path='/usuarios' element={<Users />} />
                     <Route path='/cuotas' element={<Fees />} />
                     <Route path='/pagos' element={<Payments />} />
                     <Route path='/alumnos' element={<Students />} />
+                    <Route path='/coaches' element={<AdminCoaches />} />
                     <Route path='/auth/*' element={<Navigate to='/' />} />
                     <Route path='/*' element={<Dashboard />} />
                   </>

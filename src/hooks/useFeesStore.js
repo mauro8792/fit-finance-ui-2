@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { financeApi } from "../api";
-import { clearErrorMessage, onLoadFee } from "../store";
+import { clearErrorMessage, onLoadFee } from "../store/feeSlice";
 
 const url = "/fee";
 

@@ -1,6 +1,6 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { financeApi } from '../api';
-import { onLoad, clearErrorMessage } from '../store';
+import { useDispatch, useSelector } from "react-redux";
+import { financeApi } from "../api";
+import { onLoad, clearErrorMessage } from "../store/studentSlice";
 
 export const useStudentsStore = () => {
   const { students, errorMessage } = useSelector((state) => state.student);
@@ -8,7 +8,7 @@ export const useStudentsStore = () => {
 
   const findAll = async () => {
     try {
-      const { data } = await financeApi.get('/students');
+      const { data } = await financeApi.get("/students");
 
       dispatch(onLoad({ data }));
     } catch (error) {
@@ -32,7 +32,7 @@ export const useStudentsStore = () => {
 
   const create = async (payload) => {
     try {
-      await financeApi.post('/students', payload);
+      await financeApi.post("/students", payload);
     } catch (error) {
       setTimeout(() => {
         dispatch(clearErrorMessage());

@@ -1,8 +1,8 @@
-import { useDispatch, useSelector } from 'react-redux';
-import { financeApi } from '../api';
-import { clearErrorMessage } from '../store';
+import { useDispatch, useSelector } from "react-redux";
+import { financeApi } from "../api";
+import { clearErrorMessage } from "../store/paymentSlice";
 
-const url = '/payments';
+const url = "/payments";
 
 export const usePaymentsStore = () => {
   const { payments, errorMessage } = useSelector((state) => state.payment);
@@ -10,7 +10,7 @@ export const usePaymentsStore = () => {
 
   const create = async (payment) => {
     try {
-      await financeApi.post(url, {...payment});
+      await financeApi.post(url, { ...payment });
     } catch (error) {
       setTimeout(() => {
         dispatch(clearErrorMessage());
@@ -21,7 +21,10 @@ export const usePaymentsStore = () => {
   const update = async (payload) => {
     const { id, ...sport } = payload;
     try {
-      await financeApi.patch(`${url}/${id}`, { ...sport, monthlyFee: parseInt(sport.monthlyFee) });
+      await financeApi.patch(`${url}/${id}`, {
+        ...sport,
+        monthlyFee: parseInt(sport.monthlyFee),
+      });
     } catch (error) {
       setTimeout(() => {
         dispatch(clearErrorMessage());
