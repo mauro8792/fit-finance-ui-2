@@ -47,78 +47,12 @@ const SidebarComponent = () => {
   const { user } = useAuthStore();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isCollapsed, setIsCollapsed } = useSidebar(); // ← USAR EL CONTEX
-  // Drawer para mobile
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [selected, setSelected] = useState('dashboard');
 
  if (isMobile) {
-    return (
-      <>
-        <IconButton
-          sx={{ position: 'fixed', top: 18, left: 18, zIndex: 1300, color: colors.orangeAccent[500] }}
-          onClick={() => setDrawerOpen(true)}
-        >
-          <MenuOutlinedIcon />
-        </IconButton>
-        <Box
-          sx={{
-     
-           position: 'fixed', 
-            top: 0,
-            left: drawerOpen ? 0 : '-260px',
-            width: 280,
-            height: '100vh',
-            background: `linear-gradient(180deg, #181818 0%, ${colors.primary[900]} 40%, ${colors.orangeAccent[500]} 100%)`,
-            boxShadow: drawerOpen ? '2px 0 8px rgba(0,0,0,0.2)' : 'none',
-            transition: 'left 0.3s',
-            zIndex: 1400,
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-        <Box display='flex' alignItems='center' justifyContent='space-between' p={2}>
-            <Typography
-              variant='h5'
-              sx={{
-                color: colors.orangeAccent[500],
-                fontWeight: 700,
-                maxWidth: 160,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {user?.fullName || user?.name || user?.username || 'Usuario'}
-            </Typography>
-            <IconButton onClick={() => setDrawerOpen(false)}>
-              <MenuOutlinedIcon sx={{ color: colors.orangeAccent[500] }} />
-            </IconButton>
-          </Box>
-          <Box paddingLeft='10%'>
-            <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
-          </Box>
-        </Box>
-        {drawerOpen && (
-          <Box
-            onClick={() => setDrawerOpen(false)}
-            sx={{
-           position: 'sticky',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              background: 'rgba(0,0,0,0.3)',
-              zIndex: 1399,
-            }}
-          />
-        )}
-      </>
-    );
+    // En móvil, el sidebar no se renderiza aquí
+    // Se maneja desde BrandingHeader con MobileDrawer
+    return null;
   }
 
   // Para desktop, retornar directamente el Box del sidebar

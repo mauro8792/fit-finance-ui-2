@@ -12,12 +12,16 @@ export default function BrandingHeader() {
   const { startLogout, user, student, userType } = useAuthStore();
   const isMobile = useMediaQuery('(max-width:600px)');
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+  
+  // Solo mostrar drawer para admin/superadmin en móvil, o para estudiantes
+  const showMobileMenu = isMobile && (userType === 'admin' || userType === 'superadmin' || userType === 'student');
+  
   return (
     <header style={{
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: themeConfig.primaryColor, color: themeConfig.textColor, padding: '12px 24px', fontFamily: themeConfig.fontFamily
     }}>
       <Box display='flex' alignItems='center' gap={2}>
-        {isMobile && (
+        {showMobileMenu && (
           <IconButton color="inherit" onClick={() => setDrawerOpen(true)} sx={{ mr: 1 }}>
             <MenuIcon />
           </IconButton>
@@ -78,7 +82,9 @@ export default function BrandingHeader() {
           </IconButton>
         )}
       </Box>
-      <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      {showMobileMenu && (
+        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      )}
     </header>
   );
 }

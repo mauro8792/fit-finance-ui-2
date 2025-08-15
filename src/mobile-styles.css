@@ -174,3 +174,36 @@ button, .MuiButton-root {
     padding: 8px !important;
   }
 }
+
+/* Sidebar y navegación mobile */
+@media (max-width: 600px) {
+  /* Asegurar que el sidebar no aparezca en mobile */
+  .pro-sidebar {
+    display: none !important;
+  }
+  
+  /* Drawer específico para mobile */
+  .MuiDrawer-paper {
+    background: linear-gradient(180deg, #181818 0%, #1f2a40 40%, #ff8a50 100%) !important;
+  }
+  
+  /* Header del drawer */
+  .mobile-drawer-header {
+    background: #1976d2 !important;
+    color: white !important;
+    padding: 16px !important;
+  }
+  
+  /* Items del drawer */
+  .MuiListItem-root {
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  }
+  
+  .MuiListItemIcon-root {
+    color: #ff8a50 !important;
+  }
+  
+  .MuiListItemText-primary {
+    font-weight: 500 !important;
+  }
+}
