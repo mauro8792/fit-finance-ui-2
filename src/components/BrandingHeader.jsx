@@ -10,11 +10,15 @@ import MobileDrawer from './MobileDrawer';
 
 export default function BrandingHeader() {
   const { startLogout, user, student, userType } = useAuthStore();
-  const isMobile = useMediaQuery('(max-width:600px)');
+  const isMobile = useMediaQuery('(max-width:768px)'); // Cambiado de 600px a 768px
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   
-  // Solo mostrar drawer para admin/superadmin en móvil, o para estudiantes
-  const showMobileMenu = isMobile && (userType === 'admin' || userType === 'superadmin' || userType === 'student');
+  // Debug logs
+  console.log('BrandingHeader Debug:', { isMobile, userType, showMobileMenu: isMobile && (userType === 'admin' || userType === 'superadmin' || userType === 'student' || userType === 'coach') });
+  
+  // Solo mostrar drawer para admin/superadmin/coach en móvil, o para estudiantes
+  // Temporalmente mostrar siempre en mobile para debug
+  const showMobileMenu = isMobile;
   
   return (
     <header style={{
@@ -22,7 +26,14 @@ export default function BrandingHeader() {
     }}>
       <Box display='flex' alignItems='center' gap={2}>
         {showMobileMenu && (
-          <IconButton color="inherit" onClick={() => setDrawerOpen(true)} sx={{ mr: 1 }}>
+          <IconButton 
+            color="inherit" 
+            onClick={() => {
+              console.log('Menu button clicked!');
+              setDrawerOpen(true);
+            }} 
+            sx={{ mr: 1 }}
+          >
             <MenuIcon />
           </IconButton>
         )}

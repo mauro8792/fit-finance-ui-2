@@ -3,9 +3,8 @@ import { useState } from 'react';
 import { useAuthStore } from '../../hooks';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { Link } from 'react-router-dom';
-import { Box, IconButton, Typography, useTheme } from '@mui/material';
+import { Box, Typography, useTheme } from '@mui/material';
 import { ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
-import DashboardMock from '../../components/DashboardMock';
 
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import GroupIcon from '@mui/icons-material/Group';
@@ -15,6 +14,9 @@ import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PaidIcon from '@mui/icons-material/Paid';
 import FeedIcon from '@mui/icons-material/Feed';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 
 import 'react-pro-sidebar/dist/css/styles.css';
 import { tokens } from '../../theme';
@@ -38,22 +40,60 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
       <Link to={to} />
     </MenuItem>
   );
-
 };
 
 const SidebarComponent = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { user } = useAuthStore();
+  const { user, userType } = useAuthStore();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { isCollapsed, setIsCollapsed } = useSidebar(); // ← USAR EL CONTEX
+  const { isCollapsed, setIsCollapsed } = useSidebar();
   const [selected, setSelected] = useState('dashboard');
 
- if (isMobile) {
+  if (isMobile) {
     // En móvil, el sidebar no se renderiza aquí
     // Se maneja desde BrandingHeader con MobileDrawer
     return null;
   }
+
+  // Función para renderizar items según el tipo de usuario
+  const renderMenuItems = () => {
+    if (userType === 'coach') {
+      return (
+        <>
+          <Item title='Dashboard' to='/coach/dashboard' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Rutinas' to='/coach/routines' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Macrociclos' to='/coach/macrocycles' icon={<AssignmentIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Horarios' to='/coach/schedule' icon={<ScheduleIcon />} selected={selected} setSelected={setSelected} />
+        </>
+      );
+    }
+
+    if (userType === 'student') {
+      return (
+        <>
+          <Item title='Dashboard' to='/student' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Mis Cuotas' to='/student/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Mi Perfil' to='/student/profile' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
+        </>
+      );
+    }
+
+    // Menú por defecto para admin/superadmin
+    return (
+      <>
+        <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Coaches' to='/coaches' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+      </>
+    );
+  };
 
   // Para desktop, retornar directamente el Box del sidebar
   return (
@@ -115,17 +155,12 @@ const SidebarComponent = () => {
             )}
           </MenuItem>
           <Box paddingLeft={isCollapsed ? undefined : '10%'}>
-            <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
-            <Item title='Coaches' to='/coaches' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+            {renderMenuItems()}
           </Box>
         </Menu>
       </ProSidebar>
     </Box>
   );
 };
+
 export default SidebarComponent;

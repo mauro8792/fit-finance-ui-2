@@ -1,9 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
-import MacroCycleForm from './MacroCycleForm';
-import MesocycleForm from './MesocycleForm';
-import MicrocycleForm from './MicrocycleForm';
 import RoutineWizard from './RoutineWizard';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
 
@@ -14,13 +11,8 @@ const StudentDetail = () => {
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showMacroForm, setShowMacroForm] = useState(false);
   const [macros, setMacros] = useState([]);
   const [loadingMacros, setLoadingMacros] = useState(true);
-  const [showMesocycleForm, setShowMesocycleForm] = useState(false);
-  const [currentMacroId, setCurrentMacroId] = useState(null);
-  const [showMicrocycleForm, setShowMicrocycleForm] = useState(false);
-  const [currentMesocycleId, setCurrentMesocycleId] = useState(null);
   const [showRoutineWizard, setShowRoutineWizard] = useState(false);
   const { getAllMacroCycles } = useRoutineStore();
 
@@ -48,233 +40,188 @@ const StudentDetail = () => {
   if (error) return <div style={{textAlign:'center',marginTop:40}}>Error al cargar datos del alumno</div>;
   if (!student) return <div style={{textAlign:'center',marginTop:40}}>No se encontró el alumno</div>;
 
-
-  // Simulación: si student.routine existe, mostrar Ver Rutina, si no, Crear Rutina
-  const hasRoutine = !!student.routine; // Cambia esto según tu backend
-
   // Estilos responsivos inline (CSS-in-JS)
   const isMobile = window.innerWidth < 600;
-  const containerStyle = {
-
-    background: isMobile ? '#181818' : 'rgba(30,30,30,0.97)',
-    borderRadius: 18,
-    boxShadow: isMobile ? '0 2px 16px #0002' : '0 8px 32px #0005',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    width: isMobile ? '98vw' : '100%',
-    justifyContent: isMobile ? 'flex-start' : 'center',
-    minHeight: isMobile ? 'unset' : '60vh',
-    color: '#f5f5f5',
-    border: isMobile ? 'none' : '1.5px solid #222',
-    transition: 'all 0.2s',
-  };
-  const buttonStyle = {
-    padding: isMobile ? '12px 24px' : '16px 40px',
-    borderRadius: 10,
-    border: 'none',
-    background: '#ffd700',
-    fontWeight: 700,
-    cursor: 'pointer',
-    fontSize: isMobile ? 16 : 20,
-    width: isMobile ? '100%' : 220,
-    marginBottom: isMobile ? 10 : 0,
-    boxShadow: isMobile ? 'none' : '0 2px 12px #0002',
-    color: '#222',
-    letterSpacing: 0.5,
-    transition: 'background 0.2s',
-  };
-  const volverBtnStyle = {
-    marginBottom: 32,
-    padding: isMobile ? '10px 20px' : '12px 32px',
-    borderRadius: 8,
-    border: 'none',
-    background: '#fff',
-    fontWeight: 600,
-    cursor: 'pointer',
-    fontSize: isMobile ? 15 : 18,
-    alignSelf: isMobile ? 'flex-start' : 'center',
-    color: '#222',
-    boxShadow: isMobile ? 'none' : '0 2px 8px #0001',
-  };
 
   return (
-    <div style={{ background: '#181818', minHeight: '100vh', padding: isMobile ? 8 : 32 }}>
-      <button onClick={() => navigate(-1)} style={volverBtnStyle}>Volver</button>
-      <h2 style={{ marginBottom: 24, fontSize: isMobile ? 28 : 40, textAlign: 'center', fontWeight: 800, letterSpacing: 0.5 }}>Detalle del Alumno</h2>
+    <div style={{ background: '#181818', height: '100vh', padding: isMobile ? 8 : 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {/* Cards superiores */}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, marginBottom: 32, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, marginBottom: 20, justifyContent: 'center', flex: '0 0 auto' }}>
         {/* Card Alumno */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#7b6be6 60%,#5e4bb7)', borderRadius: 18, color: '#fff', padding: 28, minWidth: 260, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>{student.user?.fullName || student.firstName + ' ' + student.lastName}</div>
-          <div style={{ fontSize: 16, marginBottom: 8 }}><b>Email:</b> {student.user?.email || student.email}</div>
-          <div style={{ fontSize: 16, marginBottom: 8 }}><b>Teléfono:</b> {student.user?.phone || student.phone || '-'}</div>
-          {student.birthDate && <div style={{ fontSize: 16, marginBottom: 8 }}><b>Nacimiento:</b> {new Date(student.birthDate).toLocaleDateString()}</div>}
-          {student.startDate && <div style={{ fontSize: 16, marginBottom: 8 }}><b>Alta:</b> {new Date(student.startDate).toLocaleDateString()}</div>}
-          {typeof student.isActive === 'boolean' && <div style={{ fontSize: 16, marginBottom: 8 }}><b>Estado:</b> {student.isActive ? 'Activo' : 'Inactivo'}</div>}
+        <div style={{ flex: 1, background: 'linear-gradient(135deg,#7b6be6 60%,#5e4bb7)', borderRadius: 18, color: '#fff', padding: isMobile ? 16 : 20, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, marginBottom: 6 }}>{student.user?.fullName || student.firstName + ' ' + student.lastName}</div>
+          <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Email:</b> {student.user?.email || student.email}</div>
+          <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Teléfono:</b> {student.user?.phone || student.phone || '-'}</div>
+          {student.birthDate && <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Nacimiento:</b> {new Date(student.birthDate).toLocaleDateString()}</div>}
+          {student.startDate && <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Alta:</b> {new Date(student.startDate).toLocaleDateString()}</div>}
+          {typeof student.isActive === 'boolean' && <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Estado:</b> {student.isActive ? 'Activo' : 'Inactivo'}</div>}
         </div>
         {/* Card Deporte */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#f093fb 60%,#f5576c)', borderRadius: 18, color: '#fff', padding: 28, minWidth: 260, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>Información Deportiva</div>
+        <div style={{ flex: 1, background: 'linear-gradient(135deg,#f093fb 60%,#f5576c)', borderRadius: 18, color: '#fff', padding: isMobile ? 16 : 20, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, marginBottom: 6 }}>Información Deportiva</div>
           
-          <div style={{ fontSize: 18, fontWeight: 600, marginBottom: 8 }}>
+          <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 600, marginBottom: 6 }}>
             Disciplina: {student.sport?.name || '-'}
           </div>
           
           {student.sportPlan ? (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 16, marginBottom: 4 }}>
+              <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 3 }}>
                 <b>Plan:</b> {student.sportPlan.name}
               </div>
-              <div style={{ fontSize: 14, marginBottom: 4 }}>
+              <div style={{ fontSize: isMobile ? 12 : 13, marginBottom: 3 }}>
                 <b>Precio:</b> ${student.sportPlan.monthlyFee}/mes
               </div>
-              <div style={{ fontSize: 14, marginBottom: 4 }}>
+              <div style={{ fontSize: isMobile ? 12 : 13, marginBottom: 3 }}>
                 <b>Frecuencia:</b> {student.sportPlan.weeklyFrequency}x por semana
               </div>
               {student.sportPlan.description && (
-                <div style={{ fontSize: 12, marginTop: 8, fontStyle: 'italic' }}>
+                <div style={{ fontSize: isMobile ? 11 : 12, marginTop: 6, fontStyle: 'italic' }}>
                   {student.sportPlan.description}
                 </div>
               )}
             </div>
           ) : student.sport ? (
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 14, fontStyle: 'italic' }}>
+              <div style={{ fontSize: isMobile ? 12 : 13, fontStyle: 'italic' }}>
                 Usando precio base: ${student.sport.monthlyFee}/mes
               </div>
             </div>
           ) : null}
         </div>
         {/* Card vacía */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#43e97b 60%,#38f9d7)', borderRadius: 18, color: '#222', padding: 28, minWidth: 260, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ flex: 1, background: 'linear-gradient(135deg,#43e97b 60%,#38f9d7)', borderRadius: 18, color: '#222', padding: isMobile ? 16 : 20, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           {/* Placeholder para futuro */}
         </div>
       </div>
 
       {/* Grid de macro-ciclos */}
-      <div style={{ background: '#222', borderRadius: 16, padding: isMobile ? 12 : 28, margin: '0 auto', maxWidth: 1200, boxShadow: '0 2px 16px #0002' }}>
-        <h3 style={{ color: '#ffd700', fontWeight: 700, fontSize: isMobile ? 20 : 28, marginBottom: 24, textAlign: 'center' }}>Rutinas (Macro-ciclos)</h3>
+      <div style={{ background: '#222', borderRadius: 16, padding: isMobile ? 6 : 8, margin: '0 auto', maxWidth: 1200, boxShadow: '0 2px 16px #0002', flex: '0 0 auto', position: 'relative' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 style={{ color: '#ffd700', fontWeight: 700, fontSize: isMobile ? 14 : 16, margin: 0 }}>Rutinas (Macro-ciclos)</h3>
+        </div>
+        
         {loadingMacros ? (
-          <div style={{ textAlign: 'center', color: '#aaa', margin: 16 }}>Cargando macro-ciclos...</div>
+          <div style={{ textAlign: 'center', color: '#aaa', margin: 4, fontSize: 13 }}>Cargando macro-ciclos...</div>
         ) : macros.length === 0 ? (
-          <div style={{ textAlign: 'center', color: '#aaa', margin: 16 }}>No hay rutinas para este alumno.</div>
-        ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, justifyContent: 'center' }}>
-            {macros.map(macro => (
-              <div
-                key={macro.id}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 60, gap: 8 }}>
+            <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>No hay rutinas para este alumno.</div>
+            {!showRoutineWizard && (
+              <button 
                 style={{
-                  background: '#181818',
-                  borderRadius: 14,
-                  boxShadow: '0 2px 12px #0003',
-                  padding: 22,
-                  minWidth: 260,
-                  maxWidth: 320,
-                  border: '2px solid #ffd700',
-                  color: '#fff',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  fontSize: 17,
+                  padding: isMobile ? '8px 16px' : '10px 20px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  fontWeight: 600,
                   cursor: 'pointer',
-                  transition: 'box-shadow 0.2s',
+                  fontSize: isMobile ? 12 : 14,
+                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
+                  color: '#fff',
+                  letterSpacing: 0.3,
+                  transition: 'all 0.2s ease',
+                  transform: 'translateY(0)',
                 }}
-                onClick={() => navigate(`/coach/macrocycle/${macro.id}`)}
-                title="Ver detalle del macro-ciclo"
+                onClick={() => setShowRoutineWizard(true)}
+                onMouseEnter={(e) => {
+                  e.target.style.transform = 'translateY(-1px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
+                }}
               >
-                <div style={{ fontWeight: 700, fontSize: 20, color: '#ffd700', marginBottom: 8 }}>{macro.name}</div>
-                <div style={{ fontSize: 15, marginBottom: 4 }}><b>Inicio:</b> {macro.startDate ? new Date(macro.startDate).toLocaleDateString() : '-'}</div>
-                <div style={{ fontSize: 15, marginBottom: 4 }}><b>Fin:</b> {macro.endDate ? new Date(macro.endDate).toLocaleDateString() : '-'}</div>
-                {macro.observaciones && <div style={{ fontSize: 14, marginTop: 8, color: '#ccc' }}><b>Obs.:</b> {macro.observaciones}</div>}
-              </div>
-            ))}
+                🚀 Crear Primera Rutina
+              </button>
+            )}
+          </div>
+        ) : (
+          <div>
+            {/* Grid de rutinas existentes */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'flex-start', marginBottom: 16 }}>
+              {macros.map(macro => (
+                <div
+                  key={macro.id}
+                  style={{
+                    background: '#181818',
+                    borderRadius: 12,
+                    boxShadow: '0 2px 12px #0003',
+                    padding: 12,
+                    minWidth: 200,
+                    maxWidth: 240,
+                    border: '2px solid #ffd700',
+                    color: '#fff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onClick={() => navigate(`/coach/macrocycle/${macro.id}`)}
+                  title="Ver detalle del macro-ciclo"
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 4px 16px rgba(255, 215, 0, 0.3)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 12px #0003';
+                  }}
+                >
+                  <div style={{ fontWeight: 700, fontSize: 16, color: '#ffd700', marginBottom: 4 }}>{macro.name}</div>
+                  <div style={{ fontSize: 12, marginBottom: 2, color: '#ccc' }}><b>Inicio:</b> {macro.startDate ? new Date(macro.startDate).toLocaleDateString() : '-'}</div>
+                  <div style={{ fontSize: 12, marginBottom: 2, color: '#ccc' }}><b>Fin:</b> {macro.endDate ? new Date(macro.endDate).toLocaleDateString() : '-'}</div>
+                  {macro.observaciones && <div style={{ fontSize: 11, marginTop: 4, color: '#aaa' }}><b>Obs.:</b> {macro.observaciones}</div>}
+                </div>
+              ))}
+              
+              {/* Card para crear nueva rutina */}
+              {!showRoutineWizard && (
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    borderRadius: 12,
+                    boxShadow: '0 2px 12px rgba(102, 126, 234, 0.3)',
+                    padding: 12,
+                    minWidth: 200,
+                    maxWidth: 240,
+                    border: '2px dashed rgba(255, 255, 255, 0.3)',
+                    color: '#fff',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minHeight: 120,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onClick={() => setShowRoutineWizard(true)}
+                  onMouseEnter={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 2px 12px rgba(102, 126, 234, 0.3)';
+                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
+                  }}
+                >
+                  <div style={{ fontSize: 32, marginBottom: 8 }}>+</div>
+                  <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
+                    Nueva Rutina
+                  </div>
+                  <div style={{ fontSize: 11, opacity: 0.8, textAlign: 'center', marginTop: 4 }}>
+                    Crear macrociclo
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
-
-      <div style={{ marginTop: 32, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, width: '100%', justifyContent: 'center' }}>
-        {hasRoutine ? (
-          <button style={buttonStyle}
-            onClick={() => alert('Ver rutina de ' + (student.user?.fullName || student.firstName))}>
-            Ver Rutina
-          </button>
-        ) : (
-          !showMacroForm && !showRoutineWizard && (
-            <>
-              <button style={{...buttonStyle, background: '#667eea'}}
-                onClick={() => setShowRoutineWizard(true)}>
-                🧙‍♂️ Crear Rutina Completa
-              </button>
-              <button style={{...buttonStyle, background: '#888'}}
-                onClick={() => setShowMacroForm(true)}>
-                📝 Crear Paso a Paso
-              </button>
-            </>
-          )
-        )}
-      </div>
-
-
-      {/* Wizard: Macro-ciclo */}
-      {showMacroForm && (
-        <div style={{ marginTop: 32, width: '100%' }}>
-          <MacroCycleForm
-            studentId={student.id}
-            onCreated={(macro) => {
-              setShowMacroForm(false);
-              setCurrentMacroId(macro.id);
-              setShowMesocycleForm(true);
-            }}
-            onCancel={() => setShowMacroForm(false)}
-          />
-        </div>
-      )}
-
-      {/* Wizard: Mesociclo */}
-      {showMesocycleForm && (
-        <div style={{ marginTop: 32, width: '100%' }}>
-          <MesocycleForm
-            macrocycleId={currentMacroId}
-            onCreated={(meso) => {
-              setShowMesocycleForm(false);
-              setCurrentMesocycleId(meso.id || 1); // Simulado, reemplazar por el id real si lo tienes
-              setShowMicrocycleForm(true);
-            }}
-            onCancel={() => setShowMesocycleForm(false)}
-          />
-        </div>
-      )}
-
-      {/* Wizard: Microciclo */}
-      {showMicrocycleForm && (
-        <div style={{ marginTop: 32, width: '100%' }}>
-          <MicrocycleForm
-            mesocycleId={currentMesocycleId}
-            onCreated={(micro) => {
-              alert('Microciclo creado: ' + micro.name);
-              setShowMicrocycleForm(false);
-              // Refresca los datos del alumno y macro-ciclos
-              setLoading(true);
-              getStudentById(id)
-                .then((data) => {
-                  setStudent(data);
-                })
-                .catch((err) => {
-                  setError(err);
-                })
-                .finally(() => setLoading(false));
-              setLoadingMacros(true);
-              getAllMacroCycles()
-                .then((allMacros) => {
-                  setMacros(allMacros.filter(m => m.studentId == id));
-                })
-                .finally(() => setLoadingMacros(false));
-            }}
-            onCancel={() => setShowMicrocycleForm(false)}
-          />
-        </div>
-      )}
 
       {/* Nuevo Wizard Completo */}
       {showRoutineWizard && (

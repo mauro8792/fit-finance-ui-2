@@ -191,70 +191,84 @@ const RoutineWizard = ({ studentId, studentName, onCancel, onComplete }) => {
   const isMobile = window.innerWidth < 768;
   
   const wizardStyle = {
-    background: '#181818',
-    minHeight: '100vh',
-    padding: isMobile ? '16px' : '32px',
-    color: '#fff'
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    padding: isMobile ? '10px' : '20px'
   };
 
   const containerStyle = {
-    maxWidth: '900px',
+    maxWidth: isMobile ? '95vw' : '900px',
+    maxHeight: isMobile ? '95vh' : '90vh',
+    width: '100%',
     margin: '0 auto',
     background: '#222',
-    borderRadius: '16px',
+    borderRadius: '12px',
     overflow: 'hidden',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+    display: 'flex',
+    flexDirection: 'column'
   };
 
   const headerStyle = {
     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    padding: '24px',
-    textAlign: 'center'
+    padding: isMobile ? '16px' : '20px',
+    textAlign: 'center',
+    flexShrink: 0
   };
 
   const progressStyle = {
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: '12px',
-    marginTop: '16px'
+    gap: '8px',
+    marginTop: '12px'
   };
 
   const stepIndicatorStyle = (step) => ({
-    width: '40px',
-    height: '40px',
+    width: isMobile ? '30px' : '35px',
+    height: isMobile ? '30px' : '35px',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: 'bold',
-    fontSize: '14px',
+    fontSize: isMobile ? '12px' : '14px',
     background: step <= currentStep ? '#ffd700' : '#444',
     color: step <= currentStep ? '#222' : '#888',
-    border: step === currentStep ? '3px solid #fff' : 'none'
+    border: step === currentStep ? '2px solid #fff' : 'none'
   });
 
   const contentStyle = {
-    padding: '32px',
-    minHeight: '400px'
+    padding: isMobile ? '16px' : '24px',
+    flex: 1,
+    overflow: 'auto',
+    minHeight: 0
   };
 
   const buttonContainerStyle = {
     display: 'flex',
     justifyContent: 'space-between',
-    gap: '16px',
-    marginTop: '32px',
-    padding: '24px',
-    borderTop: '1px solid #333'
+    gap: '12px',
+    padding: isMobile ? '16px' : '20px',
+    borderTop: '1px solid #333',
+    flexShrink: 0
   };
 
   const buttonStyle = (variant = 'primary') => ({
-    padding: '12px 24px',
-    borderRadius: '8px',
+    padding: isMobile ? '8px 16px' : '10px 20px',
+    borderRadius: '6px',
     border: 'none',
     fontWeight: '600',
     cursor: 'pointer',
-    fontSize: '16px',
+    fontSize: isMobile ? '14px' : '15px',
     background: variant === 'primary' ? '#ffd700' : 
                 variant === 'secondary' ? '#666' : '#444',
     color: variant === 'primary' ? '#222' : '#fff',
@@ -267,10 +281,36 @@ const RoutineWizard = ({ studentId, studentName, onCancel, onComplete }) => {
       <div style={containerStyle}>
         {/* Header */}
         <div style={headerStyle}>
-          <h2 style={{ margin: 0, fontSize: '28px' }}>
-            🧙‍♂️ Crear Rutina Completa
-          </h2>
-          <p style={{ margin: '8px 0 0 0', opacity: 0.9 }}>
+          <div style={{ position: 'relative' }}>
+            <h2 style={{ margin: 0, fontSize: isMobile ? '20px' : '24px' }}>
+              🧙‍♂️ Crear Rutina Completa
+            </h2>
+            <button
+              onClick={onCancel}
+              style={{
+                position: 'absolute',
+                top: '-5px',
+                right: '0',
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '30px',
+                height: '30px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#fff',
+                fontSize: '16px',
+                transition: 'background 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
+              onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
+            >
+              ✕
+            </button>
+          </div>
+          <p style={{ margin: '6px 0 0 0', opacity: 0.9, fontSize: isMobile ? '13px' : '14px' }}>
             Alumno: <strong>{studentName}</strong>
           </p>
           
@@ -283,7 +323,7 @@ const RoutineWizard = ({ studentId, studentName, onCancel, onComplete }) => {
             ))}
           </div>
           
-          <div style={{ marginTop: '12px', fontSize: '14px', opacity: 0.8 }}>
+          <div style={{ marginTop: '8px', fontSize: isMobile ? '12px' : '13px', opacity: 0.8 }}>
             {currentStep === 1 && 'Paso 1: Configurar Macrociclo'}
             {currentStep === 2 && 'Paso 2: Configurar Mesociclos'}
             {currentStep === 3 && 'Paso 3: Configurar Microciclos'}
