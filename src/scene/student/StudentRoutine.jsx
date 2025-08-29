@@ -37,7 +37,13 @@ export const StudentRoutine = () => {
         const allMacros = await getAllMacroCycles();
         const myMacros = allMacros.filter(m => m.studentId === student.id);
         setMacros(myMacros);
-        if (!myMacros.length) setError('No tenés rutinas asignadas.');
+        
+        // ✅ MEJORA: Auto-seleccionar si hay solo un macrociclo
+        if (myMacros.length === 1) {
+          setSelectedMacroId(myMacros[0].id);
+        } else if (!myMacros.length) {
+          setError('No tenés rutinas asignadas.');
+        }
       } catch (err) {
         setError(err.message || 'Error cargando macrocycles');
       } finally {
@@ -226,48 +232,49 @@ export const StudentRoutine = () => {
           <Typography color="error" align="center">{error}</Typography>
         ) : (
           <>
-            {/* Macrocycle selector */}
-            <Tabs
-              value={macros.findIndex(m => m.id === Number(selectedMacroId))}
-              onChange={(_, v) => {
-                setSelectedMacroId(macros[v]?.id || '');
-                setSelectedMesoId('');
-                setMicros([]);
-                setMesoIdx(0);
-                setMicroIdx(0);
-                setDiaIdx(0);
-              }}
-              variant="scrollable"
-              scrollButtons="auto"
-              allowScrollButtonsMobile
-              sx={{ 
-                mb: { xs: 1, sm: 1 }, 
-                minHeight: { xs: 36, sm: 48 },
-                width: '100%',
-                maxWidth: '100%',
-                overflow: 'hidden',
-                '& .MuiTabs-scroller': {
-                  overflow: 'auto !important'
-                },
-                '& .MuiTabs-scrollButtons': {
-                  width: { xs: 28, sm: 32 },
-                  color: '#ffe082'
-                },
-                '& .MuiTab-root': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
-                  color: '#fff',
-                  margin: { xs: '0 1px', sm: '0 3px' },
-                  borderRadius: { xs: '8px', sm: '10px' },
+            {/* Macrocycle selector - Solo mostrar carousel si hay más de 1 */}
+            {macros.length > 1 ? (
+              <Tabs
+                value={macros.findIndex(m => m.id === Number(selectedMacroId))}
+                onChange={(_, v) => {
+                  setSelectedMacroId(macros[v]?.id || '');
+                  setSelectedMesoId('');
+                  setMicros([]);
+                  setMesoIdx(0);
+                  setMicroIdx(0);
+                  setDiaIdx(0);
+                }}
+                variant="scrollable"
+                scrollButtons="auto"
+                allowScrollButtonsMobile
+                sx={{ 
+                  mb: { xs: 1, sm: 1 }, 
                   minHeight: { xs: 36, sm: 48 },
-                  fontSize: { xs: '0.75rem', sm: '1rem' },
-                  fontWeight: 600,
-                  backdropFilter: 'blur(15px)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  transition: 'all 0.3s ease',
-                  minWidth: { xs: 70, sm: 120 },
-                  maxWidth: { xs: 100, sm: 'none' },
-                  padding: { xs: '6px 10px', sm: '8px 16px' },
-                  textTransform: 'none',
+                  width: '100%',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  '& .MuiTabs-scroller': {
+                    overflow: 'auto !important'
+                  },
+                  '& .MuiTabs-scrollButtons': {
+                    width: { xs: 28, sm: 32 },
+                    color: '#ffe082'
+                  },
+                  '& .MuiTab-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                    color: '#fff',
+                    margin: { xs: '0 1px', sm: '0 3px' },
+                    borderRadius: { xs: '8px', sm: '10px' },
+                    minHeight: { xs: 36, sm: 48 },
+                    fontSize: { xs: '0.75rem', sm: '1rem' },
+                    fontWeight: 600,
+                    backdropFilter: 'blur(15px)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    transition: 'all 0.3s ease',
+                    minWidth: { xs: 70, sm: 120 },
+                    maxWidth: { xs: 100, sm: 'none' },
+                    padding: { xs: '6px 10px', sm: '8px 16px' },
+                    textTransform: 'none',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -296,8 +303,34 @@ export const StudentRoutine = () => {
                 <Tab key={macro.id} label={macro.name} />
               ))}
             </Tabs>
-            {/* Si no hay macro seleccionado, mostrar mensaje y no mostrar nada más */}
-            {!selectedMacroId && (
+            ) : macros.length === 1 ? (
+              // Mostrar solo el título cuando hay un único macrociclo
+              <Box
+                sx={{
+                  mb: { xs: 1, sm: 1 },
+                  textAlign: 'center',
+                  py: { xs: 1, sm: 2 }
+                }}
+              >
+                <Typography
+                  variant="h6"
+                  sx={{
+                    backgroundColor: '#ffe082',
+                    color: '#222',
+                    fontWeight: 700,
+                    padding: { xs: '8px 16px', sm: '12px 24px' },
+                    borderRadius: { xs: '8px', sm: '10px' },
+                    display: 'inline-block',
+                    fontSize: { xs: '0.9rem', sm: '1.1rem' },
+                    boxShadow: '0 4px 12px rgba(255, 224, 130, 0.3)'
+                  }}
+                >
+                  📋 {macros[0].name}
+                </Typography>
+              </Box>
+            ) : null}
+            {/* Si no hay macro seleccionado Y hay múltiples macros, mostrar mensaje */}
+            {!selectedMacroId && macros.length > 1 && (
               <Typography 
                 align="center" 
                 color="text.secondary" 
@@ -312,84 +345,112 @@ export const StudentRoutine = () => {
                 Seleccioná un programa para ver tu rutina
               </Typography>
             )}
-            {/* Mesocycle selector */}
+            {/* Mesocycle selector - Solo mostrar carousel si hay más de 1 */}
             {selectedMacroId && (
               <>
-                <Tabs
-                  value={mesoIdx}
-                  onChange={(_, v) => {
-                    setMesoIdx(v);
-                    setSelectedMesoId(mesos[v]?.id || '');
-                    // El resto se resetea en el useEffect de selectedMesoId
-                  }}
-                  variant="scrollable"
-                  scrollButtons="auto"
-                  allowScrollButtonsMobile
-                  sx={{ 
-                    mb: { xs: 1, sm: 1 }, 
-                    minHeight: { xs: 36, sm: 48 },
-                    width: '100%',
-                    maxWidth: '100%',
-                    overflow: 'hidden',
-                    '& .MuiTabs-scroller': {
-                      overflow: 'auto !important'
-                    },
-                    '& .MuiTabs-scrollButtons': {
-                      width: { xs: 28, sm: 32 },
-                      color: '#ff9800'
-                    },
-                    '& .MuiTab-root': {
-                      backgroundColor: 'rgba(255, 152, 0, 0.15)',
-                      color: '#ff9800',
-                      margin: { xs: '0 1px', sm: '0 3px' },
-                      borderRadius: { xs: '8px', sm: '10px' },
+                {mesos.length > 1 ? (
+                  <Tabs
+                    value={mesoIdx}
+                    onChange={(_, v) => {
+                      setMesoIdx(v);
+                      setSelectedMesoId(mesos[v]?.id || '');
+                      // El resto se resetea en el useEffect de selectedMesoId
+                    }}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    allowScrollButtonsMobile
+                    sx={{ 
+                      mb: { xs: 1, sm: 1 }, 
                       minHeight: { xs: 36, sm: 48 },
-                      fontSize: { xs: '0.75rem', sm: '1rem' },
-                      fontWeight: 600,
-                      backdropFilter: 'blur(15px)',
-                      border: '1px solid rgba(255, 152, 0, 0.25)',
-                      transition: 'all 0.3s ease',
-                      minWidth: { xs: 70, sm: 120 },
-                      maxWidth: { xs: 100, sm: 'none' },
-                      padding: { xs: '6px 10px', sm: '8px 16px' },
-                      textTransform: 'none',
-                      whiteSpace: 'nowrap',
+                      width: '100%',
+                      maxWidth: '100%',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      boxShadow: '0 2px 6px rgba(255, 152, 0, 0.1)',
-                      lineHeight: 1.2,
-                      '&:hover': {
-                        backgroundColor: 'rgba(255, 152, 0, 0.25)',
-                        transform: 'translateY(-2px)',
-                        boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
+                      '& .MuiTabs-scroller': {
+                        overflow: 'auto !important'
+                      },
+                      '& .MuiTabs-scrollButtons': {
+                        width: { xs: 28, sm: 32 },
+                        color: '#ff9800'
+                      },
+                      '& .MuiTab-root': {
+                        backgroundColor: 'rgba(255, 152, 0, 0.15)',
+                        color: '#ff9800',
+                        margin: { xs: '0 1px', sm: '0 3px' },
+                        borderRadius: { xs: '8px', sm: '10px' },
+                        minHeight: { xs: 36, sm: 48 },
+                        fontSize: { xs: '0.75rem', sm: '1rem' },
+                        fontWeight: 600,
+                        backdropFilter: 'blur(15px)',
+                        border: '1px solid rgba(255, 152, 0, 0.25)',
+                        transition: 'all 0.3s ease',
+                        minWidth: { xs: 70, sm: 120 },
+                        maxWidth: { xs: 100, sm: 'none' },
+                        padding: { xs: '6px 10px', sm: '8px 16px' },
+                        textTransform: 'none',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        boxShadow: '0 2px 6px rgba(255, 152, 0, 0.1)',
+                        lineHeight: 1.2,
+                        '&:hover': {
+                          backgroundColor: 'rgba(255, 152, 0, 0.25)',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
+                        }
+                      },
+                      '& .MuiTab-root.Mui-selected': {
+                        backgroundColor: '#ff9800',
+                        color: '#fff',
+                        fontWeight: 700,
+                        transform: 'scale(1.03)',
+                        boxShadow: '0 6px 16px rgba(255, 152, 0, 0.5)',
+                        border: '2px solid #ff9800'
+                      },
+                      '& .MuiTabs-indicator': {
+                        display: 'none'
                       }
-                    },
-                    '& .MuiTab-root.Mui-selected': {
-                      backgroundColor: '#ff9800',
-                      color: '#fff',
-                      fontWeight: 700,
-                      transform: 'scale(1.03)',
-                      boxShadow: '0 6px 16px rgba(255, 152, 0, 0.5)',
-                      border: '2px solid #ff9800'
-                    },
-                    '& .MuiTabs-indicator': {
-                      display: 'none'
-                    }
-                  }}
-                >
-                  {mesos.map((meso) => (
-                    <Tab key={meso.id} label={meso.name} />
-                  ))}
-                </Tabs>
+                    }}
+                  >
+                    {mesos.map((meso) => (
+                      <Tab key={meso.id} label={meso.name} />
+                    ))}
+                  </Tabs>
+                ) : mesos.length === 1 ? (
+                  // Mostrar solo el título cuando hay un único mesociclo
+                  <Box
+                    sx={{
+                      mb: { xs: 1, sm: 1 },
+                      textAlign: 'center',
+                      py: { xs: 1, sm: 1.5 }
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        backgroundColor: '#ff9800',
+                        color: '#fff',
+                        fontWeight: 700,
+                        padding: { xs: '6px 14px', sm: '10px 20px' },
+                        borderRadius: { xs: '8px', sm: '10px' },
+                        display: 'inline-block',
+                        fontSize: { xs: '0.85rem', sm: '1rem' },
+                        boxShadow: '0 4px 12px rgba(255, 152, 0, 0.4)'
+                      }}
+                    >
+                      🎯 {mesos[0].name}
+                    </Typography>
+                  </Box>
+                ) : null}
                 {/* Microcycle navigation */}
                 {selectedMesoId && micros.length > 0 && (
                   <Box sx={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     mb: { xs: 1, sm: 1 }, 
-                    gap: { xs: 0.5, sm: 0.5 },
+                    gap: { xs: 1, sm: 1.5 },
                     px: { xs: 0.5, sm: 0 },
-                    py: { xs: 0.5, sm: 0 }
+                    py: { xs: 0.5, sm: 0 },
+                    justifyContent: 'center'
                   }}>
                     {/* Left Arrow */}
                     <IconButton
@@ -424,13 +485,14 @@ export const StudentRoutine = () => {
                       sx={{ 
                         flex: 1,
                         display: 'flex',
-                        gap: { xs: 0.4, sm: 0.5 },
+                        gap: { xs: 0.5, sm: 0.8 },
                         overflowX: 'auto',
                         scrollBehavior: 'smooth',
                         py: { xs: 0.4, sm: 0.5 },
-                        px: { xs: 0.3, sm: 1 },
-                        mx: { xs: 0, sm: -0.5 },
+                        px: { xs: 0.5, sm: 1.2 },
+                        mx: { xs: 0, sm: 0 },
                         maxWidth: '100%',
+                        justifyContent: 'center',
                         WebkitOverflowScrolling: 'touch',
                         scrollbarWidth: 'thin',
                         '&::-webkit-scrollbar': {
@@ -561,18 +623,23 @@ export const StudentRoutine = () => {
                   </Box>
                 )}
                 {/* Días selector - Solo días con ejercicios */}
-                {selectedMesoId && micros.length > 0 && micros[microIdx]?.days && (
-                  <Tabs
-                    value={diaIdx}
-                    onChange={(_, v) => setDiaIdx(v)}
-                    variant="scrollable"
-                    scrollButtons="auto"
-                    sx={{ 
-                      mb: 2, 
-                      minHeight: { xs: 40, sm: 48 },
-                      width: '100%',
-                      maxWidth: '100%',
-                      overflow: 'hidden',
+                {selectedMesoId && micros.length > 0 && micros[microIdx]?.days && (() => {
+                  const daysWithExercises = micros[microIdx].days
+                    .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0);
+                  
+                  return (
+                    <Tabs
+                      value={diaIdx}
+                      onChange={(_, v) => setDiaIdx(v)}
+                      variant={daysWithExercises.length <= 3 ? "standard" : "scrollable"}
+                      scrollButtons={daysWithExercises.length <= 3 ? false : "auto"}
+                      centered={daysWithExercises.length <= 3}
+                      sx={{ 
+                        mb: 2, 
+                        minHeight: { xs: 40, sm: 48 },
+                        width: '100%',
+                        maxWidth: '100%',
+                        overflow: 'hidden',
                       '& .MuiTabs-scroller': {
                         overflow: 'auto !important'
                       },
@@ -637,8 +704,9 @@ export const StudentRoutine = () => {
                           label={`DÍA ${day.dia || index + 1}`}
                         />
                       ))}
-                  </Tabs>
-                )}
+                    </Tabs>
+                  );
+                })()}
                 {/* Ejercicios del día */}
                 {selectedMesoId && micros.length > 0 && micros[microIdx]?.days && (() => {
                   // Filtrar días con ejercicios y ordenarlos
@@ -661,7 +729,36 @@ export const StudentRoutine = () => {
                     <>
                       <Typography variant="body2" color="#1976d2" align="center" mb={0.5} sx={{ fontSize: { xs: '0.95rem', sm: '1rem' } }}>
                         <strong>{diaActual.nombre || `Día ${diaActual.dia}`}</strong>
-                        {diaActual.fecha && ` · Fecha: ${diaActual.fecha.slice(0,10)}`}
+                        {diaActual.fecha ? (
+                          <span style={{ 
+                            color: '#4caf50', 
+                            fontWeight: 600,
+                            background: 'rgba(76, 175, 80, 0.1)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            marginLeft: '8px',
+                            fontSize: '0.9em'
+                          }}>
+                            📅 {new Date(diaActual.fecha + 'T12:00:00').toLocaleDateString('es-ES', {
+                              weekday: 'short',
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit'
+                            })}
+                          </span>
+                        ) : (
+                          <span style={{ 
+                            color: '#ff9800', 
+                            fontWeight: 500,
+                            background: 'rgba(255, 152, 0, 0.1)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            marginLeft: '8px',
+                            fontSize: '0.9em'
+                          }}>
+                            ⏳ Sin entrenar
+                          </span>
+                        )}
                       </Typography>
                       <Stack spacing={2}>
                         {diaActual.exercises
