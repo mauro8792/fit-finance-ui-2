@@ -88,7 +88,7 @@ MobileMenuItem.propTypes = {
 const FinalMobileDrawer = ({ open, onClose }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { user, logout, userType, student } = useAuthStore();
+  const { user, startLogout, userType, student } = useAuthStore();
   const [selected, setSelected] = useState('Dashboard');
 
   console.log('FinalMobileDrawer rendered:', { open, userType });
@@ -97,7 +97,7 @@ const FinalMobileDrawer = ({ open, onClose }) => {
   const handleLogout = () => {
     console.log('=== LOGOUT INICIADO ===');
     onClose();
-    logout();
+    startLogout();
   };
 
   // Función para renderizar items según el tipo de usuario
