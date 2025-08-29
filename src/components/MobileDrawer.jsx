@@ -2,6 +2,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 import { useAuthStore } from '../hooks';
 import { Drawer, Box, Typography, useTheme } from '@mui/material';
+import { Link } from 'react-router-dom';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
@@ -13,14 +14,72 @@ import FeedIcon from '@mui/icons-material/Feed';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
-import { useNavigate } from 'react-router-dom';
 import { tokens } from '../theme';
 
-export default function MobileDrawer({ open, onClose }) {
-  const navigate = useNavigate();
+// Componente Item similar al del SidebarComponent pero adaptado para mobile
+const MobileItem = ({ title, to, icon, selected, setSelected, onClose }) => {
+  const theme = useTheme();
+  const colors = tokens(theme.palette.mode);
+  
+  return (
+    <Link 
+      to={to} 
+      style={{ textDecoration: 'none', color: 'inherit' }}
+      onClick={() => {
+        console.log(`🚀 Navegando a: ${to}`);
+        setSelected(title);
+        if (onClose) {
+          onClose();
+        }
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '16px 24px',
+          margin: '4px 8px',
+          borderRadius: '8px',
+          minHeight: '56px',
+          color: colors.grey[100],
+          backgroundColor: selected === title ? colors.orangeAccent[500] : 'transparent',
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            backgroundColor: selected === title ? colors.orangeAccent[500] : 'rgba(255, 152, 0, 0.1)',
+            transform: 'translateX(5px)',
+          },
+          '&:active': {
+            transform: 'scale(0.98)',
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          {icon}
+        </Box>
+        <Typography sx={{ fontSize: '1rem', fontWeight: 500 }}>
+          {title}
+        </Typography>
+      </Box>
+    </Link>
+  );
+};
+
+MobileItem.propTypes = {
+  title: PropTypes.string.isRequired,
+  to: PropTypes.string.isRequired,
+  icon: PropTypes.element.isRequired,
+  selected: PropTypes.string,
+  setSelected: PropTypes.func.isRequired,
+  onClose: PropTypes.func,
+};
+
+const MobileDrawer = ({ open, onClose }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const { user, logout, userType, student } = useAuthStore();
+  const [selected, setSelected] = React.useState('Dashboard');
   
   // Debug log
   console.log('MobileDrawer rendered:', { open, userType });
@@ -52,51 +111,95 @@ export default function MobileDrawer({ open, onClose }) {
       document.body.classList.remove('drawer-open');
     };
   }, [open]);
-  
-  // Función para renderizar items según el tipo de usuario
-  const getMenuItems = () => {
+
+  // Función para renderizar items según el tipo de usuario (usando la misma lógica del SidebarComponent)
+  const renderMenuItems = () => {
     if (userType === 'student') {
-      return [
-        { title: 'Dashboard', to: '/student', icon: <DashboardIcon /> },
-        { title: 'Mi Rutina', to: '/student/routine', icon: <FitnessCenterIcon /> },
-        { title: 'Mis Cuotas', to: '/student/fees', icon: <PaidIcon /> },
-        { title: 'Mi Perfil', to: '/student/profile', icon: <PersonSearchIcon /> },
-      ];
+      return (
+        <>
+          <MobileItem title='Dashboard' to='/student' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Mis Cuotas' to='/student/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Mi Perfil' to='/student/profile' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+        </>
+      );
     }
     
     if (userType === 'admin' || userType === 'superadmin') {
-      return [
-        { title: 'HOME', to: '/', icon: <HomeOutlinedIcon /> },
-        { title: 'Disciplinas', to: '/sports', icon: <SportsMartialArtsIcon /> },
-        { title: 'Alumnos', to: '/alumnos', icon: <PersonSearchIcon /> },
-        { title: 'Pagos', to: '/pagos', icon: <PaidIcon /> },
-        { title: 'Cuotas', to: '/cuotas', icon: <FeedIcon /> },
-        { title: 'Usuarios', to: '/usuarios', icon: <GroupIcon /> },
-        { title: 'Coaches', to: '/coaches', icon: <FitnessCenterIcon /> },
-      ];
+      return (
+        <>
+          <MobileItem title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Coaches' to='/coaches' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+        </>
+      );
     }
     
     if (userType === 'coach') {
-      return [
-        { title: 'Dashboard', to: '/coach/dashboard', icon: <DashboardIcon /> },
-        { title: 'Mis Alumnos', to: '/coach/students', icon: <PersonSearchIcon /> },
-        { title: 'Rutinas', to: '/coach/routines', icon: <FitnessCenterIcon /> },
-        { title: 'Macrociclos', to: '/coach/macrocycles', icon: <AssignmentIcon /> },
-        { title: 'Horarios', to: '/coach/schedule', icon: <ScheduleIcon /> },
-      ];
+      return (
+        <>
+          <MobileItem title='Dashboard' to='/coach/dashboard' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Rutinas' to='/coach/routines' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Macrociclos' to='/coach/macrocycles' icon={<AssignmentIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Horarios' to='/coach/schedule' icon={<ScheduleIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+        </>
+      );
     }
     
-    return [];
+    return null;
+  };
+
+  // Componente separado para logout
+  const LogoutItem = ({ onLogout }) => {
+    const theme = useTheme();
+    const colors = tokens(theme.palette.mode);
+    
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '16px',
+          padding: '16px 24px',
+          margin: '4px 8px',
+          borderRadius: '8px',
+          minHeight: '56px',
+          color: colors.grey[100],
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+          '&:hover': {
+            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+            transform: 'translateX(5px)',
+          },
+          '&:active': {
+            transform: 'scale(0.98)',
+          }
+        }}
+        onClick={onLogout}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <ExitToAppIcon />
+        </Box>
+        <Typography sx={{ fontSize: '1rem', fontWeight: 500 }}>
+          Cerrar Sesión
+        </Typography>
+      </Box>
+    );
+  };
+
+  LogoutItem.propTypes = {
+    onLogout: PropTypes.func.isRequired,
   };
 
   const handleLogout = () => {
+    console.log('=== LOGOUT INICIADO ===');
+    onClose();
     logout();
-    onClose();
-  };
-
-  const handleNavigation = (to) => {
-    navigate(to);
-    onClose();
   };
 
   // Nombre a mostrar según el tipo de usuario
@@ -107,8 +210,6 @@ export default function MobileDrawer({ open, onClose }) {
     return user?.fullName || user?.name || user?.username || 'Usuario';
   };
 
-  const menuItems = getMenuItems();
-
   return (
     <Drawer 
       anchor="left" 
@@ -116,7 +217,12 @@ export default function MobileDrawer({ open, onClose }) {
       onClose={onClose}
       ModalProps={{
         keepMounted: true,
-        style: { zIndex: 1400 }
+        style: { zIndex: 1500 },
+        disableScrollLock: false,
+        hideBackdrop: false
+      }}
+      SlideProps={{
+        direction: "right"
       }}
       PaperProps={{
         sx: {
@@ -125,7 +231,7 @@ export default function MobileDrawer({ open, onClose }) {
           maxHeight: '100vh',
           background: `linear-gradient(180deg, #181818 0%, ${colors.primary[900]} 40%, ${colors.orangeAccent[500]} 100%)`,
           border: 'none',
-          boxShadow: 'none',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
           display: 'flex',
           flexDirection: 'column'
         }
@@ -142,11 +248,11 @@ export default function MobileDrawer({ open, onClose }) {
           flexDirection: 'column',
           overflow: 'hidden',
           position: 'relative',
-          zIndex: 1401
+          zIndex: 1501
         }} 
         role="presentation"
       >
-        {/* Header - replicando el estilo del ProSidebar */}
+        {/* Header */}
         <Box 
           sx={{ 
             p: '15px 0 25px 0',
@@ -158,30 +264,22 @@ export default function MobileDrawer({ open, onClose }) {
             flexDirection: 'column',
             minHeight: '100px'
           }}
-          onClick={(e) => e.stopPropagation()}
         >
-          <Box sx={{ 
-            display: 'flex',
-            alignItems: 'center',
-            ml: '5px',
-            px: 3
-          }}>
-            <Typography 
-              variant="h5" 
-              sx={{ 
-                color: colors.orangeAccent[500], 
-                fontWeight: 700,
-                fontSize: '1.2rem',
-                maxWidth: 200,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                textAlign: 'center'
-              }}
-            >
-              {getUserDisplayName()}
-            </Typography>
-          </Box>
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              color: colors.orangeAccent[500], 
+              fontWeight: 700,
+              fontSize: '1.2rem',
+              maxWidth: 200,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              textAlign: 'center'
+            }}
+          >
+            {getUserDisplayName()}
+          </Typography>
           <Typography variant="body2" sx={{ 
             color: colors.grey[100], 
             fontSize: '0.85rem',
@@ -193,121 +291,31 @@ export default function MobileDrawer({ open, onClose }) {
           </Typography>
         </Box>
         
-        {/* Menu Items - replicando el estilo del ProSidebar */}
-        <Box 
-          sx={{ 
-            flex: 1, 
-            overflow: 'auto',
-            pl: '10%', // Igual que el ProSidebar
-            pr: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            minHeight: 0
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {menuItems.map((item, index) => (
-            <Box
-              key={index}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0,
-                padding: '8px 40px 8px 25px', // Aumentar padding para mejor apariencia
-                cursor: 'pointer',
-                color: colors.grey[100],
-                transition: 'color 0.2s ease',
-                '&:hover': { 
-                  color: `${colors.orangeAccent[300]} !important`
-                },
-                '&.active': {
-                  backgroundColor: colors.orangeAccent[500],
-                  color: `${colors.primary[400]} !important`
-                }
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                console.log('Menu item clicked:', item.title);
-                handleNavigation(item.to);
-              }}
-            >
-              <Box sx={{ 
-                color: 'inherit',
-                display: 'flex',
-                alignItems: 'center',
-                minWidth: 24,
-                mr: 2
-              }}>
-                {item.icon}
-              </Box>
-              <Typography sx={{ 
-                fontSize: '1rem',
-                fontWeight: 400,
-                color: 'inherit'
-              }}>
-                {item.title}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
+        {/* Menu Items */}
+        {renderMenuItems()}
         
-        {/* Logout Button - estilo consistente con el menú */}
+        {/* Logout Button */}
         <Box 
           sx={{ 
             borderTop: '1px solid rgba(255,255,255,0.1)',
             flexShrink: 0,
-            pl: '10%',
+            pl: '5%',
             pr: 1,
-            minHeight: '60px',
+            minHeight: '80px',
             display: 'flex',
             alignItems: 'center'
           }}
-          onClick={(e) => e.stopPropagation()}
         >
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 0,
-              padding: '8px 40px 8px 25px',
-              cursor: 'pointer',
-              color: colors.grey[100],
-              transition: 'color 0.2s ease',
-              '&:hover': { 
-                color: `${colors.orangeAccent[300]} !important`
-              }
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              console.log('Logout clicked');
-              handleLogout();
-            }}
-          >
-            <Box sx={{ 
-              color: 'inherit',
-              display: 'flex',
-              alignItems: 'center',
-              minWidth: 24,
-              mr: 2
-            }}>
-              <ExitToAppIcon />
-            </Box>
-            <Typography sx={{ 
-              fontSize: '1rem',
-              fontWeight: 400,
-              color: 'inherit'
-            }}>
-              Salir
-            </Typography>
-          </Box>
+          <LogoutItem onLogout={handleLogout} />
         </Box>
       </Box>
     </Drawer>
   );
-}
+};
 
 MobileDrawer.propTypes = {
   open: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
 };
+
+export default MobileDrawer;

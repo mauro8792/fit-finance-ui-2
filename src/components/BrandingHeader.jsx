@@ -6,7 +6,7 @@ import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import { LogoutOutlined, Menu as MenuIcon } from '@mui/icons-material';
 import { useAuthStore } from '../hooks';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import MobileDrawer from './MobileDrawer';
+import FinalMobileDrawer from './FinalMobileDrawer';
 
 export default function BrandingHeader() {
   const { startLogout, user, student, userType } = useAuthStore();
@@ -103,7 +103,7 @@ export default function BrandingHeader() {
         )}
       </Box>
       {showMobileMenu && (
-        <MobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+        <FinalMobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       )}
     </header>
   );

@@ -235,6 +235,33 @@ button, .MuiButton-root {
 }
 
 /* Sidebar y navegación mobile */
+/* Mejorar la respuesta táctil en dispositivos móviles */
+.mobile-drawer-button {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: rgba(255, 152, 0, 0.2);
+  min-height: 48px !important;
+  user-select: none;
+  position: relative;
+}
+
+.mobile-drawer-button:active {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Asegurar que los elementos del drawer no sean seleccionables */
+.MuiDrawer-paper * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}
+
+/* Optimización para touch en iOS Safari */
+.MuiDrawer-paper {
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 768px) {
   /* Asegurar que el sidebar no aparezca en mobile */
   .pro-sidebar {
