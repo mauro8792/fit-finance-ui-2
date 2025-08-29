@@ -22,7 +22,16 @@ export default function BrandingHeader() {
   
   return (
     <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: themeConfig.primaryColor, color: themeConfig.textColor, padding: '12px 24px', fontFamily: themeConfig.fontFamily
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between', 
+      background: themeConfig.primaryColor, 
+      color: themeConfig.textColor, 
+      padding: isMobile ? '8px 12px' : '12px 24px', // Menos padding en móvil
+      fontFamily: themeConfig.fontFamily,
+      width: '100%',
+      boxSizing: 'border-box', // Incluir padding en el ancho total
+      overflow: 'hidden' // Evitar que elementos se desborden
     }}>
       <Box display='flex' alignItems='center' gap={2}>
         {showMobileMenu && (

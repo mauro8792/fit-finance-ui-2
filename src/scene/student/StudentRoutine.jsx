@@ -1,19 +1,16 @@
-import { Box, Typography, CircularProgress, Button, Tabs, Tab, IconButton, Stack } from '@mui/material';
+import { Box, Typography, CircularProgress, Button, Tabs, Tab, IconButton, Stack, useMediaQuery, useTheme } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import { Header } from '../../components';
-import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../hooks';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
 import EditSetModal from '../../components/EditSetModal';
 
-import { Layout } from '../../components';
-
 
 
 export const StudentRoutine = () => {
-  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { student } = useAuthStore();
   const { getAllMacroCycles, getMesocyclesByMacro, fetchMicrocyclesByMesocycle } = useRoutineStore();
   const [loading, setLoading] = useState(true);
@@ -109,22 +106,44 @@ export const StudentRoutine = () => {
     const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
     const token = localStorage.getItem('token');
     
+    // Guardar el estado actual de navegación antes de hacer cambios
+    const currentMicroId = micros[microIdx]?.id;
+    const currentDayId = (() => {
+      const diasConEjercicios = micros[microIdx].days
+        .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0)
+        .sort((a, b) => {
+          const getDayNumber = (day) => {
+            if (day.dia) return parseInt(day.dia) || 0;
+            const match = day.nombre?.match(/\d+/);
+            return match ? parseInt(match[0]) : 0;
+          };
+          return getDayNumber(a) - getDayNumber(b);
+        });
+      return diasConEjercicios[diaIdx]?.id;
+    })();
+    
     let response;
     
     // Si es un set temporal (nuevo), crearlo
     if (selectedSet.id && selectedSet.id.toString().startsWith('temp-')) {
-      // Encontrar el ejercicio al que pertenece este set
-      const diasConEjercicios = micros[microIdx].days.filter(day => 
-        !day.esDescanso && day.exercises && day.exercises.length > 0
-      );
-      const diaActual = diasConEjercicios[diaIdx];
-      const ejercicio = diaActual.exercises.find(ej => 
-        selectedSet.id.includes(`temp-${ej.id}`)
-      );
+      // Usar el exerciseId del set temporal si está disponible
+      let ejercicioId = selectedSet.exerciseId;
       
-      if (ejercicio) {
+      // Si no hay exerciseId, buscar el ejercicio usando la lógica anterior (fallback)
+      if (!ejercicioId) {
+        const diasConEjercicios = micros[microIdx].days.filter(day => 
+          !day.esDescanso && day.exercises && day.exercises.length > 0
+        );
+        const diaActual = diasConEjercicios[diaIdx];
+        const ejercicio = diaActual.exercises.find(ej => 
+          selectedSet.id.includes(`temp-${ej.id}`)
+        );
+        ejercicioId = ejercicio?.id;
+      }
+      
+      if (ejercicioId) {
         // Crear nuevo set
-        response = await fetch(`${apiUrl}/exercise/${ejercicio.id}/sets`, {
+        response = await fetch(`${apiUrl}/exercise/${ejercicioId}/sets`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -153,20 +172,52 @@ export const StudentRoutine = () => {
       throw new Error(errorData?.message || 'Error al guardar');
     }
     
-    // Actualizar el estado local o recargar los microciclos
-    // Por simplicidad, vamos a recargar los microciclos
+    // Recargar los microciclos y mantener la navegación en el mismo lugar
     const microsResult = await fetchMicrocyclesByMesocycle(selectedMesoId);
     setMicros(microsResult);
+    
+    // Restaurar la navegación al mismo microciclo y día
+    if (currentMicroId && currentDayId) {
+      // Encontrar el índice del microciclo actual
+      const newMicroIdx = microsResult.findIndex(micro => micro.id === currentMicroId);
+      if (newMicroIdx !== -1) {
+        setMicroIdx(newMicroIdx);
+        
+        // Encontrar el índice del día actual dentro del microciclo
+        const diasConEjercicios = microsResult[newMicroIdx].days
+          .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0)
+          .sort((a, b) => {
+            const getDayNumber = (day) => {
+              if (day.dia) return parseInt(day.dia) || 0;
+              const match = day.nombre?.match(/\d+/);
+              return match ? parseInt(match[0]) : 0;
+            };
+            return getDayNumber(a) - getDayNumber(b);
+          });
+        
+        const newDayIdx = diasConEjercicios.findIndex(day => day.id === currentDayId);
+        if (newDayIdx !== -1) {
+          setDiaIdx(newDayIdx);
+        }
+      }
+    }
   };
 
   return (
-      <>
-        <Header title="Rutina de Entrenamiento" subtitle="Visualiza y edita tu rutina" />
-        <Box mb={2}>
-          <button onClick={() => navigate(-1)} style={{ padding: 8, borderRadius: 4, background: '#70d8bd', color: '#fff', border: 'none', cursor: 'pointer', width: '100%', maxWidth: 320 }}>
-            Volver al Dashboard
-          </button>
-        </Box>
+      <Box sx={{ 
+        width: '100%', 
+        maxWidth: '100vw',
+        minHeight: isMobile ? 'calc(100vh - 120px)' : '100%',
+        overflow: 'hidden',
+        px: { xs: 0.5, sm: 2 },
+        py: { xs: 0.5, sm: 1 },
+        ...(isMobile && {
+          display: 'flex',
+          flexDirection: 'column',
+          boxSizing: 'border-box'
+        })
+      }}>
+        
         {loading ? (
           <Box display="flex" justifyContent="center" alignItems="center" minHeight={200}>
             <CircularProgress />
@@ -188,16 +239,77 @@ export const StudentRoutine = () => {
               }}
               variant="scrollable"
               scrollButtons="auto"
-              sx={{ mb: 1, minHeight: { xs: 36, sm: 48 } }}
+              allowScrollButtonsMobile
+              sx={{ 
+                mb: { xs: 1, sm: 1 }, 
+                minHeight: { xs: 36, sm: 48 },
+                width: '100%',
+                maxWidth: '100%',
+                overflow: 'hidden',
+                '& .MuiTabs-scroller': {
+                  overflow: 'auto !important'
+                },
+                '& .MuiTabs-scrollButtons': {
+                  width: { xs: 28, sm: 32 },
+                  color: '#ffe082'
+                },
+                '& .MuiTab-root': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  color: '#fff',
+                  margin: { xs: '0 1px', sm: '0 3px' },
+                  borderRadius: { xs: '8px', sm: '10px' },
+                  minHeight: { xs: 36, sm: 48 },
+                  fontSize: { xs: '0.75rem', sm: '1rem' },
+                  fontWeight: 600,
+                  backdropFilter: 'blur(15px)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  transition: 'all 0.3s ease',
+                  minWidth: { xs: 70, sm: 120 },
+                  maxWidth: { xs: 100, sm: 'none' },
+                  padding: { xs: '6px 10px', sm: '8px 16px' },
+                  textTransform: 'none',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.1)',
+                  lineHeight: 1.2,
+                  '&:hover': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(255, 255, 255, 0.1)'
+                  }
+                },
+                '& .MuiTab-root.Mui-selected': {
+                  backgroundColor: '#ffe082',
+                  color: '#222',
+                  fontWeight: 700,
+                  transform: 'scale(1.03)',
+                  boxShadow: '0 6px 16px rgba(255, 224, 130, 0.4)',
+                  border: '2px solid #ffe082'
+                },
+                '& .MuiTabs-indicator': {
+                  display: 'none'
+                }
+              }}
             >
               {macros.map((macro) => (
-                <Tab key={macro.id} label={macro.name} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, minWidth: { xs: 80, sm: 120 } }} />
+                <Tab key={macro.id} label={macro.name} />
               ))}
             </Tabs>
             {/* Si no hay macro seleccionado, mostrar mensaje y no mostrar nada más */}
             {!selectedMacroId && (
-              <Typography align="center" color="text.secondary" sx={{ mt: 4, fontSize: { xs: '0.95rem', sm: '1rem' } }}>
-                Seleccioná un macro para ver los mesociclos y microciclos
+              <Typography 
+                align="center" 
+                color="text.secondary" 
+                sx={{ 
+                  mt: { xs: 2, sm: 4 }, 
+                  fontSize: { xs: '0.8rem', sm: '1rem' },
+                  px: { xs: 1, sm: 2 },
+                  lineHeight: 1.4,
+                  wordBreak: 'break-word'
+                }}
+              >
+                Seleccioná un programa para ver tu rutina
               </Typography>
             )}
             {/* Mesocycle selector */}
@@ -212,56 +324,239 @@ export const StudentRoutine = () => {
                   }}
                   variant="scrollable"
                   scrollButtons="auto"
-                  sx={{ mb: 1, minHeight: { xs: 36, sm: 48 } }}
+                  allowScrollButtonsMobile
+                  sx={{ 
+                    mb: { xs: 1, sm: 1 }, 
+                    minHeight: { xs: 36, sm: 48 },
+                    width: '100%',
+                    maxWidth: '100%',
+                    overflow: 'hidden',
+                    '& .MuiTabs-scroller': {
+                      overflow: 'auto !important'
+                    },
+                    '& .MuiTabs-scrollButtons': {
+                      width: { xs: 28, sm: 32 },
+                      color: '#ff9800'
+                    },
+                    '& .MuiTab-root': {
+                      backgroundColor: 'rgba(255, 152, 0, 0.15)',
+                      color: '#ff9800',
+                      margin: { xs: '0 1px', sm: '0 3px' },
+                      borderRadius: { xs: '8px', sm: '10px' },
+                      minHeight: { xs: 36, sm: 48 },
+                      fontSize: { xs: '0.75rem', sm: '1rem' },
+                      fontWeight: 600,
+                      backdropFilter: 'blur(15px)',
+                      border: '1px solid rgba(255, 152, 0, 0.25)',
+                      transition: 'all 0.3s ease',
+                      minWidth: { xs: 70, sm: 120 },
+                      maxWidth: { xs: 100, sm: 'none' },
+                      padding: { xs: '6px 10px', sm: '8px 16px' },
+                      textTransform: 'none',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      boxShadow: '0 2px 6px rgba(255, 152, 0, 0.1)',
+                      lineHeight: 1.2,
+                      '&:hover': {
+                        backgroundColor: 'rgba(255, 152, 0, 0.25)',
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
+                      }
+                    },
+                    '& .MuiTab-root.Mui-selected': {
+                      backgroundColor: '#ff9800',
+                      color: '#fff',
+                      fontWeight: 700,
+                      transform: 'scale(1.03)',
+                      boxShadow: '0 6px 16px rgba(255, 152, 0, 0.5)',
+                      border: '2px solid #ff9800'
+                    },
+                    '& .MuiTabs-indicator': {
+                      display: 'none'
+                    }
+                  }}
                 >
                   {mesos.map((meso) => (
-                    <Tab key={meso.id} label={meso.name} sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, minWidth: { xs: 80, sm: 120 } }} />
+                    <Tab key={meso.id} label={meso.name} />
                   ))}
                 </Tabs>
-                {/* Microcycle selector con flechas y solo 3 visibles */}
+                {/* Microcycle navigation */}
                 {selectedMesoId && micros.length > 0 && (
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    mb: { xs: 1, sm: 1 }, 
+                    gap: { xs: 0.5, sm: 0.5 },
+                    px: { xs: 0.5, sm: 0 },
+                    py: { xs: 0.5, sm: 0 }
+                  }}>
+                    {/* Left Arrow */}
                     <IconButton
                       size="small"
                       onClick={() => {
-                        if (microIdx > 0) { setMicroIdx(microIdx - 1); setDiaIdx(0); }
+                        if (microIdx > 0) {
+                          setMicroIdx(prev => prev - 1);
+                          setDiaIdx(0);
+                        }
                       }}
-                      disabled={microIdx === 0}
+                      disabled={microIdx <= 0}
+                      sx={{
+                        backgroundColor: microIdx <= 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 224, 130, 0.2)',
+                        color: microIdx <= 0 ? 'rgba(255, 255, 255, 0.3)' : '#ffe082',
+                        backdropFilter: 'blur(10px)',
+                        border: `1px solid ${microIdx <= 0 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 224, 130, 0.4)'}`,
+                        width: { xs: 32, sm: 40 },
+                        height: { xs: 32, sm: 40 },
+                        boxShadow: microIdx <= 0 ? 'none' : '0 2px 8px rgba(255, 224, 130, 0.2)',
+                        '&:hover': {
+                          backgroundColor: microIdx <= 0 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 224, 130, 0.3)',
+                          transform: microIdx <= 0 ? 'none' : 'translateY(-1px)',
+                        },
+                        transition: 'all 0.2s ease'
+                      }}
                     >
-                      <ArrowBackIosNewIcon fontSize="small" />
+                      <ArrowBackIosNewIcon fontSize={isMobile ? 'small' : 'medium'} />
                     </IconButton>
-                    <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', gap: 1 }}>
-                      {micros
-                        .sort((a, b) => {
-                          // Ordenar por nombre del microciclo (extraer número)
-                          const getNumber = (name) => {
-                            const match = name.match(/\d+/);
-                            return match ? parseInt(match[0]) : 0;
-                          };
-                          return getNumber(a.name) - getNumber(b.name);
-                        })
-                        .map((micro, i) => ({ ...micro, idx: i }))
-                        .filter((_, i) => Math.abs(i - microIdx) <= 1)
-                        .map((micro) => (
-                          <Button
-                            key={micro.idx}
-                            variant={micro.idx === microIdx ? 'contained' : 'outlined'}
-                            size="small"
-                            sx={{ minWidth: { xs: 70, sm: 90 }, bgcolor: micro.idx === microIdx ? '#ffe082' : undefined, color: '#222', fontWeight: 700, fontSize: { xs: '0.85rem', sm: '1rem' } }}
-                            onClick={() => { setMicroIdx(micro.idx); setDiaIdx(0); }}
-                          >
-                            {micro.name}
-                          </Button>
-                        ))}
+                    
+                    {/* Contenedor de microciclos con mejor scroll */}
+                    <Box 
+                      sx={{ 
+                        flex: 1,
+                        display: 'flex',
+                        gap: { xs: 0.4, sm: 0.5 },
+                        overflowX: 'auto',
+                        scrollBehavior: 'smooth',
+                        py: { xs: 0.4, sm: 0.5 },
+                        px: { xs: 0.3, sm: 1 },
+                        mx: { xs: 0, sm: -0.5 },
+                        maxWidth: '100%',
+                        WebkitOverflowScrolling: 'touch',
+                        scrollbarWidth: 'thin',
+                        '&::-webkit-scrollbar': {
+                          height: '4px',
+                        },
+                        '&::-webkit-scrollbar-track': {
+                          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                          borderRadius: '3px',
+                          margin: '0 8px'
+                        },
+                        '&::-webkit-scrollbar-thumb': {
+                          backgroundColor: 'rgba(255, 224, 130, 0.7)',
+                          borderRadius: '3px',
+                          '&:hover': {
+                            backgroundColor: 'rgba(255, 224, 130, 0.9)'
+                          }
+                        }
+                      }}
+                    >
+                      {(() => {
+                        // Obtener los microciclos ordenados
+                        const sortedMicros = micros
+                          .sort((a, b) => {
+                            const getNumber = (name) => {
+                              const match = name.match(/\d+/);
+                              return match ? parseInt(match[0]) : 0;
+                            };
+                            return getNumber(a.name) - getNumber(b.name);
+                          });
+
+                        // Calcular ventana visible en móvil
+                        let visibleMicros = sortedMicros;
+                        let startIdx = 0;
+                        
+                        if (isMobile && sortedMicros.length > 3) {
+                          // Mostrar una ventana de 3 microciclos centrada en el actual
+                          const windowSize = 3;
+                          const currentPos = microIdx;
+                          
+                          // Calcular el inicio de la ventana
+                          startIdx = Math.max(0, Math.min(
+                            currentPos - Math.floor(windowSize / 2),
+                            sortedMicros.length - windowSize
+                          ));
+                          
+                          visibleMicros = sortedMicros.slice(startIdx, startIdx + windowSize);
+                        }
+
+                        return visibleMicros.map((micro, displayIdx) => {
+                          const realIdx = isMobile && sortedMicros.length > 3 
+                            ? startIdx + displayIdx 
+                            : sortedMicros.findIndex(m => m.id === micro.id);
+                          
+                          return (
+                            <Button
+                              key={micro.id}
+                              variant={realIdx === microIdx ? 'contained' : 'outlined'}
+                              size="small"
+                              sx={{ 
+                                minWidth: { xs: '75px', sm: '110px' },
+                                maxWidth: { xs: '95px', sm: 'none' },
+                                height: { xs: '36px', sm: '40px' },
+                                flexShrink: 0,
+                                bgcolor: realIdx === microIdx ? '#ffe082' : 'rgba(255, 255, 255, 0.08)', 
+                                color: realIdx === microIdx ? '#222' : '#fff',
+                                fontWeight: realIdx === microIdx ? 700 : 600, 
+                                fontSize: { xs: '0.65rem', sm: '0.85rem' },
+                                backdropFilter: 'blur(15px)',
+                                border: realIdx === microIdx ? '2px solid #ffe082' : '1px solid rgba(255, 255, 255, 0.15)',
+                                borderRadius: { xs: '8px', sm: '10px' },
+                                transition: 'all 0.25s ease',
+                                py: { xs: 0.4, sm: 0.8 },
+                                px: { xs: 0.5, sm: 1 },
+                                textTransform: 'none',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                lineHeight: 1.2,
+                                boxShadow: realIdx === microIdx ? '0 4px 12px rgba(255, 224, 130, 0.4)' : '0 2px 6px rgba(0, 0, 0, 0.1)',
+                                ...(displayIdx === visibleMicros.length - 1 && { mr: { xs: 0.5, sm: 1 } }),
+                                '&:hover': {
+                                  backgroundColor: realIdx === microIdx ? '#ffe082' : 'rgba(255, 255, 255, 0.15)',
+                                  transform: 'translateY(-2px)',
+                                  boxShadow: realIdx === microIdx ? '0 6px 16px rgba(255, 224, 130, 0.5)' : '0 4px 10px rgba(255, 255, 255, 0.1)'
+                                },
+                                '&:active': {
+                                  transform: 'translateY(0px)'
+                                }
+                              }}
+                              onClick={() => { setMicroIdx(realIdx); setDiaIdx(0); }}
+                            >
+                              {isMobile ? 
+                                `M${realIdx + 1}` : 
+                                micro.name
+                              }
+                            </Button>
+                          );
+                        });
+                      })()}
                     </Box>
+
                     <IconButton
                       size="small"
                       onClick={() => {
-                        if (microIdx < micros.length - 1) { setMicroIdx(microIdx + 1); setDiaIdx(0); }
+                        if (microIdx < micros.length - 1) { 
+                          setMicroIdx(prev => prev + 1); 
+                          setDiaIdx(0); 
+                        }
                       }}
-                      disabled={microIdx === micros.length - 1}
+                      disabled={microIdx >= micros.length - 1}
+                      sx={{
+                        backgroundColor: microIdx >= micros.length - 1 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 224, 130, 0.2)',
+                        color: microIdx >= micros.length - 1 ? 'rgba(255, 255, 255, 0.3)' : '#ffe082',
+                        backdropFilter: 'blur(10px)',
+                        border: `1px solid ${microIdx >= micros.length - 1 ? 'rgba(255, 255, 255, 0.1)' : 'rgba(255, 224, 130, 0.4)'}`,
+                        width: { xs: 32, sm: 40 },
+                        height: { xs: 32, sm: 40 },
+                        boxShadow: microIdx >= micros.length - 1 ? 'none' : '0 2px 8px rgba(255, 224, 130, 0.2)',
+                        '&:hover': {
+                          backgroundColor: microIdx >= micros.length - 1 ? 'rgba(255, 255, 255, 0.05)' : 'rgba(255, 224, 130, 0.3)',
+                          transform: microIdx >= micros.length - 1 ? 'none' : 'translateY(-1px)',
+                        },
+                        transition: 'all 0.2s ease'
+                      }}
                     >
-                      <ArrowForwardIosIcon fontSize="small" />
+                      <ArrowForwardIosIcon fontSize={isMobile ? 'small' : 'medium'} />
                     </IconButton>
                   </Box>
                 )}
@@ -272,7 +567,56 @@ export const StudentRoutine = () => {
                     onChange={(_, v) => setDiaIdx(v)}
                     variant="scrollable"
                     scrollButtons="auto"
-                    sx={{ mb: 2, minHeight: { xs: 36, sm: 48 } }}
+                    sx={{ 
+                      mb: 2, 
+                      minHeight: { xs: 40, sm: 48 },
+                      width: '100%',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      '& .MuiTabs-scroller': {
+                        overflow: 'auto !important'
+                      },
+                      '& .MuiTabs-scrollButtons': {
+                        width: { xs: 28, sm: 32 },
+                        color: '#2196f3'
+                      },
+                      '& .MuiTab-root': {
+                        backgroundColor: 'rgba(33, 150, 243, 0.15)',
+                        color: '#2196f3',
+                        margin: { xs: '0 2px', sm: '0 4px' },
+                        borderRadius: { xs: '10px', sm: '12px' },
+                        minHeight: { xs: 40, sm: 48 },
+                        fontSize: { xs: '0.8rem', sm: '1rem' },
+                        fontWeight: 600,
+                        backdropFilter: 'blur(15px)',
+                        border: '1px solid rgba(33, 150, 243, 0.25)',
+                        transition: 'all 0.3s ease',
+                        minWidth: { xs: 75, sm: 100 },
+                        maxWidth: { xs: 95, sm: 'none' },
+                        textTransform: 'none',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        boxShadow: '0 2px 6px rgba(33, 150, 243, 0.1)',
+                        lineHeight: 1.2,
+                        '&:hover': {
+                          backgroundColor: 'rgba(33, 150, 243, 0.25)',
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 12px rgba(33, 150, 243, 0.2)'
+                        }
+                      },
+                      '& .MuiTab-root.Mui-selected': {
+                        backgroundColor: '#2196f3',
+                        color: '#fff',
+                        fontWeight: 700,
+                        transform: 'scale(1.03)',
+                        boxShadow: '0 6px 16px rgba(33, 150, 243, 0.5)',
+                        border: '2px solid #2196f3'
+                      },
+                      '& .MuiTabs-indicator': {
+                        display: 'none'
+                      }
+                    }}
                   >
                     {micros[microIdx].days
                       .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0)
@@ -290,8 +634,7 @@ export const StudentRoutine = () => {
                       .map((day, index) => (
                         <Tab 
                           key={day.id} 
-                          label={`DÍA ${day.dia || index + 1}`} 
-                          sx={{ fontSize: { xs: '0.85rem', sm: '1rem' }, minWidth: { xs: 70, sm: 100 } }} 
+                          label={`DÍA ${day.dia || index + 1}`}
                         />
                       ))}
                   </Tabs>
@@ -329,7 +672,14 @@ export const StudentRoutine = () => {
                             return ordenA - ordenB;
                           })
                           .map((ej, i) => (
-                          <Box key={ej.id || i} sx={{ bgcolor: '#ff9800', borderRadius: 3, boxShadow: 3, mb: 1 }}>
+                          <Box key={ej.id || i} sx={{ 
+                            bgcolor: '#ff9800', 
+                            borderRadius: 3, 
+                            boxShadow: '0 8px 32px rgba(255, 152, 0, 0.3)', 
+                            mb: 2,
+                            overflow: 'hidden',
+                            border: '1px solid rgba(255, 255, 255, 0.1)'
+                          }}>
                             <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
                               <Typography variant="h6" fontWeight="bold" align="center" color="#222" sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }}>
                                 {ej.nombre || ej.name}
@@ -337,60 +687,226 @@ export const StudentRoutine = () => {
                               <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
                                 {ej.grupoMuscular || ej.muscle} · {ej.series || ej.type} series · Descanso: {ej.descanso || ej.tempo}
                               </Typography>
-                            <Box sx={{ mt: 1 }}>
-                              <table style={{ width: '100%', background: 'transparent', fontSize: '0.9em', borderCollapse: 'collapse' }}>
+                            <Box sx={{ mt: 1, overflow: 'hidden', width: '100%' }}>
+                              <Box sx={{ overflowX: 'auto', width: '100%' }}>
+                              <table style={{ 
+                                width: '100%', 
+                                minWidth: isMobile ? '280px' : 'auto',
+                                background: 'rgba(255, 255, 255, 0.95)', 
+                                fontSize: isMobile ? '0.7em' : '0.9em', 
+                                borderCollapse: 'collapse',
+                                borderRadius: '12px',
+                                overflow: 'hidden',
+                                backdropFilter: 'blur(10px)',
+                                tableLayout: isMobile ? 'fixed' : 'auto'
+                              }}>
                                 <thead>
-                                  <tr>
-                                    <th style={{ fontWeight: 'bold', borderBottom: 'none', fontSize: '0.85em', textAlign: 'center', padding: '4px', textTransform: 'uppercase' }}>REPETICIONES</th>
-                                    <th style={{ fontWeight: 'bold', borderBottom: 'none', fontSize: '0.85em', textAlign: 'center', padding: '4px', textTransform: 'uppercase' }}>REPS</th>
-                                    <th style={{ fontWeight: 'bold', borderBottom: 'none', fontSize: '0.85em', textAlign: 'center', padding: '4px', textTransform: 'uppercase' }}>CARGA</th>
-                                    <th style={{ fontWeight: 'bold', borderBottom: 'none', fontSize: '0.85em', textAlign: 'center', padding: '4px', textTransform: 'uppercase' }}>RIR ESP</th>
-                                    <th style={{ fontWeight: 'bold', borderBottom: 'none', fontSize: '0.85em', textAlign: 'center', padding: '4px', textTransform: 'uppercase' }}>RIR REAL</th>
-                                    <th style={{ fontWeight: 'bold', borderBottom: 'none', fontSize: '0.85em', textAlign: 'center', padding: '4px', textTransform: 'uppercase' }}>RPE</th>
+                                  <tr style={{ backgroundColor: 'rgba(33, 33, 33, 0.8)' }}>
+                                    <th style={{ 
+                                      fontWeight: 'bold', 
+                                      borderBottom: 'none', 
+                                      fontSize: isMobile ? '0.65em' : '0.8em', 
+                                      textAlign: 'center', 
+                                      padding: isMobile ? '6px 2px' : '8px 4px', 
+                                      textTransform: 'uppercase', 
+                                      color: '#fff',
+                                      width: isMobile ? '18%' : '16.67%'
+                                    }}>
+                                      {isMobile ? 'REPS' : 'REPETICIONES'}
+                                    </th>
+                                    <th style={{ 
+                                      fontWeight: 'bold', 
+                                      borderBottom: 'none', 
+                                      fontSize: isMobile ? '0.65em' : '0.8em', 
+                                      textAlign: 'center', 
+                                      padding: isMobile ? '6px 2px' : '8px 4px', 
+                                      textTransform: 'uppercase', 
+                                      color: '#fff',
+                                      width: isMobile ? '14%' : '16.67%'
+                                    }}>
+                                      REAL
+                                    </th>
+                                    <th style={{ 
+                                      fontWeight: 'bold', 
+                                      borderBottom: 'none', 
+                                      fontSize: isMobile ? '0.65em' : '0.8em', 
+                                      textAlign: 'center', 
+                                      padding: isMobile ? '6px 2px' : '8px 4px', 
+                                      textTransform: 'uppercase', 
+                                      color: '#fff',
+                                      width: isMobile ? '16%' : '16.67%'
+                                    }}>
+                                      CARGA
+                                    </th>
+                                    <th style={{ 
+                                      fontWeight: 'bold', 
+                                      borderBottom: 'none', 
+                                      fontSize: isMobile ? '0.65em' : '0.8em', 
+                                      textAlign: 'center', 
+                                      padding: isMobile ? '6px 2px' : '8px 4px', 
+                                      textTransform: 'uppercase', 
+                                      color: '#fff',
+                                      width: isMobile ? '17%' : '16.67%'
+                                    }}>
+                                      {isMobile ? 'RIR E' : 'RIR ESP'}
+                                    </th>
+                                    <th style={{ 
+                                      fontWeight: 'bold', 
+                                      borderBottom: 'none', 
+                                      fontSize: isMobile ? '0.65em' : '0.8em', 
+                                      textAlign: 'center', 
+                                      padding: isMobile ? '6px 2px' : '8px 4px', 
+                                      textTransform: 'uppercase', 
+                                      color: '#fff',
+                                      width: isMobile ? '17%' : '16.67%'
+                                    }}>
+                                      {isMobile ? 'RIR R' : 'RIR REAL'}
+                                    </th>
+                                    <th style={{ 
+                                      fontWeight: 'bold', 
+                                      borderBottom: 'none', 
+                                      fontSize: isMobile ? '0.65em' : '0.8em', 
+                                      textAlign: 'center', 
+                                      padding: isMobile ? '6px 2px' : '8px 4px', 
+                                      textTransform: 'uppercase', 
+                                      color: '#fff',
+                                      width: isMobile ? '18%' : '16.67%'
+                                    }}>
+                                      RPE
+                                    </th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {(() => {
-                                    // Si no hay sets, crear sets vacíos basados en el número de series
+                                    // Asegurar que siempre hay el número correcto de sets
                                     let sets = ej.sets || [];
-                                    if (!sets.length && ej.series) {
-                                      const numSeries = parseInt(ej.series) || 3;
-                                      sets = Array.from({ length: numSeries }, (_, index) => ({
-                                        id: `temp-${ej.id}-${index}`,
+                                    const numSeries = parseInt(ej.series) || 3;
+                                    
+                                    // Crear un array con todos los órdenes que deberían existir
+                                    const expectedOrders = Array.from({ length: numSeries }, (_, i) => i + 1);
+                                    
+                                    // Identificar qué órdenes faltan
+                                    const existingOrders = sets.map(s => s.order || 0);
+                                    const missingOrders = expectedOrders.filter(order => !existingOrders.includes(order));
+                                    
+                                    // Crear sets temporales para los órdenes que faltan
+                                    missingOrders.forEach(order => {
+                                      sets.push({
+                                        id: `temp-${ej.id}-${order}-${Date.now()}`,
                                         reps: 0,
                                         load: 0,
                                         actualRir: 0,
                                         actualRpe: 0,
                                         notes: '',
-                                        order: index + 1
-                                      }));
-                                    }
+                                        order: order,
+                                        exerciseId: ej.id // Agregar referencia al ejercicio
+                                      });
+                                    });
+                                    
+                                    // Ordenar sets por order
+                                    sets.sort((a, b) => (a.order || 0) - (b.order || 0));
                                     
                                     return sets.map((serie, j) => (
-                                      <tr key={serie.id || j} style={{ cursor: 'pointer' }} onClick={() => handleEditSet(serie)}>
-                                        <td style={{ fontSize: '0.95em', textAlign: 'center', padding: '4px', textTransform: 'none' }}>{ej.repeticiones || ej.repRange}</td>
-                                        <td style={{ fontSize: '0.95em', textAlign: 'center', padding: '4px', textTransform: 'none' }}>{serie.reps || 0}</td>
-                                        <td style={{ fontSize: '0.95em', textAlign: 'center', padding: '4px', textTransform: 'none' }}>{serie.load || 0}</td>
-                                        <td style={{ fontSize: '0.95em', textAlign: 'center', padding: '4px', textTransform: 'none' }}>{ej.rirEsperado || serie.expectedRir || 0}</td>
-                                        <td style={{ fontSize: '0.95em', textAlign: 'center', padding: '4px', textTransform: 'none' }}>{serie.actualRir || 0}</td>
-                                        <td style={{ fontSize: '0.95em', textAlign: 'center', padding: '4px', textTransform: 'none' }}>{serie.actualRpe || 0}</td>
+                                      <tr 
+                                        key={serie.id || j} 
+                                        style={{ 
+                                          cursor: 'pointer',
+                                          backgroundColor: j % 2 === 0 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(240, 240, 240, 0.8)',
+                                          transition: 'all 0.2s ease',
+                                          minHeight: '48px'
+                                        }} 
+                                        onClick={() => handleEditSet(serie)}
+                                        onMouseEnter={(e) => {
+                                          e.target.closest('tr').style.backgroundColor = 'rgba(255, 193, 7, 0.3)';
+                                          e.target.closest('tr').style.transform = 'scale(1.02)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                          e.target.closest('tr').style.backgroundColor = j % 2 === 0 ? 'rgba(255, 255, 255, 0.8)' : 'rgba(240, 240, 240, 0.8)';
+                                          e.target.closest('tr').style.transform = 'scale(1)';
+                                        }}
+                                      >
+                                        <td style={{ 
+                                          fontSize: isMobile ? '0.8em' : '0.9em', 
+                                          textAlign: 'center', 
+                                          padding: isMobile ? '8px 2px' : '12px 4px', 
+                                          textTransform: 'none', 
+                                          color: '#222', 
+                                          fontWeight: '500' 
+                                        }}>
+                                          {ej.repeticiones || ej.repRange}
+                                        </td>
+                                        <td style={{ 
+                                          fontSize: isMobile ? '0.8em' : '0.9em', 
+                                          textAlign: 'center', 
+                                          padding: isMobile ? '8px 2px' : '12px 4px', 
+                                          textTransform: 'none', 
+                                          color: '#222', 
+                                          fontWeight: serie.reps > 0 ? 'bold' : 'normal' 
+                                        }}>
+                                          {serie.reps || 0}
+                                        </td>
+                                        <td style={{ 
+                                          fontSize: isMobile ? '0.8em' : '0.9em', 
+                                          textAlign: 'center', 
+                                          padding: isMobile ? '8px 2px' : '12px 4px', 
+                                          textTransform: 'none', 
+                                          color: '#222', 
+                                          fontWeight: serie.load > 0 ? 'bold' : 'normal' 
+                                        }}>
+                                          {serie.load || 0}
+                                        </td>
+                                        <td style={{ 
+                                          fontSize: isMobile ? '0.8em' : '0.9em', 
+                                          textAlign: 'center', 
+                                          padding: isMobile ? '8px 2px' : '12px 4px', 
+                                          textTransform: 'none', 
+                                          color: '#222', 
+                                          fontWeight: '500' 
+                                        }}>
+                                          {ej.rirEsperado || serie.expectedRir || 0}
+                                        </td>
+                                        <td style={{ 
+                                          fontSize: isMobile ? '0.8em' : '0.9em', 
+                                          textAlign: 'center', 
+                                          padding: isMobile ? '8px 2px' : '12px 4px', 
+                                          textTransform: 'none', 
+                                          color: '#222', 
+                                          fontWeight: serie.actualRir > 0 ? 'bold' : 'normal' 
+                                        }}>
+                                          {serie.actualRir || 0}
+                                        </td>
+                                        <td style={{ 
+                                          fontSize: isMobile ? '0.8em' : '0.9em', 
+                                          textAlign: 'center', 
+                                          padding: isMobile ? '8px 2px' : '12px 4px', 
+                                          textTransform: 'none', 
+                                          color: '#222', 
+                                          fontWeight: serie.actualRpe > 0 ? 'bold' : 'normal' 
+                                        }}>
+                                          {serie.actualRpe || 0}
+                                        </td>
                                       </tr>
                                     ));
                                   })()}
                                 </tbody>
                               </table>
+                              </Box>
                             </Box>
                             {/* Mostrar observaciones debajo de la tabla en mobile si existen */}
                             {(() => {
                               // Usar la misma lógica para obtener sets
                               let sets = ej.sets || [];
-                              if (!sets.length && ej.series) {
-                                const numSeries = parseInt(ej.series) || 3;
-                                sets = Array.from({ length: numSeries }, (_, index) => ({
-                                  id: `temp-${ej.id}-${index}`,
+                              const numSeries = parseInt(ej.series) || 3;
+                              
+                              // Si faltan sets, completar con sets temporales
+                              while (sets.length < numSeries) {
+                                const newOrder = sets.length + 1;
+                                sets.push({
+                                  id: `temp-${ej.id}-${newOrder}-${Date.now()}`,
                                   notes: ''
-                                }));
+                                });
                               }
+                              
                               return sets && sets.some(s => s.notes) && (
                                 <Box sx={{ mt: 1 }}>
                                   <Typography variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.85rem', sm: '0.95rem' }, textAlign: 'center', bgcolor: '#fffde7', borderRadius: 2, p: 1 }}>
@@ -416,5 +932,5 @@ export const StudentRoutine = () => {
           onSave={handleSaveSet}
           onClose={() => setEditModalOpen(false)}
         />
-      </>
+      </Box>
   )}
