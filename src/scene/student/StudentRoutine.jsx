@@ -370,11 +370,11 @@ export const StudentRoutine = () => {
                       },
                       '& .MuiTabs-scrollButtons': {
                         width: { xs: 28, sm: 32 },
-                        color: '#ff9800'
+                        color: '#20b2aa'
                       },
                       '& .MuiTab-root': {
-                        backgroundColor: 'rgba(255, 152, 0, 0.15)',
-                        color: '#ff9800',
+                        backgroundColor: 'rgba(32, 178, 170, 0.15)',
+                        color: '#20b2aa',
                         margin: { xs: '0 1px', sm: '0 3px' },
                         borderRadius: { xs: '8px', sm: '10px' },
                         minHeight: { xs: 36, sm: 48 },
@@ -393,18 +393,18 @@ export const StudentRoutine = () => {
                         boxShadow: '0 2px 6px rgba(255, 152, 0, 0.1)',
                         lineHeight: 1.2,
                         '&:hover': {
-                          backgroundColor: 'rgba(255, 152, 0, 0.25)',
+                          backgroundColor: 'rgba(32, 178, 170, 0.25)',
                           transform: 'translateY(-2px)',
-                          boxShadow: '0 4px 12px rgba(255, 152, 0, 0.2)'
+                          boxShadow: '0 4px 12px rgba(32, 178, 170, 0.2)'
                         }
                       },
                       '& .MuiTab-root.Mui-selected': {
-                        backgroundColor: '#ff9800',
+                        backgroundColor: '#20b2aa',
                         color: '#fff',
                         fontWeight: 700,
                         transform: 'scale(1.03)',
-                        boxShadow: '0 6px 16px rgba(255, 152, 0, 0.5)',
-                        border: '2px solid #ff9800'
+                        boxShadow: '0 6px 16px rgba(32, 178, 170, 0.5)',
+                        border: '2px solid #20b2aa'
                       },
                       '& .MuiTabs-indicator': {
                         display: 'none'
@@ -427,14 +427,14 @@ export const StudentRoutine = () => {
                     <Typography
                       variant="h6"
                       sx={{
-                        backgroundColor: '#ff9800',
+                        backgroundColor: '#20b2aa',
                         color: '#fff',
                         fontWeight: 700,
                         padding: { xs: '6px 14px', sm: '10px 20px' },
                         borderRadius: { xs: '8px', sm: '10px' },
                         display: 'inline-block',
                         fontSize: { xs: '0.85rem', sm: '1rem' },
-                        boxShadow: '0 4px 12px rgba(255, 152, 0, 0.4)'
+                        boxShadow: '0 4px 12px rgba(32, 178, 170, 0.4)'
                       }}
                     >
                       🎯 {mesos[0].name}
@@ -748,9 +748,9 @@ export const StudentRoutine = () => {
                           </span>
                         ) : (
                           <span style={{ 
-                            color: '#ff9800', 
+                            color: '#20b2aa', 
                             fontWeight: 500,
-                            background: 'rgba(255, 152, 0, 0.1)',
+                            background: 'rgba(32, 178, 170, 0.1)',
                             padding: '2px 6px',
                             borderRadius: '4px',
                             marginLeft: '8px',
@@ -770,18 +770,18 @@ export const StudentRoutine = () => {
                           })
                           .map((ej, i) => (
                           <Box key={ej.id || i} sx={{ 
-                            bgcolor: '#ff9800', 
+                            bgcolor: '#ffe082', 
                             borderRadius: 3, 
-                            boxShadow: '0 8px 32px rgba(255, 152, 0, 0.3)', 
+                            boxShadow: '0 8px 32px rgba(255, 224, 130, 0.4)', 
                             mb: 2,
                             overflow: 'hidden',
                             border: '1px solid rgba(255, 255, 255, 0.1)'
                           }}>
                             <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
-                              <Typography variant="h6" fontWeight="bold" align="center" color="#222" sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }}>
+                              <Typography variant="h6" fontWeight="bold" align="center" color="#000" sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }}>
                                 {ej.nombre || ej.name}
                               </Typography>
-                              <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' } }}>
+                              <Typography variant="body2" color="#000" align="center" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' }, opacity: 0.8 }}>
                                 {ej.grupoMuscular || ej.muscle} · {ej.series || ej.type} series · Descanso: {ej.descanso || ej.tempo}
                               </Typography>
                             <Box sx={{ mt: 1, overflow: 'hidden', width: '100%' }}>
@@ -791,7 +791,8 @@ export const StudentRoutine = () => {
                                 minWidth: isMobile ? '280px' : 'auto',
                                 background: 'rgba(255, 255, 255, 0.95)', 
                                 fontSize: isMobile ? '0.7em' : '0.9em', 
-                                borderCollapse: 'collapse',
+                                borderCollapse: 'separate',
+                                borderSpacing: '0',
                                 borderRadius: '12px',
                                 overflow: 'hidden',
                                 backdropFilter: 'blur(10px)',
@@ -807,7 +808,8 @@ export const StudentRoutine = () => {
                                       padding: isMobile ? '6px 2px' : '8px 4px', 
                                       textTransform: 'uppercase', 
                                       color: '#fff',
-                                      width: isMobile ? '18%' : '16.67%'
+                                      width: isMobile ? '18%' : '16.67%',
+                                      borderTopLeftRadius: '12px'
                                     }}>
                                       {isMobile ? 'REPS' : 'REPETICIONES'}
                                     </th>
@@ -867,7 +869,8 @@ export const StudentRoutine = () => {
                                       padding: isMobile ? '6px 2px' : '8px 4px', 
                                       textTransform: 'uppercase', 
                                       color: '#fff',
-                                      width: isMobile ? '18%' : '16.67%'
+                                      width: isMobile ? '18%' : '16.67%',
+                                      borderTopRightRadius: '12px'
                                     }}>
                                       RPE
                                     </th>
@@ -903,7 +906,9 @@ export const StudentRoutine = () => {
                                     // Ordenar sets por order
                                     sets.sort((a, b) => (a.order || 0) - (b.order || 0));
                                     
-                                    return sets.map((serie, j) => (
+                                    return sets.map((serie, j) => {
+                                      const isLastRow = j === sets.length - 1;
+                                      return (
                                       <tr 
                                         key={serie.id || j} 
                                         style={{ 
@@ -928,7 +933,8 @@ export const StudentRoutine = () => {
                                           padding: isMobile ? '8px 2px' : '12px 4px', 
                                           textTransform: 'none', 
                                           color: '#222', 
-                                          fontWeight: '500' 
+                                          fontWeight: '500',
+                                          ...(isLastRow && { borderBottomLeftRadius: '12px' })
                                         }}>
                                           {ej.repeticiones || ej.repRange}
                                         </td>
@@ -978,12 +984,14 @@ export const StudentRoutine = () => {
                                           padding: isMobile ? '8px 2px' : '12px 4px', 
                                           textTransform: 'none', 
                                           color: '#222', 
-                                          fontWeight: serie.actualRpe > 0 ? 'bold' : 'normal' 
+                                          fontWeight: serie.actualRpe > 0 ? 'bold' : 'normal',
+                                          ...(isLastRow && { borderBottomRightRadius: '12px' })
                                         }}>
                                           {serie.actualRpe || 0}
                                         </td>
                                       </tr>
-                                    ));
+                                      );
+                                    });
                                   })()}
                                 </tbody>
                               </table>
