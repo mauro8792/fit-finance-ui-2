@@ -93,7 +93,7 @@ export const FitFinanceApp = () => {
               
               {userType === 'coach' && (
                 <>
-                  <Route path="/" element={<DashboardMock />} />
+                  <Route path="/" element={<CoachDashboard coachUserId={user?.id} />} />
                   <Route path="/coach/dashboard" element={<CoachDashboard coachUserId={user?.id} />} />
                   <Route path="/coach/alumno/:id" element={<StudentDetail />} />
                   <Route path="/coach/macrocycle/:id" element={<MacrocycleDetail />} />

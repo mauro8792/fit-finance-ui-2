@@ -78,7 +78,6 @@ export const checkingAuthentication = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const userType = localStorage.getItem("userType");
 
       if (!token) {
         return dispatch(onLogout());
@@ -100,13 +99,16 @@ export const checkingAuthentication = () => {
 
       const data = await response.json();
 
-      if (userType === "student") {
-        const studentId = localStorage.getItem("studentId");
+      // Actualizar localStorage con los datos del backend
+      localStorage.setItem("userType", data.userType);
+
+      if (data.userType === "student") {
+        localStorage.setItem("studentId", data.student.id);
         dispatch(
           onLogin({
             user: data.user,
-            student: { id: studentId, ...data.student },
-            userType: "student",
+            student: data.student,
+            userType: data.userType,
             token,
           })
         );
@@ -114,7 +116,7 @@ export const checkingAuthentication = () => {
         dispatch(
           onLogin({
             user: data.user,
-            userType: "admin",
+            userType: data.userType,
             token,
           })
         );
