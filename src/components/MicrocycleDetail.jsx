@@ -131,7 +131,15 @@ const MicrocycleDetail = () => {
             color: '#7f8c8d',
             textAlign: 'center'
           }}>
-            <strong>Período:</strong> {microcycle.startDate} - {microcycle.endDate}
+            <strong>Período:</strong> {(() => {
+              if (!microcycle.days || microcycle.days.length === 0) return 'Sin días configurados';
+              const daysWithDates = microcycle.days.filter(day => day.fecha);
+              if (daysWithDates.length === 0) return 'Sin fechas asignadas';
+              const dates = daysWithDates.map(day => new Date(day.fecha)).sort((a, b) => a - b);
+              const startDate = dates[0].toLocaleDateString();
+              const endDate = dates[dates.length - 1].toLocaleDateString();
+              return `${startDate} - ${endDate}`;
+            })()}
           </div>
         </div>
       </div>

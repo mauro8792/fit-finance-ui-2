@@ -214,25 +214,6 @@ const MicrocycleManager = () => {
                     e.target.style.boxShadow = '0 2px 12px #0003';
                   }}
                 >
-                  {/* Badge de número secuencial */}
-                  <div style={{
-                    position: 'absolute',
-                    top: -8,
-                    right: -8,
-                    background: '#ff9800',
-                    color: '#fff',
-                    borderRadius: '50%',
-                    width: 24,
-                    height: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                    fontWeight: 700
-                  }}>
-                    {index + 1}
-                  </div>
-
                   {/* Título secuencial */}
                   <div style={{ 
                     fontWeight: 700, 
@@ -248,7 +229,13 @@ const MicrocycleManager = () => {
                     marginBottom: 4, 
                     color: '#ccc' 
                   }}>
-                    <b>Inicio:</b> {micro.startDate ? new Date(micro.startDate).toLocaleDateString() : '-'}
+                    <b>Inicio:</b> {(() => {
+                      if (!micro.days || micro.days.length === 0) return 'Sin días';
+                      const daysWithDates = micro.days.filter(day => day.fecha);
+                      if (daysWithDates.length === 0) return 'Sin fechas';
+                      const dates = daysWithDates.map(day => new Date(day.fecha)).sort((a, b) => a - b);
+                      return dates[0].toLocaleDateString();
+                    })()}
                   </div>
                   
                   <div style={{ 
@@ -256,7 +243,13 @@ const MicrocycleManager = () => {
                     marginBottom: 8, 
                     color: '#ccc' 
                   }}>
-                    <b>Fin:</b> {micro.endDate ? new Date(micro.endDate).toLocaleDateString() : '-'}
+                    <b>Fin:</b> {(() => {
+                      if (!micro.days || micro.days.length === 0) return 'Sin días';
+                      const daysWithDates = micro.days.filter(day => day.fecha);
+                      if (daysWithDates.length === 0) return 'Sin fechas';
+                      const dates = daysWithDates.map(day => new Date(day.fecha)).sort((a, b) => a - b);
+                      return dates[dates.length - 1].toLocaleDateString();
+                    })()}
                   </div>
 
                   {micro.objetivo && (
@@ -270,40 +263,12 @@ const MicrocycleManager = () => {
                     </div>
                   )}
 
-                  {/* Botones de acción */}
+                  {/* Botón de acción */}
                   <div style={{ 
                     marginTop: 'auto',
                     display: 'flex',
-                    gap: 8,
                     width: '100%'
                   }}>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/coach/mesocycle/${mesocycleId}/microcycle/${micro.id}/edit`);
-                      }}
-                      style={{
-                        flex: 1,
-                        padding: '6px 8px',
-                        borderRadius: 6,
-                        border: 'none',
-                        background: '#ffd700',
-                        color: '#222',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        fontSize: 11,
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.target.style.background = '#ffed4e';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.target.style.background = '#ffd700';
-                      }}
-                    >
-                      Editar
-                    </button>
-                    
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -311,14 +276,14 @@ const MicrocycleManager = () => {
                       }}
                       style={{
                         flex: 1,
-                        padding: '6px 8px',
+                        padding: '8px 12px',
                         borderRadius: 6,
                         border: 'none',
                         background: '#4caf50',
                         color: '#fff',
                         fontWeight: 600,
                         cursor: 'pointer',
-                        fontSize: 11,
+                        fontSize: 12,
                         transition: 'all 0.2s ease'
                       }}
                       onMouseEnter={(e) => {
