@@ -782,7 +782,17 @@ export const StudentRoutine = () => {
                                 {ej.nombre || ej.name}
                               </Typography>
                               <Typography variant="body2" color="#000" align="center" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' }, opacity: 0.8 }}>
-                                {ej.grupoMuscular || ej.muscle} · {ej.series || ej.type} series · Descanso: {ej.descanso || ej.tempo}
+                                {/* Corregir datos intercambiados entre series y repeticiones */}
+                                {(() => {
+                                  const series = ej.series || '';
+                                  const reps = ej.repeticiones || ej.repRange || '';
+                                  
+                                  // Si series contiene un guión (ej: "10-12"), probablemente son repeticiones intercambiadas
+                                  const correctSeries = series.includes('-') && !reps.includes('-') ? reps : series;
+                                  const correctReps = series.includes('-') && !reps.includes('-') ? series : reps;
+                                  
+                                  return `${ej.grupoMuscular || ej.muscle} · ${correctSeries} series · Reps: ${correctReps} · Descanso: ${ej.descanso || ej.tempo}`;
+                                })()}
                               </Typography>
                             <Box sx={{ mt: 1, overflow: 'hidden', width: '100%' }}>
                               <Box sx={{ overflowX: 'auto', width: '100%' }}>
@@ -880,7 +890,12 @@ export const StudentRoutine = () => {
                                   {(() => {
                                     // Asegurar que siempre hay el número correcto de sets
                                     let sets = ej.sets || [];
-                                    const numSeries = parseInt(ej.series) || 3;
+                                    
+                                    // Corregir el número de series si están intercambiadas
+                                    const series = ej.series || '';
+                                    const reps = ej.repeticiones || ej.repRange || '';
+                                    const correctSeries = series.includes('-') && !reps.includes('-') ? reps : series;
+                                    const numSeries = parseInt(correctSeries) || 3;
                                     
                                     // Crear un array con todos los órdenes que deberían existir
                                     const expectedOrders = Array.from({ length: numSeries }, (_, i) => i + 1);
@@ -1001,7 +1016,12 @@ export const StudentRoutine = () => {
                             {(() => {
                               // Usar la misma lógica para obtener sets
                               let sets = ej.sets || [];
-                              const numSeries = parseInt(ej.series) || 3;
+                              
+                              // Corregir el número de series si están intercambiadas
+                              const series = ej.series || '';
+                              const reps = ej.repeticiones || ej.repRange || '';
+                              const correctSeries = series.includes('-') && !reps.includes('-') ? reps : series;
+                              const numSeries = parseInt(correctSeries) || 3;
                               
                               // Si faltan sets, completar con sets temporales
                               while (sets.length < numSeries) {
