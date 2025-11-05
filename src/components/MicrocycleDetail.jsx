@@ -2,6 +2,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import fitFinanceApi from "../api/fitFinanceApi";
 import EditSetModal from "./EditSetModal";
+import RestTimerWidget from "./RestTimerWidget";
+import './MicrocycleDetail.css';
 
 const MicrocycleDetail = () => {
   const { id } = useParams();
@@ -10,6 +12,11 @@ const MicrocycleDetail = () => {
   const [loading, setLoading] = useState(true);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSet, setSelectedSet] = useState(null);
+  const [selectedExerciseForSet, setSelectedExerciseForSet] = useState(null);
+  
+  // Timer de descanso
+  const [showTimer, setShowTimer] = useState(false);
+  const [timerDuration, setTimerDuration] = useState(0);
   
   // Estados para edición de ejercicios por el entrenador
   const [exerciseEditModalOpen, setExerciseEditModalOpen] = useState(false);
@@ -27,9 +34,23 @@ const MicrocycleDetail = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const handleEditSet = (set) => {
+  const handleEditSet = (set, exercise) => {
     setSelectedSet(set);
+    setSelectedExerciseForSet(exercise);
     setEditModalOpen(true);
+  };
+
+  const handleStartTimer = (duration) => {
+    setTimerDuration(duration);
+    setShowTimer(true);
+  };
+
+  const handleTimerComplete = () => {
+    // Opcional: hacer algo cuando el timer termina
+  };
+
+  const handleTimerDismiss = () => {
+    setShowTimer(false);
   };
 
   const handleSaveSet = async (form) => {
@@ -102,9 +123,13 @@ const MicrocycleDetail = () => {
   return (
     <div style={{ 
       background: '#f5f5f5', 
-      minHeight: '100vh', 
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
       padding: isMobile ? 12 : 20, 
-      fontFamily: 'system-ui, -apple-system, sans-serif'
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+      boxSizing: 'border-box'
     }}>
       {/* Header simplificado */}
       <div style={{ marginBottom: 24 }}>
@@ -160,8 +185,15 @@ const MicrocycleDetail = () => {
               .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0); // Solo días con ejercicios
             
             return sortedDays.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {sortedDays.map((day) => (
+              <div style={{ 
+                flex: 1, 
+                overflow: 'auto',
+                paddingBottom: showTimer ? '100px' : '20px'
+              }}
+              className="scrollable-content"
+              >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {sortedDays.map((day) => (
                   <div key={day.id} style={{
                     background: '#f8f9fa',
                     borderRadius: 8,
@@ -447,7 +479,7 @@ const MicrocycleDetail = () => {
                                           background: index % 2 === 0 ? '#444' : '#555',
                                           transition: 'background 0.2s ease'
                                         }} 
-                                        onClick={() => handleEditSet(set)}
+                                        onClick={() => handleEditSet(set, ex)}
                                         onMouseEnter={(e) => {
                                           e.target.style.background = '#666';
                                         }}
@@ -486,7 +518,8 @@ const MicrocycleDetail = () => {
                       </div>
                     )}
                   </div>
-                ))}
+                  ))}
+                </div>
               </div>
             ) : (
               <div style={{ 
@@ -521,12 +554,23 @@ const MicrocycleDetail = () => {
         )}
       </div>
 
+      {/* Timer de descanso widget */}
+      {showTimer && (
+        <RestTimerWidget
+          restTime={timerDuration}
+          onComplete={handleTimerComplete}
+          onDismiss={handleTimerDismiss}
+        />
+      )}
+
       {/* Modal de edición */}
       <EditSetModal
         open={editModalOpen}
         set={selectedSet || {}}
+        restTime={selectedExerciseForSet ? (parseInt(selectedExerciseForSet.descanso) || 0) * 60 : 0}
         onSave={handleSaveSet}
         onClose={() => setEditModalOpen(false)}
+        onStartTimer={handleStartTimer}
       />
 
       {/* Modal de edición de ejercicios para entrenador */}
