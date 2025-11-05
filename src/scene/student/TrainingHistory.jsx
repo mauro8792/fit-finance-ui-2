@@ -49,6 +49,7 @@ const TrainingHistory = () => {
   const [viewMode, setViewMode] = useState(0); // 0 = Progreso, 1 = Lista
   const [openDialog, setOpenDialog] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [visibleItems, setVisibleItems] = useState(5); // Para "cargar más"
   const { student } = useAuthStore();
   const isMobile = useMediaQuery('(max-width:768px)');
 
@@ -242,6 +243,13 @@ const TrainingHistory = () => {
       exercise.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [uniqueExercises, searchTerm]);
+
+  // Historial visible con "cargar más"
+  const visibleHistory = useMemo(() => {
+    return historyData.slice(0, visibleItems);
+  }, [historyData, visibleItems]);
+
+  const hasMore = visibleItems < historyData.length;
 
   // Datos del ejercicio seleccionado
   const selectedExerciseData = useMemo(() => {
@@ -489,122 +497,186 @@ const TrainingHistory = () => {
             </Grid>
           )}
 
-          {/* Selector de ejercicio */}
+          {/* Selector de ejercicio - Botón simple */}
           {uniqueExercises.length > 0 && (
-            <Card sx={{ mb: 3 }}>
+            <Card sx={{ mb: 3, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
               <CardContent>
-                {isMobile ? (
-                  // Versión MOBILE: Lista con buscador
-                  <>
-                    <Typography variant="body2" color="text.secondary" mb={2}>
-                      Selecciona un ejercicio para ver su progreso:
+                <Typography variant="body2" color="white" mb={2} textAlign="center">
+                  {selectedExercise ? 'Ejercicio seleccionado:' : 'Selecciona un ejercicio'}
                     </Typography>
                     
-                    {/* Buscador */}
-                    <TextField
+                <Button
+                  variant="contained"
                       fullWidth
-                      size="small"
+                  size="large"
+                  onClick={() => setOpenDialog(true)}
+                  sx={{
+                    bgcolor: 'white',
+                    color: '#667eea',
+                    fontWeight: 'bold',
+                    py: 2,
+                    fontSize: '1.1rem',
+                    '&:hover': {
+                      bgcolor: 'rgba(255,255,255,0.9)',
+                      transform: 'translateY(-2px)',
+                      boxShadow: '0 8px 16px rgba(0,0,0,0.2)'
+                    },
+                    transition: 'all 0.2s'
+                  }}
+                  startIcon={<ChartIcon />}
+                >
+                  {selectedExercise || 'Elegir Ejercicio'}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Modal simple para seleccionar ejercicio */}
+          {openDialog && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              zIndex: 9999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
+            }}>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                width: '100%',
+                maxWidth: '500px',
+                height: '80vh',
+                display: 'flex',
+                flexDirection: 'column'
+              }}>
+                {/* Header */}
+                <div style={{
+                  backgroundColor: '#667eea',
+                  color: 'white',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexShrink: 0
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '18px' }}>📊 Selecciona un Ejercicio</h3>
+                  <button 
+                    onClick={() => {
+                      setOpenDialog(false);
+                      setSearchTerm('');
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'white',
+                      fontSize: '24px',
+                      cursor: 'pointer',
+                      padding: '0',
+                      width: '30px',
+                      height: '30px'
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {/* Buscador */}
+                <div style={{ padding: '16px', backgroundColor: '#f5f5f5', borderBottom: '1px solid #ddd', flexShrink: 0 }}>
+                  <input
+                    type="text"
                       placeholder="Buscar ejercicio..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <SearchIcon />
-                          </InputAdornment>
-                        ),
-                      }}
-                      sx={{ mb: 2 }}
-                    />
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: '#666' }}>
+                    {filteredExercises?.length || 0} ejercicios disponibles
+                  </p>
+                </div>
 
-                    {/* Mostrar ejercicio seleccionado */}
-                    {selectedExercise && (
-                      <Box sx={{ 
-                        p: 1.5, 
-                        mb: 2, 
-                        bgcolor: 'rgba(25, 118, 210, 0.1)', 
-                        borderRadius: 1,
-                        border: '1px solid #1976d2'
-                      }}>
-                        <Typography variant="body2" color="text.secondary" fontSize="0.75rem">
-                          Seleccionado:
-                        </Typography>
-                        <Typography variant="body1" fontWeight="bold" color="primary">
-                          {selectedExercise}
-                        </Typography>
-                      </Box>
-                    )}
-
-                    {/* Lista de ejercicios con scroll */}
-                    <Box sx={{ maxHeight: 200, overflowY: 'auto', border: '1px solid #ddd', borderRadius: 1 }}>
-                      {filteredExercises.length === 0 ? (
-                        <Box sx={{ p: 3, textAlign: 'center' }}>
-                          <Typography variant="body2" color="text.secondary">
-                            No se encontraron ejercicios
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Stack spacing={0}>
-                          {filteredExercises.map((exercise) => (
-                            <Box
-                              key={exercise}
+                {/* Lista de ejercicios */}
+                <div style={{
+                  flex: '1 1 0',
+                  overflowY: 'scroll',
+                  backgroundColor: 'white',
+                  WebkitOverflowScrolling: 'touch'
+                }}>
+                  {(() => {
+                    console.log('📋 Renderizando lista, filteredExercises:', filteredExercises);
+                    console.log('📋 Tipo:', typeof filteredExercises, 'Es array?', Array.isArray(filteredExercises));
+                    console.log('📋 Longitud:', filteredExercises?.length);
+                    
+                    if (!filteredExercises || filteredExercises.length === 0) {
+                      return (
+                        <div style={{ padding: '40px', textAlign: 'center' }}>
+                          <p style={{ color: '#999', margin: 0 }}>
+                            {searchTerm ? 'No se encontraron ejercicios' : 'No hay ejercicios disponibles'}
+                          </p>
+                        </div>
+                      );
+                    }
+                    
+                    return (
+                      <div style={{ width: '100%' }}>
+                        {filteredExercises.map((exercise, index) => {
+                          console.log(`Renderizando ejercicio ${index}:`, exercise);
+                          return (
+                            <div
+                              key={`exercise-${index}-${exercise}`}
                               onClick={() => {
-                                console.log('📱 Mobile click en:', exercise);
+                                console.log('✅ Seleccionado:', exercise);
                                 setSelectedExercise(exercise);
+                                setOpenDialog(false);
+                                setSearchTerm('');
                               }}
-                              sx={{
-                                p: 1.5,
-                                borderBottom: '1px solid #f0f0f0',
-                                cursor: 'pointer',
-                                bgcolor: selectedExercise === exercise ? 'rgba(25, 118, 210, 0.15)' : 'transparent',
-                                transition: 'all 0.2s',
-                                '&:active': {
-                                  bgcolor: 'rgba(25, 118, 210, 0.25)',
-                                  transform: 'scale(0.98)'
-                                },
-                                '&:last-child': {
-                                  borderBottom: 'none'
+                              onMouseEnter={(e) => {
+                                if (selectedExercise !== exercise) {
+                                  e.currentTarget.style.backgroundColor = '#f5f5f5';
                                 }
                               }}
+                              onMouseLeave={(e) => {
+                                if (selectedExercise !== exercise) {
+                                  e.currentTarget.style.backgroundColor = 'white';
+                                }
+                              }}
+                              style={{
+                                padding: '16px 20px',
+                                borderBottom: '1px solid #e0e0e0',
+                                cursor: 'pointer',
+                                backgroundColor: selectedExercise === exercise ? '#e3f2fd' : 'white',
+                                color: selectedExercise === exercise ? '#1976d2' : '#333',
+                                fontSize: '16px',
+                                fontWeight: selectedExercise === exercise ? 'bold' : 'normal',
+                                minHeight: '50px',
+                                display: 'block',
+                                width: '100%',
+                                boxSizing: 'border-box',
+                                transition: 'all 0.2s ease'
+                              }}
                             >
-                              <Typography 
-                                variant="body2" 
-                                fontWeight={selectedExercise === exercise ? 'bold' : 'normal'}
-                                color={selectedExercise === exercise ? 'primary' : 'text.primary'}
-                              >
-                                {exercise}
-                              </Typography>
-                            </Box>
-                          ))}
-                        </Stack>
-                      )}
-                    </Box>
-                  </>
-                ) : (
-                  // Versión DESKTOP: Select de Material-UI
-                  <FormControl fullWidth>
-                    <InputLabel id="exercise-select-label">Selecciona un ejercicio para ver su progreso</InputLabel>
-                    <Select
-                      labelId="exercise-select-label"
-                      id="exercise-select"
-                      value={selectedExercise}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        console.log('✅ onChange disparado con valor:', value);
-                        setSelectedExercise(value);
-                      }}
-                      label="Selecciona un ejercicio para ver su progreso"
-                    >
-                      {uniqueExercises.map((exercise) => (
-                        <MenuItem key={exercise} value={exercise}>
-                          {exercise}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
-              </CardContent>
-            </Card>
+                              {selectedExercise === exercise && '✓ '}{exercise}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Análisis de progreso del ejercicio seleccionado */}
@@ -846,7 +918,7 @@ const TrainingHistory = () => {
             </Card>
           ) : (
             <Stack spacing={2}>
-              {historyData.map((day, index) => (
+              {visibleHistory.map((day, index) => (
                 <Card 
                   key={`${day.id}-${index}`} 
                   sx={{ 
@@ -928,6 +1000,34 @@ const TrainingHistory = () => {
                   </CardContent>
                 </Card>
               ))}
+              
+              {/* Botón Cargar Más */}
+              {hasMore && (
+                <Box sx={{ textAlign: 'center', mt: 3 }}>
+                  <Button
+                    variant="contained"
+                    size="large"
+                    onClick={() => setVisibleItems(prev => prev + 5)}
+                    sx={{
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      color: 'white',
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: 3,
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        boxShadow: '0 6px 20px rgba(102, 126, 234, 0.6)',
+                      },
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    Ver Más Entrenamientos ({historyData.length - visibleItems} restantes)
+                  </Button>
+                </Box>
+              )}
             </Stack>
           )}
         </>
