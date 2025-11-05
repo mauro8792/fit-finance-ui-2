@@ -1,6 +1,8 @@
-import { Box, Typography, CircularProgress, Button, Tabs, Tab, IconButton, Stack, useMediaQuery, useTheme } from '@mui/material';
+import { Box, Typography, CircularProgress, Button, Tabs, Tab, IconButton, Stack, useMediaQuery, useTheme, Fab } from '@mui/material';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import TodayIcon from '@mui/icons-material/Today';
+import HistoryIcon from '@mui/icons-material/History';
 import { useEffect, useState } from 'react';
 import { useAuthStore } from '../../hooks';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
@@ -25,6 +27,10 @@ export const StudentRoutine = () => {
   const [diaIdx, setDiaIdx] = useState(0);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedSet, setSelectedSet] = useState(null);
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [exerciseHistory, setExerciseHistory] = useState([]);
+  const [historyViewMode, setHistoryViewMode] = useState('friendly'); // 'friendly' o 'compact'
 
   useEffect(() => {
     const fetchMacros = async () => {
@@ -106,6 +112,207 @@ export const StudentRoutine = () => {
   const handleEditSet = (set) => {
     setSelectedSet(set);
     setEditModalOpen(true);
+  };
+
+  // Función para comparar fechas ignorando la hora
+  const isToday = (fecha) => {
+    if (!fecha) return false;
+    const today = new Date();
+    const dayDate = new Date(fecha + 'T12:00:00');
+    return (
+      today.getFullYear() === dayDate.getFullYear() &&
+      today.getMonth() === dayDate.getMonth() &&
+      today.getDate() === dayDate.getDate()
+    );
+  };
+
+  // Función para encontrar el día de hoy en los microciclos
+  const findTodayDay = () => {
+    if (!micros || micros.length === 0) return null;
+
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+
+    for (let microIdx = 0; microIdx < micros.length; microIdx++) {
+      const micro = micros[microIdx];
+      if (!micro.days) continue;
+
+      const diasConEjercicios = micro.days
+        .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0)
+        .sort((a, b) => {
+          const getDayNumber = (day) => {
+            if (day.dia) return parseInt(day.dia) || 0;
+            const match = day.nombre?.match(/\d+/);
+            return match ? parseInt(match[0]) : 0;
+          };
+          return getDayNumber(a) - getDayNumber(b);
+        });
+
+      for (let diaIdx = 0; diaIdx < diasConEjercicios.length; diaIdx++) {
+        const day = diasConEjercicios[diaIdx];
+        if (day.fecha) {
+          const dayDate = new Date(day.fecha + 'T12:00:00');
+          const dayDateStr = dayDate.toISOString().split('T')[0];
+          
+          if (dayDateStr === todayStr) {
+            return { microIdx, diaIdx };
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  // Función para navegar al día de hoy
+  const navigateToToday = () => {
+    const todayDay = findTodayDay();
+    if (todayDay) {
+      setMicroIdx(todayDay.microIdx);
+      setDiaIdx(todayDay.diaIdx);
+      // Hacer scroll al inicio del contenido
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Verificar si el día actual es hoy
+  const isCurrentDayToday = () => {
+    if (!micros || micros.length === 0 || !micros[microIdx]?.days) return false;
+    
+    const diasConEjercicios = micros[microIdx].days
+      .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0)
+      .sort((a, b) => {
+        const getDayNumber = (day) => {
+          if (day.dia) return parseInt(day.dia) || 0;
+          const match = day.nombre?.match(/\d+/);
+          return match ? parseInt(match[0]) : 0;
+        };
+        return getDayNumber(a) - getDayNumber(b);
+      });
+    
+    const diaActual = diasConEjercicios[diaIdx];
+    return diaActual ? isToday(diaActual.fecha) : false;
+  };
+
+  // Función para obtener el historial de un ejercicio
+  const getExerciseHistory = (exercise) => {
+    if (!exercise || !micros || micros.length === 0) return [];
+
+    const history = [];
+    const exerciseName = exercise.nombre || exercise.name;
+    const exerciseId = exercise.id;
+
+    // Obtener el número del día actual para priorizar el mismo día en microciclos anteriores
+    const getCurrentDayNumber = () => {
+      if (!micros[microIdx]?.days) return null;
+      const diasConEjercicios = micros[microIdx].days
+        .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0)
+        .sort((a, b) => {
+          const getDayNumber = (day) => {
+            if (day.dia) return parseInt(day.dia) || 0;
+            const match = day.nombre?.match(/\d+/);
+            return match ? parseInt(match[0]) : 0;
+          };
+          return getDayNumber(a) - getDayNumber(b);
+        });
+      const diaActual = diasConEjercicios[diaIdx];
+      if (diaActual?.dia) return parseInt(diaActual.dia);
+      const match = diaActual?.nombre?.match(/\d+/);
+      return match ? parseInt(match[0]) : null;
+    };
+    const currentDayNumber = getCurrentDayNumber();
+
+    // Buscar el ejercicio en todos los microciclos anteriores al actual
+    for (let i = 0; i < micros.length; i++) {
+      const micro = micros[i];
+      if (!micro.days) continue;
+
+      // Solo buscar en microciclos anteriores al actual
+      if (i >= microIdx) continue;
+
+      const diasConEjercicios = micro.days
+        .filter(day => !day.esDescanso && day.exercises && day.exercises.length > 0)
+        .sort((a, b) => {
+          const getDayNumber = (day) => {
+            if (day.dia) return parseInt(day.dia) || 0;
+            const match = day.nombre?.match(/\d+/);
+            return match ? parseInt(match[0]) : 0;
+          };
+          return getDayNumber(a) - getDayNumber(b);
+        });
+
+      // Priorizar el mismo día si está disponible
+      const dayOrder = currentDayNumber !== null 
+        ? [...diasConEjercicios].sort((a, b) => {
+            const getDayNumber = (day) => {
+              if (day.dia) return parseInt(day.dia) || 0;
+              const match = day.nombre?.match(/\d+/);
+              return match ? parseInt(match[0]) : 0;
+            };
+            const aNum = getDayNumber(a);
+            const bNum = getDayNumber(b);
+            // Si uno coincide con el día actual, priorizarlo
+            if (aNum === currentDayNumber && bNum !== currentDayNumber) return -1;
+            if (bNum === currentDayNumber && aNum !== currentDayNumber) return 1;
+            return aNum - bNum;
+          })
+        : diasConEjercicios;
+
+      for (const day of dayOrder) {
+        if (!day.exercises) continue;
+
+        // Buscar el ejercicio por ID o por nombre
+        const foundExercise = day.exercises.find(ej => 
+          ej.id === exerciseId || 
+          (ej.nombre || ej.name) === exerciseName
+        );
+
+        if (foundExercise && foundExercise.sets && foundExercise.sets.length > 0) {
+          // Obtener la carga promedio y máxima de los sets
+          const sets = foundExercise.sets.filter(s => s.load > 0);
+          if (sets.length > 0) {
+            const maxLoad = Math.max(...sets.map(s => s.load));
+            const avgLoad = sets.reduce((sum, s) => sum + s.load, 0) / sets.length;
+            const maxReps = Math.max(...sets.map(s => s.reps || 0));
+            const avgRir = sets.some(s => s.actualRir > 0) 
+              ? sets.filter(s => s.actualRir > 0).reduce((sum, s) => sum + s.actualRir, 0) / sets.filter(s => s.actualRir > 0).length 
+              : null;
+
+            const dayNumber = day.dia ? parseInt(day.dia) : null;
+            const isSameDay = currentDayNumber !== null && dayNumber === currentDayNumber;
+
+            history.push({
+              microName: micro.name,
+              microNumber: micro.name.match(/\d+/) ? parseInt(micro.name.match(/\d+/)[0]) : i + 1,
+              dayName: day.nombre || `Día ${day.dia}`,
+              dayNumber,
+              fecha: day.fecha,
+              maxLoad,
+              avgLoad,
+              maxReps,
+              avgRir,
+              sets: sets.length,
+              microIndex: i,
+              isSameDay // Marcar si es el mismo día
+            });
+          }
+        }
+      }
+    }
+
+    // Ordenar: primero por si es el mismo día (prioridad), luego por microciclo (más reciente primero)
+    return history.sort((a, b) => {
+      if (a.isSameDay && !b.isSameDay) return -1;
+      if (!a.isSameDay && b.isSameDay) return 1;
+      return b.microIndex - a.microIndex;
+    });
+  };
+
+  // Función para abrir el modal de historial
+  const handleOpenHistory = (exercise) => {
+    setSelectedExercise(exercise);
+    const history = getExerciseHistory(exercise);
+    setExerciseHistory(history);
+    setHistoryModalOpen(true);
   };
 
   const handleSaveSet = async (form) => {
@@ -778,9 +985,27 @@ export const StudentRoutine = () => {
                             border: '1px solid rgba(255, 255, 255, 0.1)'
                           }}>
                             <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
-                              <Typography variant="h6" fontWeight="bold" align="center" color="#000" sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }}>
-                                {ej.nombre || ej.name}
-                              </Typography>
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                                <Typography variant="h6" fontWeight="bold" align="center" color="#000" sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }}>
+                                  {ej.nombre || ej.name}
+                                </Typography>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenHistory(ej)}
+                                  sx={{
+                                    color: '#2196f3',
+                                    backgroundColor: 'rgba(33, 150, 243, 0.1)',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(33, 150, 243, 0.2)',
+                                    },
+                                    width: { xs: 28, sm: 32 },
+                                    height: { xs: 28, sm: 32 },
+                                  }}
+                                  title="Ver historial"
+                                >
+                                  <HistoryIcon fontSize="small" />
+                                </IconButton>
+                              </Box>
                               <Typography variant="body2" color="#000" align="center" sx={{ fontSize: { xs: '0.9rem', sm: '1rem' }, opacity: 0.8 }}>
                                 {/* Corregir datos intercambiados entre series y repeticiones */}
                                 {(() => {
@@ -1057,5 +1282,395 @@ export const StudentRoutine = () => {
           onSave={handleSaveSet}
           onClose={() => setEditModalOpen(false)}
         />
+        
+        {/* Modal de Historial del Ejercicio */}
+        {historyModalOpen && (
+          <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: isMobile ? '16px' : '24px'
+          }}
+          onClick={() => setHistoryModalOpen(false)}
+          >
+            <div
+              style={{
+                background: "#222",
+                padding: isMobile ? 16 : 24,
+                borderRadius: 12,
+                minWidth: isMobile ? '90%' : 500,
+                maxWidth: isMobile ? '95%' : 600,
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                color: "#fff",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.5)"
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: '#ffe082', fontSize: { xs: '1.2rem', sm: '1.5rem' } }}>
+                  💪 {selectedExercise?.nombre || selectedExercise?.name}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() => setHistoryViewMode(historyViewMode === 'friendly' ? 'compact' : 'friendly')}
+                  sx={{
+                    color: '#fff',
+                    fontSize: '0.75rem',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: 'rgba(255, 255, 255, 0.1)' }
+                  }}
+                >
+                  {historyViewMode === 'friendly' ? '📊 Compacto' : '💚 Amigable'}
+                </Button>
+              </Box>
+              
+              {exerciseHistory.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 6 }}>
+                  <Typography variant="h6" sx={{ color: '#999', mb: 1 }}>📭</Typography>
+                  <Typography align="center" color="text.secondary">
+                    No hay historial disponible para este ejercicio en microciclos anteriores.
+                  </Typography>
+                </Box>
+              ) : historyViewMode === 'friendly' ? (
+                // VERSIÓN FRIENDLY - Más visual y amigable
+                <Stack spacing={2.5}>
+                  {exerciseHistory.map((entry, index) => {
+                    // Calcular progresión (comparar con la sesión más reciente anterior)
+                    // El índice 0 es el más reciente, así que comparamos con el siguiente en el array (más antiguo)
+                    // Pero queremos mostrar "cuánto subiste desde la última vez", así que comparamos con el más reciente anterior
+                    const nextEntry = exerciseHistory[index + 1]; // Más antiguo en el tiempo
+                    const loadChange = nextEntry ? entry.maxLoad - nextEntry.maxLoad : 0;
+                    const loadChangePercent = nextEntry && nextEntry.maxLoad > 0 
+                      ? ((loadChange / nextEntry.maxLoad) * 100).toFixed(0) 
+                      : null;
+                    
+                    return (
+                      <Box
+                        key={index}
+                        sx={{
+                          bgcolor: entry.isSameDay 
+                            ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%)'
+                            : 'linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)',
+                          borderRadius: 3,
+                          p: 3,
+                          border: entry.isSameDay ? '2px solid #4caf50' : '1px solid rgba(255, 255, 255, 0.15)',
+                          transition: 'all 0.3s ease',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          '&::before': entry.isSameDay ? {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '4px',
+                            height: '100%',
+                            bgcolor: '#4caf50',
+                            borderRadius: '3px 0 0 3px'
+                          } : {},
+                          '&:hover': {
+                            transform: 'translateY(-4px) scale(1.02)',
+                            boxShadow: entry.isSameDay 
+                              ? '0 8px 24px rgba(76, 175, 80, 0.3)'
+                              : '0 8px 24px rgba(0, 0, 0, 0.3)',
+                          }
+                        }}
+                      >
+                        {/* Header con fecha y badge */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                          <Box>
+                            <Typography variant="h6" fontWeight="bold" sx={{ 
+                              color: entry.isSameDay ? '#4caf50' : '#fff',
+                              fontSize: { xs: '1rem', sm: '1.1rem' },
+                              mb: 0.5
+                            }}>
+                              {entry.microName}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#999', fontSize: '0.85rem' }}>
+                              {entry.dayName}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ textAlign: 'right' }}>
+                            {entry.isSameDay && (
+                              <Box sx={{
+                                bgcolor: '#4caf50',
+                                color: '#fff',
+                                px: 1.5,
+                                py: 0.5,
+                                borderRadius: 2,
+                                fontSize: '0.75rem',
+                                fontWeight: 'bold',
+                                mb: 1,
+                                display: 'inline-block'
+                              }}>
+                                ⭐ Mismo día
+                              </Box>
+                            )}
+                            {entry.fecha && (
+                              <Typography variant="caption" sx={{ 
+                                color: '#999',
+                                fontSize: '0.8rem',
+                                display: 'block',
+                                mt: entry.isSameDay ? 0.5 : 0
+                              }}>
+                                📅 {new Date(entry.fecha + 'T12:00:00').toLocaleDateString('es-ES', {
+                                  day: '2-digit',
+                                  month: 'short',
+                                  year: '2-digit'
+                                })}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+
+                        {/* Carga principal destacada */}
+                        <Box sx={{
+                          bgcolor: 'rgba(255, 224, 130, 0.2)',
+                          borderRadius: 2,
+                          p: 2,
+                          mb: 2,
+                          border: '1px solid rgba(255, 224, 130, 0.3)',
+                          textAlign: 'center'
+                        }}>
+                          <Typography variant="caption" sx={{ 
+                            color: '#ffe082', 
+                            display: 'block',
+                            fontSize: '0.85rem',
+                            mb: 0.5
+                          }}>
+                            💪 Carga Máxima
+                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                            <Typography variant="h4" fontWeight="bold" sx={{ color: '#fff' }}>
+                              {entry.maxLoad}
+                            </Typography>
+                            <Typography variant="body2" sx={{ color: '#999', fontSize: '1rem' }}>
+                              kg
+                            </Typography>
+                            {loadChangePercent && (
+                              <Typography variant="caption" sx={{
+                                bgcolor: loadChange > 0 ? 'rgba(76, 175, 80, 0.3)' : loadChange < 0 ? 'rgba(244, 67, 54, 0.3)' : 'rgba(158, 158, 158, 0.3)',
+                                color: loadChange > 0 ? '#4caf50' : loadChange < 0 ? '#f44336' : '#9e9e9e',
+                                px: 1,
+                                py: 0.3,
+                                borderRadius: 1,
+                                fontSize: '0.7rem',
+                                fontWeight: 'bold'
+                              }}>
+                                {loadChange > 0 ? '↑' : loadChange < 0 ? '↓' : '='} {Math.abs(loadChangePercent)}%
+                              </Typography>
+                            )}
+                          </Box>
+                          <Typography variant="caption" sx={{ color: '#999', fontSize: '0.75rem', mt: 0.5, display: 'block' }}>
+                            Promedio: {Math.round(entry.avgLoad)} kg
+                          </Typography>
+                        </Box>
+
+                        {/* Métricas secundarias en fila */}
+                        <Box sx={{ display: 'flex', gap: 1.5 }}>
+                          <Box sx={{ 
+                            flex: 1, 
+                            bgcolor: 'rgba(33, 150, 243, 0.15)', 
+                            borderRadius: 2, 
+                            p: 1.5,
+                            textAlign: 'center',
+                            border: '1px solid rgba(33, 150, 243, 0.2)'
+                          }}>
+                            <Typography variant="caption" sx={{ color: '#2196f3', display: 'block', mb: 0.5, fontSize: '0.75rem' }}>
+                              🔢 Reps
+                            </Typography>
+                            <Typography variant="h6" fontWeight="bold" sx={{ color: '#fff' }}>
+                              {entry.maxReps}
+                            </Typography>
+                          </Box>
+                          
+                          <Box sx={{ 
+                            flex: 1, 
+                            bgcolor: 'rgba(76, 175, 80, 0.15)', 
+                            borderRadius: 2, 
+                            p: 1.5,
+                            textAlign: 'center',
+                            border: '1px solid rgba(76, 175, 80, 0.2)'
+                          }}>
+                            <Typography variant="caption" sx={{ color: '#4caf50', display: 'block', mb: 0.5, fontSize: '0.75rem' }}>
+                              📊 Sets
+                            </Typography>
+                            <Typography variant="h6" fontWeight="bold" sx={{ color: '#fff' }}>
+                              {entry.sets}
+                            </Typography>
+                          </Box>
+                          
+                          {entry.avgRir !== null && (
+                            <Box sx={{ 
+                              flex: 1, 
+                              bgcolor: 'rgba(32, 178, 170, 0.15)', 
+                              borderRadius: 2, 
+                              p: 1.5,
+                              textAlign: 'center',
+                              border: '1px solid rgba(32, 178, 170, 0.2)'
+                            }}>
+                              <Typography variant="caption" sx={{ color: '#20b2aa', display: 'block', mb: 0.5, fontSize: '0.75rem' }}>
+                                ⚡ RIR
+                              </Typography>
+                              <Typography variant="h6" fontWeight="bold" sx={{ color: '#fff' }}>
+                                {entry.avgRir.toFixed(1)}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              ) : (
+                // VERSIÓN COMPACTA - La original
+                <Stack spacing={2}>
+                  {exerciseHistory.map((entry, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        bgcolor: entry.isSameDay ? 'rgba(76, 175, 80, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                        borderRadius: 2,
+                        p: 2,
+                        border: entry.isSameDay ? '2px solid #4caf50' : '1px solid rgba(255, 255, 255, 0.1)',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                          bgcolor: entry.isSameDay ? 'rgba(76, 175, 80, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                          transform: 'translateY(-2px)',
+                        }
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="subtitle1" fontWeight="bold" sx={{ color: entry.isSameDay ? '#4caf50' : '#2196f3' }}>
+                            {entry.microName} - {entry.dayName}
+                          </Typography>
+                          {entry.isSameDay && (
+                            <Typography variant="caption" sx={{ 
+                              bgcolor: '#4caf50', 
+                              color: '#fff', 
+                              px: 1, 
+                              py: 0.5, 
+                              borderRadius: 1,
+                              fontWeight: 'bold'
+                            }}>
+                              Mismo día
+                            </Typography>
+                          )}
+                        </Box>
+                        {entry.fecha && (
+                          <Typography variant="caption" sx={{ color: '#4caf50' }}>
+                            📅 {new Date(entry.fecha + 'T12:00:00').toLocaleDateString('es-ES', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit'
+                            })}
+                          </Typography>
+                        )}
+                      </Box>
+                      
+                      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5, mt: 1.5 }}>
+                        <Box sx={{ bgcolor: 'rgba(255, 224, 130, 0.15)', borderRadius: 1, p: 1 }}>
+                          <Typography variant="caption" sx={{ color: '#ffe082', display: 'block' }}>
+                            Carga Máx
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold" sx={{ color: '#fff' }}>
+                            {entry.maxLoad} kg
+                          </Typography>
+                        </Box>
+                        
+                        <Box sx={{ bgcolor: 'rgba(255, 224, 130, 0.15)', borderRadius: 1, p: 1 }}>
+                          <Typography variant="caption" sx={{ color: '#ffe082', display: 'block' }}>
+                            Carga Prom
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold" sx={{ color: '#fff' }}>
+                            {Math.round(entry.avgLoad)} kg
+                          </Typography>
+                        </Box>
+                        
+                        <Box sx={{ bgcolor: 'rgba(33, 150, 243, 0.15)', borderRadius: 1, p: 1 }}>
+                          <Typography variant="caption" sx={{ color: '#2196f3', display: 'block' }}>
+                            Reps Máx
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold" sx={{ color: '#fff' }}>
+                            {entry.maxReps}
+                          </Typography>
+                        </Box>
+                        
+                        <Box sx={{ bgcolor: 'rgba(76, 175, 80, 0.15)', borderRadius: 1, p: 1 }}>
+                          <Typography variant="caption" sx={{ color: '#4caf50', display: 'block' }}>
+                            Sets
+                          </Typography>
+                          <Typography variant="body1" fontWeight="bold" sx={{ color: '#fff' }}>
+                            {entry.sets}
+                          </Typography>
+                        </Box>
+                      </Box>
+                      
+                      {entry.avgRir !== null && (
+                        <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+                          <Typography variant="caption" sx={{ color: '#20b2aa' }}>
+                            RIR Promedio: <strong>{entry.avgRir.toFixed(1)}</strong>
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                  ))}
+                </Stack>
+              )}
+              
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                <Button
+                  onClick={() => setHistoryModalOpen(false)}
+                  variant="contained"
+                  sx={{
+                    backgroundColor: '#2196f3',
+                    color: '#fff',
+                    fontWeight: 600,
+                    px: 4,
+                    '&:hover': {
+                      backgroundColor: '#1976d2',
+                    }
+                  }}
+                >
+                  Cerrar
+                </Button>
+              </Box>
+            </div>
+          </div>
+        )}
+        
+        {/* Botón flotante para navegar al día de hoy - se muestra solo cuando NO estás viendo el día de hoy */}
+        {selectedMesoId && micros.length > 0 && findTodayDay() !== null && !isCurrentDayToday() && (
+          <Fab
+            color="primary"
+            aria-label="Ir al día de hoy"
+            onClick={navigateToToday}
+            sx={{
+              position: 'fixed',
+              bottom: { xs: 80, sm: 24 },
+              right: { xs: 16, sm: 24 },
+              backgroundColor: '#2196f3',
+              color: '#fff',
+              zIndex: 1000,
+              boxShadow: '0 4px 12px rgba(33, 150, 243, 0.4)',
+              '&:hover': {
+                backgroundColor: '#1976d2',
+                boxShadow: '0 6px 16px rgba(33, 150, 243, 0.6)',
+                transform: 'scale(1.05)',
+              },
+              transition: 'all 0.3s ease',
+            }}
+          >
+            <TodayIcon />
+          </Fab>
+        )}
       </Box>
   )}
