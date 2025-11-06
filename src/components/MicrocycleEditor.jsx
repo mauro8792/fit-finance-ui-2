@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import ExerciseCatalogSelector from './ExerciseCatalogSelector';
+import CreateExerciseDialog from './CreateExerciseDialog';
 
 const defaultSet = { reps: 0, load: 0, expectedRir: 0, actualRir: 0, actualRpe: 0, notes: '' };
 const defaultExercise = { name: '', muscle: '', type: '', repRange: '', tempo: '', sets: [ { ...defaultSet } ] };
@@ -12,6 +14,12 @@ export default function MicrocycleEditor({ initialStructure, onSubmit, mesocycle
       ? initialStructure.days.map((d, i) => ({ ...d, number: i + 1 }))
       : []
   );
+  
+  // Estados para dialogs del catálogo
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [currentDayIdx, setCurrentDayIdx] = useState(null);
+  
   // Agregar día
   const addDay = () => {
     setDays(prev => [
@@ -30,9 +38,38 @@ export default function MicrocycleEditor({ initialStructure, onSubmit, mesocycle
   const [endDate] = useState(initialStructure?.endDate || '');
   const [objetivo] = useState(initialStructure?.objetivo || '');
 
-  // Agregar ejercicio a un día
+  // Abrir selector de ejercicios del catálogo
+  const openExerciseSelector = (dayIdx) => {
+    setCurrentDayIdx(dayIdx);
+    setSelectorOpen(true);
+  };
+
+  // Cuando se selecciona un ejercicio del catálogo
+  const handleSelectExercise = (exercise) => {
+    if (currentDayIdx !== null) {
+      const newExercise = {
+        ...defaultExercise,
+        name: exercise.name,
+        muscle: exercise.muscleGroup,
+        exerciseCatalogId: exercise.id, // Guardar la referencia
+      };
+      setDays(days => days.map((d, i) => 
+        i === currentDayIdx 
+          ? { ...d, exercises: [...d.exercises, newExercise] } 
+          : d
+      ));
+    }
+  };
+
+  // Cuando se crea un nuevo ejercicio personalizado
+  const handleExerciseCreated = (newExercise) => {
+    // Automáticamente agregarlo al día actual
+    handleSelectExercise(newExercise);
+  };
+
+  // Función legacy (mantener por si se usa en otro lado)
   const addExercise = (dayIdx) => {
-    setDays(days => days.map((d, i) => i === dayIdx ? { ...d, exercises: [ ...d.exercises, { ...defaultExercise } ] } : d));
+    openExerciseSelector(dayIdx);
   };
 
   // Editar ejercicio
@@ -152,6 +189,23 @@ export default function MicrocycleEditor({ initialStructure, onSubmit, mesocycle
 
       <button type="button" onClick={addDay} style={{ background: '#ffd700', color: '#222', fontWeight: 700, fontSize: 16, border: 'none', borderRadius: 8, padding: '8px 24px', marginTop: 10 }}>Agregar día</button>
       <button type="submit" style={{ background: '#ffd700', color: '#222', fontWeight: 700, fontSize: 18, border: 'none', borderRadius: 8, padding: '12px 32px', marginTop: 18 }}>Guardar microciclo</button>
+      
+      {/* Dialogs del catálogo de ejercicios */}
+      <ExerciseCatalogSelector
+        open={selectorOpen}
+        onClose={() => setSelectorOpen(false)}
+        onSelect={handleSelectExercise}
+        onCreateNew={() => {
+          setSelectorOpen(false);
+          setCreateDialogOpen(true);
+        }}
+      />
+      
+      <CreateExerciseDialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        onSuccess={handleExerciseCreated}
+      />
     </form>
   );
 }

@@ -39,7 +39,31 @@ import {
   Search as SearchIcon,
   Close as CloseIcon
 } from '@mui/icons-material';
+import { Line } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 import { useAuthStore } from '../../hooks';
+
+// Registrar componentes de Chart.js
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const TrainingHistory = () => {
   const [historyData, setHistoryData] = useState([]);
@@ -185,7 +209,8 @@ const TrainingHistory = () => {
       if (!day.exercises) return;
       
       day.exercises.forEach(exercise => {
-        const exerciseName = exercise.nombre || exercise.name;
+        // Obtener nombre desde el catálogo
+        const exerciseName = exercise.exerciseCatalog?.name || exercise.nombre || exercise.name;
         if (!exerciseName) return;
         
         const sets = exercise.sets || [];
@@ -268,7 +293,7 @@ const TrainingHistory = () => {
     const firstSession = selectedExerciseData[0];
     const lastSession = selectedExerciseData[selectedExerciseData.length - 1];
     const bestSession = selectedExerciseData.reduce((best, current) => 
-      (current.maxLoad || 0) > (best.maxLoad || 0) ? current : best
+      (current.totalVolume || 0) > (best.totalVolume || 0) ? current : best
     );
     
     const loadImprovement = (lastSession.maxLoad || 0) - (firstSession.maxLoad || 0);
@@ -301,100 +326,133 @@ const TrainingHistory = () => {
     setsTotal: historyData.reduce((total, day) => total + day.totalSets, 0)
   };
 
-  // Componente para gráfico simple de línea
-  const SimpleLineChart = ({ data, width = 400, height = 200 }) => {
-    if (data.length === 0) return null;
+  // Componente para gráfico con Chart.js (mucho más profesional y animado)
+  const ProgressChart = ({ data }) => {
+    if (!data || data.length === 0) {
+      return (
+        <Box sx={{ textAlign: 'center', py: 4 }}>
+          <Typography color="text.secondary">
+            No hay datos suficientes para mostrar el gráfico
+          </Typography>
+        </Box>
+      );
+    }
     
-    const padding = { top: 20, right: 20, bottom: 40, left: 50 };
-    const chartWidth = width - padding.left - padding.right;
-    const chartHeight = height - padding.top - padding.bottom;
-    
-    const maxLoad = Math.max(...data.map(d => d.maxLoad));
-    const minLoad = Math.min(...data.map(d => d.maxLoad));
-    const loadRange = maxLoad - minLoad || 1;
-    
-    const points = data.map((session, index) => {
-      const x = (index / (data.length - 1 || 1)) * chartWidth;
-      const y = chartHeight - ((session.maxLoad - minLoad) / loadRange) * chartHeight;
-      return { x: x + padding.left, y: y + padding.top, load: session.maxLoad };
-    });
-    
-    const pathData = points.map((point, index) => 
-      `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`
-    ).join(' ');
-    
-    return (
-      <svg width={width} height={height} style={{ overflow: 'visible' }}>
-        <line 
-          x1={padding.left} 
-          y1={padding.top} 
-          x2={padding.left} 
-          y2={height - padding.bottom} 
-          stroke="#666" 
-          strokeWidth="2"
-        />
-        <line 
-          x1={padding.left} 
-          y1={height - padding.bottom} 
-          x2={width - padding.right} 
-          y2={height - padding.bottom} 
-          stroke="#666" 
-          strokeWidth="2"
-        />
-        
-        <path 
-          d={pathData} 
-          fill="none" 
-          stroke="#2196f3" 
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        
-        {points.map((point, index) => (
-          <g key={index}>
-            <circle 
-              cx={point.x} 
-              cy={point.y} 
-              r="5" 
-              fill="#2196f3"
-              stroke="#fff"
-              strokeWidth="2"
-            />
-            <text 
-              x={point.x} 
-              y={point.y - 10} 
-              textAnchor="middle" 
-              fontSize="10" 
-              fill="#fff"
-              fontWeight="bold"
-            >
-              {point.load}
-            </text>
-          </g>
-        ))}
-        
-        <text 
-          x={width / 2} 
-          y={height - 5} 
-          textAnchor="middle" 
-          fontSize="12" 
-          fill="#999"
-        >
-          Sesiones
-        </text>
-        <text 
-          x={10} 
-          y={height / 2} 
-          textAnchor="middle" 
-          fontSize="12" 
-          fill="#999"
-          transform={`rotate(-90, 10, ${height / 2})`}
-        >
-          Carga (kg)
-        </text>
-      </svg>
-    );
+    const chartData = {
+      labels: data.map((session, index) => {
+        // Extraer nombre del día (ej: "Día 3")
+        const dayName = session.dia || `Día ${index + 1}`;
+        // Extraer número de microciclo (ej: "Microciclo 1" -> "M1")
+        const microMatch = session.microciclo?.match(/\d+/);
+        const microNum = microMatch ? `M${microMatch[0]}` : '';
+        return microNum ? `${dayName} - ${microNum}` : dayName;
+      }),
+      datasets: [
+        {
+          label: 'Volumen Total (kg)',
+          data: data.map(session => session.totalVolume),
+          borderColor: '#4caf50',
+          backgroundColor: 'rgba(76, 175, 80, 0.15)',
+          borderWidth: 3,
+          fill: true,
+          tension: 0.4,
+          pointBackgroundColor: '#4caf50',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          pointHoverRadius: 9,
+          pointHoverBackgroundColor: '#388e3c',
+          pointHoverBorderWidth: 3,
+        }
+      ]
+    };
+
+    const options = {
+      responsive: true,
+      maintainAspectRatio: true,
+      aspectRatio: isMobile ? 1.2 : 2,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          labels: {
+            color: '#fff',
+            font: {
+              size: 12,
+              weight: 'bold'
+            },
+            usePointStyle: true,
+            padding: 15
+          }
+        },
+        tooltip: {
+          enabled: true,
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: '#2196f3',
+          borderWidth: 2,
+          padding: 12,
+          displayColors: true,
+          callbacks: {
+            label: function(context) {
+              const sessionData = data[context.dataIndex];
+              return `Volumen: ${context.parsed.y.toFixed(0)} kg`;
+            },
+            afterLabel: function(context) {
+              const sessionData = data[context.dataIndex];
+              return [
+                `Carga máx: ${sessionData.maxLoad} kg`,
+                `Sets: ${sessionData.totalSets}`,
+                `Reps máx: ${sessionData.maxReps}`,
+                `Día: ${sessionData.dia}`,
+                `Microciclo: ${sessionData.microciclo}`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+            drawBorder: false,
+          },
+          ticks: {
+            color: '#999',
+            font: {
+              size: 11
+            }
+          }
+        },
+        y: {
+          beginAtZero: false,
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)',
+            drawBorder: false,
+          },
+          ticks: {
+            color: '#999',
+            font: {
+              size: 11
+            },
+            callback: function(value) {
+              return value + ' kg';
+            }
+          }
+        }
+      },
+      animation: {
+        duration: 1500,
+        easing: 'easeInOutQuart'
+      }
+    };
+
+    return <Line data={chartData} options={options} />;
   };
 
   if (loading) {
@@ -685,44 +743,22 @@ const TrainingHistory = () => {
               {/* Estadísticas de progreso */}
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={4}>
-                  <Card sx={{ bgcolor: 'rgba(33, 150, 243, 0.1)', border: '1px solid #2196f3' }}>
-                    <CardContent>
-                      <Typography variant="body2" color="text.secondary" mb={1}>
-                        Mejora de Carga
-                      </Typography>
-                      <Typography variant="h4" fontWeight="bold" color="#2196f3">
-                        {progressStats.loadImprovement > 0 ? '+' : ''}{progressStats.loadImprovement.toFixed(1)} kg
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        ({progressStats.loadImprovementPercent}%)
-                      </Typography>
-                      <Typography variant="body2" mt={1}>
-                        <strong>Primera sesión:</strong> {progressStats.firstSession.maxLoad} kg
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Última sesión:</strong> {progressStats.lastSession.maxLoad} kg
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                
-                <Grid item xs={12} sm={4}>
                   <Card sx={{ bgcolor: 'rgba(76, 175, 80, 0.1)', border: '1px solid #4caf50' }}>
                     <CardContent>
                       <Typography variant="body2" color="text.secondary" mb={1}>
-                        Mejor Sesión
+                        Mejora de Volumen
                       </Typography>
                       <Typography variant="h4" fontWeight="bold" color="#4caf50">
-                        {progressStats.bestSession.maxLoad} kg
+                        {progressStats.volumeImprovement > 0 ? '+' : ''}{progressStats.volumeImprovement.toFixed(0)} kg
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {progressStats.bestSession.dia} - {progressStats.bestSession.microciclo}
+                        ({progressStats.volumeImprovementPercent}%)
                       </Typography>
                       <Typography variant="body2" mt={1}>
-                        <strong>Volumen:</strong> {progressStats.bestSession.totalVolume.toFixed(0)} kg
+                        <strong>Primera sesión:</strong> {progressStats.firstSession.totalVolume.toFixed(0)} kg
                       </Typography>
                       <Typography variant="body2">
-                        <strong>Reps máx:</strong> {progressStats.bestSession.maxReps}
+                        <strong>Última sesión:</strong> {progressStats.lastSession.totalVolume.toFixed(0)} kg
                       </Typography>
                     </CardContent>
                   </Card>
@@ -732,19 +768,39 @@ const TrainingHistory = () => {
                   <Card sx={{ bgcolor: 'rgba(255, 152, 0, 0.1)', border: '1px solid #ff9800' }}>
                     <CardContent>
                       <Typography variant="body2" color="text.secondary" mb={1}>
-                        Total Sesiones
+                        Mejor Sesión (Mayor Volumen)
                       </Typography>
                       <Typography variant="h4" fontWeight="bold" color="#ff9800">
+                        {progressStats.bestSession.totalVolume.toFixed(0)} kg
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {progressStats.bestSession.dia} - {progressStats.bestSession.microciclo}
+                      </Typography>
+                      <Typography variant="body2" mt={1}>
+                        <strong>Carga máx:</strong> {progressStats.bestSession.maxLoad} kg
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Reps máx:</strong> {progressStats.bestSession.maxReps}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                
+                <Grid item xs={12} sm={4}>
+                  <Card sx={{ bgcolor: 'rgba(156, 39, 176, 0.1)', border: '1px solid #9c27b0' }}>
+                    <CardContent>
+                      <Typography variant="body2" color="text.secondary" mb={1}>
+                        Total Sesiones
+                      </Typography>
+                      <Typography variant="h4" fontWeight="bold" color="#9c27b0">
                         {progressStats.totalSessions}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Sesiones registradas
                       </Typography>
-                      {progressStats.volumeImprovementPercent !== '0.0' && (
-                        <Typography variant="body2" mt={1}>
-                          <strong>Mejora volumen:</strong> {progressStats.volumeImprovement > 0 ? '+' : ''}{progressStats.volumeImprovementPercent}%
-                        </Typography>
-                      )}
+                      <Typography variant="body2" mt={1}>
+                        <strong>Promedio volumen:</strong> {(selectedExerciseData.reduce((sum, s) => sum + s.totalVolume, 0) / selectedExerciseData.length).toFixed(0)} kg
+                      </Typography>
                     </CardContent>
                   </Card>
                 </Grid>
@@ -754,14 +810,10 @@ const TrainingHistory = () => {
               <Card>
                 <CardContent>
                   <Typography variant="h6" fontWeight="bold" mb={2}>
-                    📈 Evolución de Carga Máxima
+                    📈 Evolución de Volumen (Tonelaje)
                   </Typography>
-                  <Box sx={{ display: 'flex', justifyContent: 'center', overflowX: 'auto' }}>
-                    <SimpleLineChart 
-                      data={selectedExerciseData} 
-                      width={isMobile ? 350 : 600} 
-                      height={250} 
-                    />
+                  <Box sx={{ p: isMobile ? 1 : 2 }}>
+                    <ProgressChart data={selectedExerciseData} />
                   </Box>
                 </CardContent>
               </Card>
@@ -985,7 +1037,7 @@ const TrainingHistory = () => {
                           {day.exercises.map((exercise, exIndex) => (
                             <Chip 
                               key={exercise.id || exIndex}
-                              label={exercise.nombre}
+                              label={exercise.exerciseCatalog?.name || exercise.nombre || 'Ejercicio'}
                               size="small"
                               sx={{ 
                                 bgcolor: '#e3f2fd', 

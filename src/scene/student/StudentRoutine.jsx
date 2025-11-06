@@ -1,5 +1,22 @@
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import HistoryIcon from "@mui/icons-material/History";
 import TodayIcon from "@mui/icons-material/Today";
 import {
@@ -15,11 +32,68 @@ import {
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import EditSetModal from "../../components/EditSetModal";
 import RestTimerWidget from "../../components/RestTimerWidget";
 import { useAuthStore } from "../../hooks";
 import { useRoutineStore } from "../../hooks/useRoutineStore";
+
+// Componente para ejercicios arrastrables
+const SortableExercise = ({ exercise, children }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: exercise.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.7 : 1,
+    zIndex: isDragging ? 1000 : 1,
+    cursor: isDragging ? "grabbing" : "default",
+    scale: isDragging ? "1.02" : "1",
+  };
+
+  // Pasar los attributes y listeners al children mediante función
+  const childrenWithDragHandle =
+    typeof children === "function"
+      ? children({ attributes, listeners })
+      : children;
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={style}
+      sx={{
+        bgcolor: "#ffe082",
+        borderRadius: 3,
+        boxShadow: isDragging
+          ? "0 12px 48px rgba(255, 224, 130, 0.8)"
+          : "0 8px 32px rgba(255, 224, 130, 0.4)",
+        mb: 2,
+        overflow: "hidden",
+        border: isDragging
+          ? "2px solid #ffc107"
+          : "1px solid rgba(255, 255, 255, 0.1)",
+        position: "relative",
+      }}
+    >
+      {childrenWithDragHandle}
+    </Box>
+  );
+};
+
+SortableExercise.propTypes = {
+  exercise: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  }).isRequired,
+  children: PropTypes.oneOfType([PropTypes.node, PropTypes.func]).isRequired,
+};
 
 export const StudentRoutine = () => {
   const theme = useTheme();
@@ -51,6 +125,90 @@ export const StudentRoutine = () => {
   // Timer de descanso
   const [showTimer, setShowTimer] = useState(false);
   const [timerDuration, setTimerDuration] = useState(0);
+
+  // Configuración de drag & drop con activación más sensible
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Activar después de mover 5px (más sensible)
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Función para manejar el reordenamiento de ejercicios
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    const diasConEjercicios = micros[microIdx].days
+      .filter(
+        (day) => !day.esDescanso && day.exercises && day.exercises.length > 0
+      )
+      .sort((a, b) => {
+        const getDayNumber = (day) => {
+          if (day.dia) return parseInt(day.dia) || 0;
+          const match = day.nombre?.match(/\d+/);
+          return match ? parseInt(match[0]) : 0;
+        };
+        return getDayNumber(a) - getDayNumber(b);
+      });
+
+    const diaActual = diasConEjercicios[diaIdx];
+    const exercises = diaActual.exercises;
+
+    const oldIndex = exercises.findIndex((ex) => ex.id === active.id);
+    const newIndex = exercises.findIndex((ex) => ex.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    // Reordenar los ejercicios localmente
+    const reorderedExercises = arrayMove(exercises, oldIndex, newIndex);
+
+    // Actualizar el campo 'orden' para cada ejercicio
+    const updatedExercises = reorderedExercises.map((ex, index) => ({
+      ...ex,
+      orden: index + 1,
+    }));
+
+    // Actualizar el estado local
+    setMicros((prevMicros) => {
+      const newMicros = [...prevMicros];
+      newMicros[microIdx].days[diaIdx].exercises = updatedExercises;
+      return newMicros;
+    });
+
+    // Actualizar en el backend
+    try {
+      const apiUrl =
+        import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+      const token = localStorage.getItem("token");
+
+      await fetch(`${apiUrl}/exercise/reorder`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          exercises: updatedExercises.map((ex) => ({
+            id: ex.id,
+            orden: ex.orden,
+          })),
+        }),
+      });
+    } catch (error) {
+      console.error("Error al reordenar ejercicios:", error);
+      // Revertir cambios en caso de error
+      const microsResult = await fetchMicrocyclesByMesocycle(selectedMesoId);
+      setMicros(microsResult);
+    }
+  };
 
   useEffect(() => {
     const fetchMacros = async () => {
@@ -131,6 +289,66 @@ export const StudentRoutine = () => {
     setSelectedSet(set);
     setSelectedExerciseForSet(exercise);
     setEditModalOpen(true);
+  };
+
+  const handleAddExtraSet = async (exercise) => {
+    try {
+      // Contar cuántos sets extra ya existen para este ejercicio
+      const existingSets = exercise.sets || [];
+      const extraSetsCount = existingSets.filter((s) => s.isExtra).length;
+
+      // Límite de 5 sets extras
+      if (extraSetsCount >= 5) {
+        alert("Has alcanzado el límite de 5 sets extras por ejercicio");
+        return;
+      }
+
+      // Obtener el orden más alto actual
+      const maxOrder =
+        existingSets.length > 0
+          ? Math.max(...existingSets.map((s) => s.order || 0))
+          : 0;
+
+      // Crear el nuevo set extra
+      const newExtraSet = {
+        id: `temp-extra-${exercise.id}-${Date.now()}`,
+        reps: 0,
+        load: 0,
+        actualRir: 0,
+        actualRpe: 0,
+        notes: "",
+        order: maxOrder + 1,
+        isExtra: true,
+        exerciseId: exercise.id,
+      };
+
+      // Actualizar el estado local agregando el set extra
+      setMicros((prevMicros) => {
+        const newMicros = [...prevMicros];
+        const currentMicro = newMicros[microIdx];
+        const currentDay = currentMicro.days[diaIdx];
+        const exerciseIndex = currentDay.exercises.findIndex(
+          (ex) => ex.id === exercise.id
+        );
+
+        if (exerciseIndex !== -1) {
+          currentDay.exercises[exerciseIndex].sets = [
+            ...(currentDay.exercises[exerciseIndex].sets || []),
+            newExtraSet,
+          ];
+        }
+
+        return newMicros;
+      });
+
+      // Abrir el modal para editar el set extra inmediatamente
+      setSelectedSet(newExtraSet);
+      setSelectedExerciseForSet(exercise);
+      setEditModalOpen(true);
+    } catch (error) {
+      console.error("Error al agregar set extra:", error);
+      alert("Error al agregar set extra");
+    }
   };
 
   const handleStartTimer = (duration) => {
@@ -231,10 +449,19 @@ export const StudentRoutine = () => {
 
   // Función para obtener el historial de un ejercicio
   const getExerciseHistory = (exercise) => {
+    console.log("🔍 getExerciseHistory - Start", {
+      exerciseId: exercise.id,
+      exerciseName:
+        exercise.exerciseCatalog?.name || exercise.nombre || exercise.name,
+      currentMicroIdx: microIdx,
+      totalMicros: micros?.length || 0,
+    });
+
     if (!exercise || !micros || micros.length === 0) return [];
 
     const history = [];
-    const exerciseName = exercise.nombre || exercise.name;
+    const exerciseName =
+      exercise.exerciseCatalog?.name || exercise.nombre || exercise.name;
     const exerciseId = exercise.id;
 
     // Obtener el número del día actual para priorizar el mismo día en microciclos anteriores
@@ -306,7 +533,8 @@ export const StudentRoutine = () => {
         // Buscar el ejercicio por ID o por nombre
         const foundExercise = day.exercises.find(
           (ej) =>
-            ej.id === exerciseId || (ej.nombre || ej.name) === exerciseName
+            ej.id === exerciseId ||
+            (ej.exerciseCatalog?.name || ej.nombre || ej.name) === exerciseName
         );
 
         if (
@@ -316,6 +544,10 @@ export const StudentRoutine = () => {
         ) {
           // Obtener la carga promedio y máxima de los sets
           const sets = foundExercise.sets.filter((s) => s.load > 0);
+          console.log(
+            `  📌 Found exercise in M${i + 1}, sets with load:`,
+            sets.length
+          );
           if (sets.length > 0) {
             const maxLoad = Math.max(...sets.map((s) => s.load));
             const avgLoad =
@@ -332,6 +564,38 @@ export const StudentRoutine = () => {
             const isSameDay =
               currentDayNumber !== null && dayNumber === currentDayNumber;
 
+            // Calcular días transcurridos correctamente
+            let daysDiffCalc = 0;
+            if (day.fecha) {
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+
+              // Parsear la fecha correctamente
+              let sessionDate;
+              if (day.fecha.includes("/")) {
+                // Formato DD/MM/YY o DD/MM/YYYY
+                const parts = day.fecha.split("/");
+                if (parts.length === 3) {
+                  const dayNum = parseInt(parts[0], 10);
+                  const month = parseInt(parts[1], 10) - 1;
+                  let year = parseInt(parts[2], 10);
+                  if (year < 100) {
+                    year += 2000;
+                  }
+                  sessionDate = new Date(year, month, dayNum);
+                } else {
+                  sessionDate = new Date(day.fecha);
+                }
+              } else {
+                sessionDate = new Date(day.fecha + "T12:00:00");
+              }
+
+              sessionDate.setHours(0, 0, 0, 0);
+              daysDiffCalc = Math.floor(
+                (today - sessionDate) / (1000 * 60 * 60 * 24)
+              );
+            }
+
             history.push({
               microName: micro.name,
               microNumber: micro.name.match(/\d+/)
@@ -344,9 +608,11 @@ export const StudentRoutine = () => {
               avgLoad,
               maxReps,
               avgRir,
-              sets: sets.length,
+              sets: foundExercise.sets, // ✅ Guardar el array completo de sets
+              totalSets: sets.length, // ✅ Guardar también el número de sets
               microIndex: i,
               isSameDay, // Marcar si es el mismo día
+              daysDiff: daysDiffCalc, // ✅ Calcular días transcurridos
             });
           }
         }
@@ -354,11 +620,18 @@ export const StudentRoutine = () => {
     }
 
     // Ordenar: primero por si es el mismo día (prioridad), luego por microciclo (más reciente primero)
-    return history.sort((a, b) => {
+    const sortedHistory = history.sort((a, b) => {
       if (a.isSameDay && !b.isSameDay) return -1;
       if (!a.isSameDay && b.isSameDay) return 1;
       return b.microIndex - a.microIndex;
     });
+
+    console.log(
+      "📊 getExerciseHistory - Result:",
+      sortedHistory.length,
+      "sessions found"
+    );
+    return sortedHistory;
   };
 
   // Función para abrir el modal de historial
@@ -411,7 +684,9 @@ export const StudentRoutine = () => {
       }
 
       if (ejercicioId) {
-        // Crear nuevo set
+        // Crear nuevo set (excluir el id temporal y exerciseId)
+        // eslint-disable-next-line no-unused-vars
+        const { id, exerciseId, ...setDataWithoutId } = form;
         response = await fetch(`${apiUrl}/exercise/${ejercicioId}/sets`, {
           method: "POST",
           headers: {
@@ -419,7 +694,7 @@ export const StudentRoutine = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            ...form,
+            ...setDataWithoutId,
             order: selectedSet.order || 1,
           }),
         });
@@ -1164,549 +1439,763 @@ export const StudentRoutine = () => {
                           },
                         }}
                       >
-                        <Stack spacing={2}>
-                          {diaActual.exercises
-                            .sort((a, b) => {
-                              // Ordenar por campo 'orden' si existe, sino por índice
-                              const ordenA = a.orden || 0;
-                              const ordenB = b.orden || 0;
-                              return ordenA - ordenB;
-                            })
-                            .map((ej, i) => (
-                              <Box
-                                key={ej.id || i}
-                                sx={{
-                                  bgcolor: "#ffe082",
-                                  borderRadius: 3,
-                                  boxShadow:
-                                    "0 8px 32px rgba(255, 224, 130, 0.4)",
-                                  mb: 2,
-                                  overflow: "hidden",
-                                  border: "1px solid rgba(255, 255, 255, 0.1)",
-                                }}
-                              >
-                                <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      gap: 1,
-                                    }}
-                                  >
-                                    <Typography
-                                      variant="h6"
-                                      fontWeight="bold"
-                                      align="center"
-                                      color="#000"
-                                      sx={{
-                                        fontSize: { xs: "1rem", sm: "1.2rem" },
-                                      }}
-                                    >
-                                      {ej.nombre || ej.name}
-                                    </Typography>
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleOpenHistory(ej)}
-                                      sx={{
-                                        color: "#2196f3",
-                                        backgroundColor:
-                                          "rgba(33, 150, 243, 0.1)",
-                                        "&:hover": {
-                                          backgroundColor:
-                                            "rgba(33, 150, 243, 0.2)",
-                                        },
-                                        width: { xs: 28, sm: 32 },
-                                        height: { xs: 28, sm: 32 },
-                                      }}
-                                      title="Ver historial"
-                                    >
-                                      <HistoryIcon fontSize="small" />
-                                    </IconButton>
-                                  </Box>
-                                  <Typography
-                                    variant="body2"
-                                    color="#000"
-                                    align="center"
-                                    sx={{
-                                      fontSize: { xs: "0.9rem", sm: "1rem" },
-                                      opacity: 0.8,
-                                    }}
-                                  >
-                                    {/* Corregir datos intercambiados entre series y repeticiones */}
-                                    {(() => {
-                                      const series = ej.series || "";
-                                      const reps =
-                                        ej.repeticiones || ej.repRange || "";
-
-                                      // Si series contiene un guión (ej: "10-12"), probablemente son repeticiones intercambiadas
-                                      const correctSeries =
-                                        series.includes("-") &&
-                                        !reps.includes("-")
-                                          ? reps
-                                          : series;
-                                      const correctReps =
-                                        series.includes("-") &&
-                                        !reps.includes("-")
-                                          ? series
-                                          : reps;
-
-                                      return `${
-                                        ej.grupoMuscular || ej.muscle
-                                      } · ${correctSeries} series · Reps: ${correctReps} · Descanso: ${
-                                        ej.descanso || ej.tempo
-                                      }`;
-                                    })()}
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      mt: 1,
-                                      overflow: "hidden",
-                                      width: "100%",
-                                    }}
-                                  >
-                                    <Box
-                                      sx={{ overflowX: "auto", width: "100%" }}
-                                    >
-                                      <table
-                                        style={{
-                                          width: "100%",
-                                          minWidth: isMobile ? "280px" : "auto",
-                                          background:
-                                            "rgba(255, 255, 255, 0.95)",
-                                          fontSize: isMobile
-                                            ? "0.7em"
-                                            : "0.9em",
-                                          borderCollapse: "separate",
-                                          borderSpacing: "0",
-                                          borderRadius: "12px",
-                                          overflow: "hidden",
-                                          backdropFilter: "blur(10px)",
-                                          tableLayout: isMobile
-                                            ? "fixed"
-                                            : "auto",
-                                        }}
-                                      >
-                                        <thead>
-                                          <tr
-                                            style={{
-                                              backgroundColor:
-                                                "rgba(33, 33, 33, 0.8)",
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext
+                            items={diaActual.exercises.map((ex) => ex.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <Stack spacing={3}>
+                              {diaActual.exercises
+                                .sort((a, b) => {
+                                  // Ordenar por campo 'orden' si existe, sino por índice
+                                  const ordenA = a.orden || 0;
+                                  const ordenB = b.orden || 0;
+                                  return ordenA - ordenB;
+                                })
+                                .map((ej) => (
+                                  <SortableExercise key={ej.id} exercise={ej}>
+                                    {({ attributes, listeners }) => (
+                                      <Box sx={{ p: { xs: 0.5, sm: 1 } }}>
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            gap: 1,
+                                          }}
+                                        >
+                                          <Typography
+                                            variant="h6"
+                                            fontWeight="bold"
+                                            align="center"
+                                            color="#000"
+                                            sx={{
+                                              fontSize: {
+                                                xs: "1rem",
+                                                sm: "1.2rem",
+                                              },
                                             }}
                                           >
-                                            <th
-                                              style={{
-                                                fontWeight: "bold",
-                                                borderBottom: "none",
-                                                fontSize: isMobile
-                                                  ? "0.65em"
-                                                  : "0.8em",
-                                                textAlign: "center",
-                                                padding: isMobile
-                                                  ? "6px 2px"
-                                                  : "8px 4px",
-                                                textTransform: "uppercase",
-                                                color: "#fff",
-                                                width: isMobile
-                                                  ? "18%"
-                                                  : "16.67%",
-                                                borderTopLeftRadius: "12px",
-                                              }}
-                                            >
-                                              {isMobile
-                                                ? "REPS"
-                                                : "REPETICIONES"}
-                                            </th>
-                                            <th
-                                              style={{
-                                                fontWeight: "bold",
-                                                borderBottom: "none",
-                                                fontSize: isMobile
-                                                  ? "0.65em"
-                                                  : "0.8em",
-                                                textAlign: "center",
-                                                padding: isMobile
-                                                  ? "6px 2px"
-                                                  : "8px 4px",
-                                                textTransform: "uppercase",
-                                                color: "#fff",
-                                                width: isMobile
-                                                  ? "14%"
-                                                  : "16.67%",
-                                              }}
-                                            >
-                                              REAL
-                                            </th>
-                                            <th
-                                              style={{
-                                                fontWeight: "bold",
-                                                borderBottom: "none",
-                                                fontSize: isMobile
-                                                  ? "0.65em"
-                                                  : "0.8em",
-                                                textAlign: "center",
-                                                padding: isMobile
-                                                  ? "6px 2px"
-                                                  : "8px 4px",
-                                                textTransform: "uppercase",
-                                                color: "#fff",
-                                                width: isMobile
-                                                  ? "16%"
-                                                  : "16.67%",
-                                              }}
-                                            >
-                                              CARGA
-                                            </th>
-                                            <th
-                                              style={{
-                                                fontWeight: "bold",
-                                                borderBottom: "none",
-                                                fontSize: isMobile
-                                                  ? "0.65em"
-                                                  : "0.8em",
-                                                textAlign: "center",
-                                                padding: isMobile
-                                                  ? "6px 2px"
-                                                  : "8px 4px",
-                                                textTransform: "uppercase",
-                                                color: "#fff",
-                                                width: isMobile
-                                                  ? "17%"
-                                                  : "16.67%",
-                                              }}
-                                            >
-                                              {isMobile ? "RIR E" : "RIR ESP"}
-                                            </th>
-                                            <th
-                                              style={{
-                                                fontWeight: "bold",
-                                                borderBottom: "none",
-                                                fontSize: isMobile
-                                                  ? "0.65em"
-                                                  : "0.8em",
-                                                textAlign: "center",
-                                                padding: isMobile
-                                                  ? "6px 2px"
-                                                  : "8px 4px",
-                                                textTransform: "uppercase",
-                                                color: "#fff",
-                                                width: isMobile
-                                                  ? "17%"
-                                                  : "16.67%",
-                                              }}
-                                            >
-                                              {isMobile ? "RIR R" : "RIR REAL"}
-                                            </th>
-                                            <th
-                                              style={{
-                                                fontWeight: "bold",
-                                                borderBottom: "none",
-                                                fontSize: isMobile
-                                                  ? "0.65em"
-                                                  : "0.8em",
-                                                textAlign: "center",
-                                                padding: isMobile
-                                                  ? "6px 2px"
-                                                  : "8px 4px",
-                                                textTransform: "uppercase",
-                                                color: "#fff",
-                                                width: isMobile
-                                                  ? "18%"
-                                                  : "16.67%",
-                                                borderTopRightRadius: "12px",
-                                              }}
-                                            >
-                                              RPE
-                                            </th>
-                                          </tr>
-                                        </thead>
-                                        <tbody>
-                                          {(() => {
-                                            // Asegurar que siempre hay el número correcto de sets
-                                            let sets = ej.sets || [];
+                                            {ej.exerciseCatalog?.name ||
+                                              ej.nombre ||
+                                              ej.name ||
+                                              "Ejercicio"}
+                                          </Typography>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() =>
+                                              handleOpenHistory(ej)
+                                            }
+                                            sx={{
+                                              color: "#2196f3",
+                                              backgroundColor:
+                                                "rgba(33, 150, 243, 0.1)",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "rgba(33, 150, 243, 0.2)",
+                                              },
+                                              width: { xs: 28, sm: 32 },
+                                              height: { xs: 28, sm: 32 },
+                                            }}
+                                            title="Ver historial"
+                                          >
+                                            <HistoryIcon fontSize="small" />
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            onClick={() =>
+                                              handleAddExtraSet(ej)
+                                            }
+                                            sx={{
+                                              color: "#4caf50",
+                                              backgroundColor:
+                                                "rgba(76, 175, 80, 0.1)",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "rgba(76, 175, 80, 0.2)",
+                                              },
+                                              width: { xs: 28, sm: 32 },
+                                              height: { xs: 28, sm: 32 },
+                                              fontWeight: "bold",
+                                              fontSize: {
+                                                xs: "1.2rem",
+                                                sm: "1.4rem",
+                                              },
+                                            }}
+                                            title="Agregar set extra"
+                                          >
+                                            <span style={{ fontSize: "1.2em" }}>
+                                              +
+                                            </span>
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            {...attributes}
+                                            {...listeners}
+                                            sx={{
+                                              color: "rgba(0, 0, 0, 0.5)",
+                                              backgroundColor:
+                                                "rgba(0, 0, 0, 0.05)",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "rgba(255, 193, 7, 0.2)",
+                                                color: "rgba(0, 0, 0, 0.7)",
+                                              },
+                                              width: { xs: 28, sm: 32 },
+                                              height: { xs: 28, sm: 32 },
+                                              cursor: "grab",
+                                              "&:active": {
+                                                cursor: "grabbing",
+                                              },
+                                              touchAction: "none",
+                                            }}
+                                            title="Reordenar ejercicio"
+                                          >
+                                            <DragIndicatorIcon fontSize="small" />
+                                          </IconButton>
+                                        </Box>
 
-                                            // Corregir el número de series si están intercambiadas
+                                        <Typography
+                                          variant="body2"
+                                          color="#000"
+                                          align="center"
+                                          sx={{
+                                            fontSize: {
+                                              xs: "0.9rem",
+                                              sm: "1rem",
+                                            },
+                                            opacity: 0.8,
+                                          }}
+                                        >
+                                          {/* Corregir datos intercambiados entre series y repeticiones */}
+                                          {(() => {
                                             const series = ej.series || "";
                                             const reps =
                                               ej.repeticiones ||
                                               ej.repRange ||
                                               "";
+
+                                            // Si series contiene un guión (ej: "10-12"), probablemente son repeticiones intercambiadas
                                             const correctSeries =
                                               series.includes("-") &&
                                               !reps.includes("-")
                                                 ? reps
                                                 : series;
-                                            const numSeries =
-                                              parseInt(correctSeries) || 3;
+                                            const correctReps =
+                                              series.includes("-") &&
+                                              !reps.includes("-")
+                                                ? series
+                                                : reps;
 
-                                            // Crear un array con todos los órdenes que deberían existir
-                                            const expectedOrders = Array.from(
-                                              { length: numSeries },
-                                              (_, i) => i + 1
-                                            );
-
-                                            // Identificar qué órdenes faltan
-                                            const existingOrders = sets.map(
-                                              (s) => s.order || 0
-                                            );
-                                            const missingOrders =
-                                              expectedOrders.filter(
-                                                (order) =>
-                                                  !existingOrders.includes(
-                                                    order
-                                                  )
-                                              );
-
-                                            // Crear sets temporales para los órdenes que faltan
-                                            missingOrders.forEach((order) => {
-                                              sets.push({
-                                                id: `temp-${
-                                                  ej.id
-                                                }-${order}-${Date.now()}`,
-                                                reps: 0,
-                                                load: 0,
-                                                actualRir: 0,
-                                                actualRpe: 0,
-                                                notes: "",
-                                                order: order,
-                                                exerciseId: ej.id, // Agregar referencia al ejercicio
-                                              });
-                                            });
-
-                                            // Ordenar sets por order
-                                            sets.sort(
-                                              (a, b) =>
-                                                (a.order || 0) - (b.order || 0)
-                                            );
-
-                                            return sets.map((serie, j) => {
-                                              const isLastRow =
-                                                j === sets.length - 1;
-                                              return (
-                                                <tr
-                                                  key={serie.id || j}
-                                                  style={{
-                                                    cursor: "pointer",
-                                                    backgroundColor:
-                                                      j % 2 === 0
-                                                        ? "rgba(255, 255, 255, 0.8)"
-                                                        : "rgba(240, 240, 240, 0.8)",
-                                                    transition: "all 0.2s ease",
-                                                    minHeight: "48px",
-                                                  }}
-                                                  onClick={() =>
-                                                    handleEditSet(serie, ej)
-                                                  }
-                                                  onMouseEnter={(e) => {
-                                                    e.target.closest(
-                                                      "tr"
-                                                    ).style.backgroundColor =
-                                                      "rgba(255, 193, 7, 0.3)";
-                                                    e.target.closest(
-                                                      "tr"
-                                                    ).style.transform =
-                                                      "scale(1.02)";
-                                                  }}
-                                                  onMouseLeave={(e) => {
-                                                    e.target.closest(
-                                                      "tr"
-                                                    ).style.backgroundColor =
-                                                      j % 2 === 0
-                                                        ? "rgba(255, 255, 255, 0.8)"
-                                                        : "rgba(240, 240, 240, 0.8)";
-                                                    e.target.closest(
-                                                      "tr"
-                                                    ).style.transform =
-                                                      "scale(1)";
-                                                  }}
-                                                >
-                                                  <td
-                                                    style={{
-                                                      fontSize: isMobile
-                                                        ? "0.8em"
-                                                        : "0.9em",
-                                                      textAlign: "center",
-                                                      padding: isMobile
-                                                        ? "8px 2px"
-                                                        : "12px 4px",
-                                                      textTransform: "none",
-                                                      color: "#222",
-                                                      fontWeight: "500",
-                                                      ...(isLastRow && {
-                                                        borderBottomLeftRadius:
-                                                          "12px",
-                                                      }),
-                                                    }}
-                                                  >
-                                                    {ej.repeticiones ||
-                                                      ej.repRange}
-                                                  </td>
-                                                  <td
-                                                    style={{
-                                                      fontSize: isMobile
-                                                        ? "0.8em"
-                                                        : "0.9em",
-                                                      textAlign: "center",
-                                                      padding: isMobile
-                                                        ? "8px 2px"
-                                                        : "12px 4px",
-                                                      textTransform: "none",
-                                                      color: "#222",
-                                                      fontWeight:
-                                                        serie.reps > 0
-                                                          ? "bold"
-                                                          : "normal",
-                                                    }}
-                                                  >
-                                                    {serie.reps || 0}
-                                                  </td>
-                                                  <td
-                                                    style={{
-                                                      fontSize: isMobile
-                                                        ? "0.8em"
-                                                        : "0.9em",
-                                                      textAlign: "center",
-                                                      padding: isMobile
-                                                        ? "8px 2px"
-                                                        : "12px 4px",
-                                                      textTransform: "none",
-                                                      color: "#222",
-                                                      fontWeight:
-                                                        serie.load > 0
-                                                          ? "bold"
-                                                          : "normal",
-                                                    }}
-                                                  >
-                                                    {serie.load || 0}
-                                                  </td>
-                                                  <td
-                                                    style={{
-                                                      fontSize: isMobile
-                                                        ? "0.8em"
-                                                        : "0.9em",
-                                                      textAlign: "center",
-                                                      padding: isMobile
-                                                        ? "8px 2px"
-                                                        : "12px 4px",
-                                                      textTransform: "none",
-                                                      color: "#222",
-                                                      fontWeight: "500",
-                                                    }}
-                                                  >
-                                                    {ej.rirEsperado ||
-                                                      serie.expectedRir ||
-                                                      0}
-                                                  </td>
-                                                  <td
-                                                    style={{
-                                                      fontSize: isMobile
-                                                        ? "0.8em"
-                                                        : "0.9em",
-                                                      textAlign: "center",
-                                                      padding: isMobile
-                                                        ? "8px 2px"
-                                                        : "12px 4px",
-                                                      textTransform: "none",
-                                                      color: "#222",
-                                                      fontWeight:
-                                                        serie.actualRir > 0
-                                                          ? "bold"
-                                                          : "normal",
-                                                    }}
-                                                  >
-                                                    {serie.actualRir || 0}
-                                                  </td>
-                                                  <td
-                                                    style={{
-                                                      fontSize: isMobile
-                                                        ? "0.8em"
-                                                        : "0.9em",
-                                                      textAlign: "center",
-                                                      padding: isMobile
-                                                        ? "8px 2px"
-                                                        : "12px 4px",
-                                                      textTransform: "none",
-                                                      color: "#222",
-                                                      fontWeight:
-                                                        serie.actualRpe > 0
-                                                          ? "bold"
-                                                          : "normal",
-                                                      ...(isLastRow && {
-                                                        borderBottomRightRadius:
-                                                          "12px",
-                                                      }),
-                                                    }}
-                                                  >
-                                                    {serie.actualRpe || 0}
-                                                  </td>
-                                                </tr>
-                                              );
-                                            });
+                                            return `${
+                                              ej.exerciseCatalog?.muscleGroup ||
+                                              ej.grupoMuscular ||
+                                              ej.muscle
+                                            } · ${correctSeries} series · Reps: ${correctReps} · Descanso: ${
+                                              ej.descanso || ej.tempo
+                                            }`;
                                           })()}
-                                        </tbody>
-                                      </table>
-                                    </Box>
-                                  </Box>
-                                  {/* Mostrar observaciones debajo de la tabla en mobile si existen */}
-                                  {(() => {
-                                    // Usar la misma lógica para obtener sets
-                                    let sets = ej.sets || [];
-
-                                    // Corregir el número de series si están intercambiadas
-                                    const series = ej.series || "";
-                                    const reps =
-                                      ej.repeticiones || ej.repRange || "";
-                                    const correctSeries =
-                                      series.includes("-") &&
-                                      !reps.includes("-")
-                                        ? reps
-                                        : series;
-                                    const numSeries =
-                                      parseInt(correctSeries) || 3;
-
-                                    // Si faltan sets, completar con sets temporales
-                                    while (sets.length < numSeries) {
-                                      const newOrder = sets.length + 1;
-                                      sets.push({
-                                        id: `temp-${
-                                          ej.id
-                                        }-${newOrder}-${Date.now()}`,
-                                        notes: "",
-                                      });
-                                    }
-
-                                    return (
-                                      sets &&
-                                      sets.some((s) => s.notes) && (
-                                        <Box sx={{ mt: 1 }}>
-                                          <Typography
-                                            variant="body2"
-                                            color="text.secondary"
+                                        </Typography>
+                                        <Box
+                                          sx={{
+                                            mt: 1,
+                                            overflow: "hidden",
+                                            width: "100%",
+                                          }}
+                                        >
+                                          <Box
                                             sx={{
-                                              fontSize: {
-                                                xs: "0.85rem",
-                                                sm: "0.95rem",
-                                              },
-                                              textAlign: "center",
-                                              bgcolor: "#fffde7",
-                                              borderRadius: 2,
-                                              p: 1,
+                                              overflowX: "auto",
+                                              width: "100%",
                                             }}
                                           >
-                                            <strong>Observaciones:</strong>{" "}
-                                            {sets
-                                              .filter((s) => s.notes)
-                                              .map((s) => s.notes)
-                                              .join(" · ")}
-                                          </Typography>
+                                            <table
+                                              style={{
+                                                width: "100%",
+                                                minWidth: isMobile
+                                                  ? "280px"
+                                                  : "auto",
+                                                background:
+                                                  "rgba(255, 255, 255, 0.95)",
+                                                fontSize: isMobile
+                                                  ? "0.7em"
+                                                  : "0.9em",
+                                                borderCollapse: "separate",
+                                                borderSpacing: "0",
+                                                borderRadius: "12px",
+                                                overflow: "hidden",
+                                                backdropFilter: "blur(10px)",
+                                                tableLayout: isMobile
+                                                  ? "fixed"
+                                                  : "auto",
+                                              }}
+                                            >
+                                              <thead>
+                                                <tr
+                                                  style={{
+                                                    backgroundColor:
+                                                      "rgba(33, 33, 33, 0.8)",
+                                                  }}
+                                                >
+                                                  <th
+                                                    style={{
+                                                      fontWeight: "bold",
+                                                      borderBottom: "none",
+                                                      fontSize: isMobile
+                                                        ? "0.65em"
+                                                        : "0.8em",
+                                                      textAlign: "center",
+                                                      padding: isMobile
+                                                        ? "6px 2px"
+                                                        : "8px 4px",
+                                                      textTransform:
+                                                        "uppercase",
+                                                      color: "#fff",
+                                                      width: isMobile
+                                                        ? "18%"
+                                                        : "16.67%",
+                                                      borderTopLeftRadius:
+                                                        "12px",
+                                                    }}
+                                                  >
+                                                    {isMobile
+                                                      ? "REPS"
+                                                      : "REPETICIONES"}
+                                                  </th>
+                                                  <th
+                                                    style={{
+                                                      fontWeight: "bold",
+                                                      borderBottom: "none",
+                                                      fontSize: isMobile
+                                                        ? "0.65em"
+                                                        : "0.8em",
+                                                      textAlign: "center",
+                                                      padding: isMobile
+                                                        ? "6px 2px"
+                                                        : "8px 4px",
+                                                      textTransform:
+                                                        "uppercase",
+                                                      color: "#fff",
+                                                      width: isMobile
+                                                        ? "14%"
+                                                        : "16.67%",
+                                                    }}
+                                                  >
+                                                    REAL
+                                                  </th>
+                                                  <th
+                                                    style={{
+                                                      fontWeight: "bold",
+                                                      borderBottom: "none",
+                                                      fontSize: isMobile
+                                                        ? "0.65em"
+                                                        : "0.8em",
+                                                      textAlign: "center",
+                                                      padding: isMobile
+                                                        ? "6px 2px"
+                                                        : "8px 4px",
+                                                      textTransform:
+                                                        "uppercase",
+                                                      color: "#fff",
+                                                      width: isMobile
+                                                        ? "16%"
+                                                        : "16.67%",
+                                                    }}
+                                                  >
+                                                    CARGA
+                                                  </th>
+                                                  <th
+                                                    style={{
+                                                      fontWeight: "bold",
+                                                      borderBottom: "none",
+                                                      fontSize: isMobile
+                                                        ? "0.65em"
+                                                        : "0.8em",
+                                                      textAlign: "center",
+                                                      padding: isMobile
+                                                        ? "6px 2px"
+                                                        : "8px 4px",
+                                                      textTransform:
+                                                        "uppercase",
+                                                      color: "#fff",
+                                                      width: isMobile
+                                                        ? "17%"
+                                                        : "16.67%",
+                                                    }}
+                                                  >
+                                                    {isMobile
+                                                      ? "RIR E"
+                                                      : "RIR ESP"}
+                                                  </th>
+                                                  <th
+                                                    style={{
+                                                      fontWeight: "bold",
+                                                      borderBottom: "none",
+                                                      fontSize: isMobile
+                                                        ? "0.65em"
+                                                        : "0.8em",
+                                                      textAlign: "center",
+                                                      padding: isMobile
+                                                        ? "6px 2px"
+                                                        : "8px 4px",
+                                                      textTransform:
+                                                        "uppercase",
+                                                      color: "#fff",
+                                                      width: isMobile
+                                                        ? "17%"
+                                                        : "16.67%",
+                                                    }}
+                                                  >
+                                                    {isMobile
+                                                      ? "RIR R"
+                                                      : "RIR REAL"}
+                                                  </th>
+                                                  <th
+                                                    style={{
+                                                      fontWeight: "bold",
+                                                      borderBottom: "none",
+                                                      fontSize: isMobile
+                                                        ? "0.65em"
+                                                        : "0.8em",
+                                                      textAlign: "center",
+                                                      padding: isMobile
+                                                        ? "6px 2px"
+                                                        : "8px 4px",
+                                                      textTransform:
+                                                        "uppercase",
+                                                      color: "#fff",
+                                                      width: isMobile
+                                                        ? "18%"
+                                                        : "16.67%",
+                                                      borderTopRightRadius:
+                                                        "12px",
+                                                    }}
+                                                  >
+                                                    RPE
+                                                  </th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                {(() => {
+                                                  // Asegurar que siempre hay el número correcto de sets
+                                                  let sets = ej.sets || [];
+
+                                                  // Corregir el número de series si están intercambiadas
+                                                  const series =
+                                                    ej.series || "";
+                                                  const reps =
+                                                    ej.repeticiones ||
+                                                    ej.repRange ||
+                                                    "";
+                                                  const correctSeries =
+                                                    series.includes("-") &&
+                                                    !reps.includes("-")
+                                                      ? reps
+                                                      : series;
+                                                  const numSeries =
+                                                    parseInt(correctSeries) ||
+                                                    3;
+
+                                                  // Crear un array con todos los órdenes que deberían existir
+                                                  const expectedOrders =
+                                                    Array.from(
+                                                      { length: numSeries },
+                                                      (_, i) => i + 1
+                                                    );
+
+                                                  // Identificar qué órdenes faltan
+                                                  const existingOrders =
+                                                    sets.map(
+                                                      (s) => s.order || 0
+                                                    );
+                                                  const missingOrders =
+                                                    expectedOrders.filter(
+                                                      (order) =>
+                                                        !existingOrders.includes(
+                                                          order
+                                                        )
+                                                    );
+
+                                                  // Crear sets temporales para los órdenes que faltan
+                                                  missingOrders.forEach(
+                                                    (order) => {
+                                                      sets.push({
+                                                        id: `temp-${
+                                                          ej.id
+                                                        }-${order}-${Date.now()}`,
+                                                        reps: 0,
+                                                        load: 0,
+                                                        actualRir: 0,
+                                                        actualRpe: 0,
+                                                        notes: "",
+                                                        order: order,
+                                                        exerciseId: ej.id, // Agregar referencia al ejercicio
+                                                      });
+                                                    }
+                                                  );
+
+                                                  // Ordenar sets por order
+                                                  sets.sort(
+                                                    (a, b) =>
+                                                      (a.order || 0) -
+                                                      (b.order || 0)
+                                                  );
+
+                                                  return sets.map(
+                                                    (serie, j) => {
+                                                      const isLastRow =
+                                                        j === sets.length - 1;
+                                                      const isExtraSet =
+                                                        serie.isExtra === true;
+                                                      const setStatus =
+                                                        serie.status ||
+                                                        "completed";
+
+                                                      // Determinar color de fondo según estado
+                                                      let bgColor, borderColor;
+                                                      if (
+                                                        setStatus === "failed"
+                                                      ) {
+                                                        bgColor =
+                                                          "rgba(244, 67, 54, 0.15)"; // Rojo claro para fallidos
+                                                        borderColor = "#f44336";
+                                                      } else if (
+                                                        setStatus === "skipped"
+                                                      ) {
+                                                        bgColor =
+                                                          "rgba(255, 152, 0, 0.15)"; // Naranja claro para saltados
+                                                        borderColor = "#ff9800";
+                                                      } else if (isExtraSet) {
+                                                        bgColor =
+                                                          "rgba(76, 175, 80, 0.15)"; // Verde claro para extras
+                                                        borderColor = "#4caf50";
+                                                      } else {
+                                                        bgColor =
+                                                          j % 2 === 0
+                                                            ? "rgba(255, 255, 255, 0.8)"
+                                                            : "rgba(240, 240, 240, 0.8)";
+                                                        borderColor = "none";
+                                                      }
+
+                                                      return (
+                                                        <tr
+                                                          key={serie.id || j}
+                                                          style={{
+                                                            cursor: "pointer",
+                                                            backgroundColor:
+                                                              bgColor,
+                                                            borderLeft:
+                                                              borderColor !==
+                                                              "none"
+                                                                ? `4px solid ${borderColor}`
+                                                                : "none",
+                                                            transition:
+                                                              "all 0.2s ease",
+                                                            minHeight: "48px",
+                                                          }}
+                                                          onClick={() =>
+                                                            handleEditSet(
+                                                              serie,
+                                                              ej
+                                                            )
+                                                          }
+                                                          onMouseEnter={(e) => {
+                                                            e.target.closest(
+                                                              "tr"
+                                                            ).style.backgroundColor =
+                                                              "rgba(255, 193, 7, 0.3)";
+                                                            e.target.closest(
+                                                              "tr"
+                                                            ).style.transform =
+                                                              "scale(1.02)";
+                                                          }}
+                                                          onMouseLeave={(e) => {
+                                                            e.target.closest(
+                                                              "tr"
+                                                            ).style.backgroundColor =
+                                                              bgColor;
+                                                            e.target.closest(
+                                                              "tr"
+                                                            ).style.transform =
+                                                              "scale(1)";
+                                                          }}
+                                                        >
+                                                          <td
+                                                            style={{
+                                                              fontSize: isMobile
+                                                                ? "0.8em"
+                                                                : "0.9em",
+                                                              textAlign:
+                                                                "center",
+                                                              padding: isMobile
+                                                                ? "8px 2px"
+                                                                : "12px 4px",
+                                                              textTransform:
+                                                                "none",
+                                                              color: "#222",
+                                                              fontWeight: "500",
+                                                              ...(isLastRow && {
+                                                                borderBottomLeftRadius:
+                                                                  "12px",
+                                                              }),
+                                                            }}
+                                                          >
+                                                            <div
+                                                              style={{
+                                                                display: "flex",
+                                                                alignItems:
+                                                                  "center",
+                                                                justifyContent:
+                                                                  "center",
+                                                                gap: "4px",
+                                                              }}
+                                                            >
+                                                              {setStatus ===
+                                                                "failed" && (
+                                                                <span
+                                                                  style={{
+                                                                    fontSize:
+                                                                      "1.2em",
+                                                                  }}
+                                                                >
+                                                                  ❌
+                                                                </span>
+                                                              )}
+                                                              {setStatus ===
+                                                                "skipped" && (
+                                                                <span
+                                                                  style={{
+                                                                    fontSize:
+                                                                      "1.2em",
+                                                                  }}
+                                                                >
+                                                                  ⏭️
+                                                                </span>
+                                                              )}
+                                                              {setStatus ===
+                                                                "completed" &&
+                                                                isExtraSet && (
+                                                                  <span
+                                                                    style={{
+                                                                      fontSize:
+                                                                        "0.7em",
+                                                                      backgroundColor:
+                                                                        "#4caf50",
+                                                                      color:
+                                                                        "white",
+                                                                      padding:
+                                                                        "2px 6px",
+                                                                      borderRadius:
+                                                                        "4px",
+                                                                      fontWeight:
+                                                                        "bold",
+                                                                    }}
+                                                                  >
+                                                                    EXTRA
+                                                                  </span>
+                                                                )}
+                                                              {setStatus ===
+                                                                "completed" &&
+                                                                !isExtraSet && (
+                                                                  <span>
+                                                                    {ej.repeticiones ||
+                                                                      ej.repRange}
+                                                                  </span>
+                                                                )}
+                                                            </div>
+                                                          </td>
+                                                          <td
+                                                            style={{
+                                                              fontSize: isMobile
+                                                                ? "0.8em"
+                                                                : "0.9em",
+                                                              textAlign:
+                                                                "center",
+                                                              padding: isMobile
+                                                                ? "8px 2px"
+                                                                : "12px 4px",
+                                                              textTransform:
+                                                                "none",
+                                                              color: "#222",
+                                                              fontWeight:
+                                                                serie.reps > 0
+                                                                  ? "bold"
+                                                                  : "normal",
+                                                            }}
+                                                          >
+                                                            {serie.reps || 0}
+                                                          </td>
+                                                          <td
+                                                            style={{
+                                                              fontSize: isMobile
+                                                                ? "0.8em"
+                                                                : "0.9em",
+                                                              textAlign:
+                                                                "center",
+                                                              padding: isMobile
+                                                                ? "8px 2px"
+                                                                : "12px 4px",
+                                                              textTransform:
+                                                                "none",
+                                                              color: "#222",
+                                                              fontWeight:
+                                                                serie.load > 0
+                                                                  ? "bold"
+                                                                  : "normal",
+                                                            }}
+                                                          >
+                                                            {serie.load || 0}
+                                                          </td>
+                                                          <td
+                                                            style={{
+                                                              fontSize: isMobile
+                                                                ? "0.8em"
+                                                                : "0.9em",
+                                                              textAlign:
+                                                                "center",
+                                                              padding: isMobile
+                                                                ? "8px 2px"
+                                                                : "12px 4px",
+                                                              textTransform:
+                                                                "none",
+                                                              color: "#222",
+                                                              fontWeight: "500",
+                                                            }}
+                                                          >
+                                                            {ej.rirEsperado ||
+                                                              serie.expectedRir ||
+                                                              0}
+                                                          </td>
+                                                          <td
+                                                            style={{
+                                                              fontSize: isMobile
+                                                                ? "0.8em"
+                                                                : "0.9em",
+                                                              textAlign:
+                                                                "center",
+                                                              padding: isMobile
+                                                                ? "8px 2px"
+                                                                : "12px 4px",
+                                                              textTransform:
+                                                                "none",
+                                                              color: "#222",
+                                                              fontWeight:
+                                                                serie.actualRir >
+                                                                0
+                                                                  ? "bold"
+                                                                  : "normal",
+                                                            }}
+                                                          >
+                                                            {serie.actualRir ||
+                                                              0}
+                                                          </td>
+                                                          <td
+                                                            style={{
+                                                              fontSize: isMobile
+                                                                ? "0.8em"
+                                                                : "0.9em",
+                                                              textAlign:
+                                                                "center",
+                                                              padding: isMobile
+                                                                ? "8px 2px"
+                                                                : "12px 4px",
+                                                              textTransform:
+                                                                "none",
+                                                              color: "#222",
+                                                              fontWeight:
+                                                                serie.actualRpe >
+                                                                0
+                                                                  ? "bold"
+                                                                  : "normal",
+                                                              ...(isLastRow && {
+                                                                borderBottomRightRadius:
+                                                                  "12px",
+                                                              }),
+                                                            }}
+                                                          >
+                                                            {serie.actualRpe ||
+                                                              0}
+                                                          </td>
+                                                        </tr>
+                                                      );
+                                                    }
+                                                  );
+                                                })()}
+                                              </tbody>
+                                            </table>
+                                          </Box>
                                         </Box>
-                                      )
-                                    );
-                                  })()}
-                                </Box>
-                              </Box>
-                            ))}
-                        </Stack>
+                                        {/* Mostrar observaciones debajo de la tabla en mobile si existen */}
+                                        {(() => {
+                                          // Usar la misma lógica para obtener sets
+                                          let sets = ej.sets || [];
+
+                                          // Corregir el número de series si están intercambiadas
+                                          const series = ej.series || "";
+                                          const reps =
+                                            ej.repeticiones ||
+                                            ej.repRange ||
+                                            "";
+                                          const correctSeries =
+                                            series.includes("-") &&
+                                            !reps.includes("-")
+                                              ? reps
+                                              : series;
+                                          const numSeries =
+                                            parseInt(correctSeries) || 3;
+
+                                          // Si faltan sets, completar con sets temporales
+                                          while (sets.length < numSeries) {
+                                            const newOrder = sets.length + 1;
+                                            sets.push({
+                                              id: `temp-${
+                                                ej.id
+                                              }-${newOrder}-${Date.now()}`,
+                                              notes: "",
+                                            });
+                                          }
+
+                                          return (
+                                            sets &&
+                                            sets.some((s) => s.notes) && (
+                                              <Box sx={{ mt: 1 }}>
+                                                <Typography
+                                                  variant="body2"
+                                                  color="text.secondary"
+                                                  sx={{
+                                                    fontSize: {
+                                                      xs: "0.85rem",
+                                                      sm: "0.95rem",
+                                                    },
+                                                    textAlign: "center",
+                                                    bgcolor: "#fffde7",
+                                                    borderRadius: 2,
+                                                    p: 1,
+                                                  }}
+                                                >
+                                                  <strong>
+                                                    Observaciones:
+                                                  </strong>{" "}
+                                                  {sets
+                                                    .filter((s) => s.notes)
+                                                    .map((s) => s.notes)
+                                                    .join(" · ")}
+                                                </Typography>
+                                              </Box>
+                                            )
+                                          );
+                                        })()}
+                                      </Box>
+                                    )}
+                                  </SortableExercise>
+                                ))}
+                            </Stack>
+                          </SortableContext>
+                        </DndContext>
                       </Box>
                     </>
                   ) : null;
@@ -1785,7 +2274,10 @@ export const StudentRoutine = () => {
                   fontSize: { xs: "1.2rem", sm: "1.5rem" },
                 }}
               >
-                💪 {selectedExercise?.nombre || selectedExercise?.name}
+                💪{" "}
+                {selectedExercise?.exerciseCatalog?.name ||
+                  selectedExercise?.nombre ||
+                  selectedExercise?.name}
               </Typography>
               <Button
                 size="small"
@@ -1815,500 +2307,187 @@ export const StudentRoutine = () => {
                   anteriores.
                 </Typography>
               </Box>
-            ) : historyViewMode === "friendly" ? (
-              // VERSIÓN FRIENDLY - Más visual y amigable
-              <Stack spacing={2.5}>
-                {exerciseHistory.map((entry, index) => {
-                  // Calcular progresión (comparar con la sesión más reciente anterior)
-                  // El índice 0 es el más reciente, así que comparamos con el siguiente en el array (más antiguo)
-                  // Pero queremos mostrar "cuánto subiste desde la última vez", así que comparamos con el más reciente anterior
-                  const nextEntry = exerciseHistory[index + 1]; // Más antiguo en el tiempo
-                  const loadChange = nextEntry
-                    ? entry.maxLoad - nextEntry.maxLoad
-                    : 0;
-                  const loadChangePercent =
-                    nextEntry && nextEntry.maxLoad > 0
-                      ? ((loadChange / nextEntry.maxLoad) * 100).toFixed(0)
-                      : null;
+            ) : (
+              <>
+                {/* Resumen de última sesión - DESTACADO */}
+                {(() => {
+                  const history = getExerciseHistory(selectedExercise);
+                  if (!history || history.length === 0) return null;
+
+                  // Filtrar sesiones completadas
+                  const completedSessions = history.filter((session) => {
+                    const hasSets = session.sets && session.sets.length > 0;
+                    const hasCompletedSets = session.sets?.some(
+                      (s) => s.reps > 0 || s.load > 0
+                    );
+                    return hasSets && hasCompletedSets;
+                  });
+
+                  if (completedSessions.length === 0) return null;
+
+                  // Obtener la sesión más reciente
+                  const sortedByRecent = [...completedSessions].sort(
+                    (a, b) => b.microIndex - a.microIndex
+                  );
+                  const lastSession = sortedByRecent[0];
+
+                  // Calcular volumen total
+                  const totalVolume = lastSession.sets.reduce(
+                    (sum, set) => sum + (set.reps || 0) * (set.load || 0),
+                    0
+                  );
+
+                  const maxLoad =
+                    lastSession.maxLoad ||
+                    Math.max(
+                      ...(lastSession.sets?.map((s) => s.load || 0) || [0])
+                    );
 
                   return (
                     <Box
-                      key={index}
                       sx={{
-                        bgcolor: entry.isSameDay
-                          ? "linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.1) 100%)"
-                          : "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%)",
+                        bgcolor:
+                          "linear-gradient(135deg, rgba(33, 150, 243, 0.2) 0%, rgba(33, 150, 243, 0.1) 100%)",
                         borderRadius: 3,
-                        p: 3,
-                        border: entry.isSameDay
-                          ? "2px solid #4caf50"
-                          : "1px solid rgba(255, 255, 255, 0.15)",
-                        transition: "all 0.3s ease",
-                        position: "relative",
-                        overflow: "hidden",
-                        "&::before": entry.isSameDay
-                          ? {
-                              content: '""',
-                              position: "absolute",
-                              top: 0,
-                              left: 0,
-                              width: "4px",
-                              height: "100%",
-                              bgcolor: "#4caf50",
-                              borderRadius: "3px 0 0 3px",
-                            }
-                          : {},
-                        "&:hover": {
-                          transform: "translateY(-4px) scale(1.02)",
-                          boxShadow: entry.isSameDay
-                            ? "0 8px 24px rgba(76, 175, 80, 0.3)"
-                            : "0 8px 24px rgba(0, 0, 0, 0.3)",
-                        },
+                        p: 2.5,
+                        mb: 3,
+                        border: "2px solid #2196f3",
+                        boxShadow: "0 4px 12px rgba(33, 150, 243, 0.3)",
                       }}
                     >
-                      {/* Header con fecha y badge */}
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          color: "#2196f3",
+                          fontWeight: 700,
+                          mb: 1.5,
+                          fontSize: { xs: "0.95rem", sm: "1.1rem" },
+                        }}
+                      >
+                        📊 Última vez registrada
+                      </Typography>
+
                       <Box
                         sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "flex-start",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: 1.5,
                           mb: 2,
                         }}
                       >
-                        <Box>
+                        <Box
+                          sx={{
+                            bgcolor: "rgba(255,255,255,0.1)",
+                            p: 1.5,
+                            borderRadius: 2,
+                          }}
+                        >
                           <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            sx={{
-                              color: entry.isSameDay ? "#4caf50" : "#fff",
-                              fontSize: { xs: "1rem", sm: "1.1rem" },
-                              mb: 0.5,
-                            }}
+                            variant="caption"
+                            sx={{ color: "#bbb", display: "block", mb: 0.5 }}
                           >
-                            {entry.microName}
+                            Carga Máx
                           </Typography>
                           <Typography
-                            variant="body2"
-                            sx={{ color: "#999", fontSize: "0.85rem" }}
+                            variant="h5"
+                            sx={{ color: "#fff", fontWeight: 700 }}
                           >
-                            {entry.dayName}
+                            {maxLoad} kg
                           </Typography>
                         </Box>
-                        <Box sx={{ textAlign: "right" }}>
-                          {entry.isSameDay && (
-                            <Box
-                              sx={{
-                                bgcolor: "#4caf50",
-                                color: "#fff",
-                                px: 1.5,
-                                py: 0.5,
-                                borderRadius: 2,
-                                fontSize: "0.75rem",
-                                fontWeight: "bold",
-                                mb: 1,
-                                display: "inline-block",
-                              }}
-                            >
-                              ⭐ Mismo día
-                            </Box>
-                          )}
-                          {entry.fecha && (
+                        <Box
+                          sx={{
+                            bgcolor: "rgba(255,255,255,0.1)",
+                            p: 1.5,
+                            borderRadius: 2,
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{ color: "#bbb", display: "block", mb: 0.5 }}
+                          >
+                            Volumen Total
+                          </Typography>
+                          <Typography
+                            variant="h5"
+                            sx={{ color: "#fff", fontWeight: 700 }}
+                          >
+                            {totalVolume} kg
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Box>
+                        <Typography
+                          variant="caption"
+                          sx={{ color: "#bbb", display: "block", mb: 1 }}
+                        >
+                          Sets realizados:
+                        </Typography>
+                        <Stack spacing={0.5}>
+                          {lastSession.sets &&
+                            lastSession.sets.slice(0, 4).map((set, idx) => (
+                              <Box
+                                key={idx}
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  bgcolor: "rgba(255,255,255,0.05)",
+                                  px: 1.5,
+                                  py: 0.8,
+                                  borderRadius: 1,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: "#fff",
+                                    fontSize: "0.75rem",
+                                  }}
+                                >
+                                  Set {idx + 1}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    color: "#fff",
+                                    fontWeight: 600,
+                                    fontSize: "0.75rem",
+                                  }}
+                                >
+                                  {set.reps || 0} × {set.load || 0}kg
+                                  {set.actualRir > 0 && (
+                                    <span
+                                      style={{
+                                        color: "#ff9800",
+                                        marginLeft: "6px",
+                                      }}
+                                    >
+                                      RIR {set.actualRir}
+                                    </span>
+                                  )}
+                                </Typography>
+                              </Box>
+                            ))}
+                          {lastSession.sets && lastSession.sets.length > 4 && (
                             <Typography
                               variant="caption"
                               sx={{
                                 color: "#999",
-                                fontSize: "0.8rem",
-                                display: "block",
-                                mt: entry.isSameDay ? 0.5 : 0,
-                              }}
-                            >
-                              📅{" "}
-                              {new Date(
-                                entry.fecha + "T12:00:00"
-                              ).toLocaleDateString("es-ES", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "2-digit",
-                              })}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-
-                      {/* Carga principal destacada */}
-                      <Box
-                        sx={{
-                          bgcolor: "rgba(255, 224, 130, 0.2)",
-                          borderRadius: 2,
-                          p: 2,
-                          mb: 2,
-                          border: "1px solid rgba(255, 224, 130, 0.3)",
-                          textAlign: "center",
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "#ffe082",
-                            display: "block",
-                            fontSize: "0.85rem",
-                            mb: 0.5,
-                          }}
-                        >
-                          💪 Carga Máxima
-                        </Typography>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            gap: 1,
-                          }}
-                        >
-                          <Typography
-                            variant="h4"
-                            fontWeight="bold"
-                            sx={{ color: "#fff" }}
-                          >
-                            {entry.maxLoad}
-                          </Typography>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "#999", fontSize: "1rem" }}
-                          >
-                            kg
-                          </Typography>
-                          {loadChangePercent && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                bgcolor:
-                                  loadChange > 0
-                                    ? "rgba(76, 175, 80, 0.3)"
-                                    : loadChange < 0
-                                    ? "rgba(244, 67, 54, 0.3)"
-                                    : "rgba(158, 158, 158, 0.3)",
-                                color:
-                                  loadChange > 0
-                                    ? "#4caf50"
-                                    : loadChange < 0
-                                    ? "#f44336"
-                                    : "#9e9e9e",
-                                px: 1,
-                                py: 0.3,
-                                borderRadius: 1,
                                 fontSize: "0.7rem",
-                                fontWeight: "bold",
+                                textAlign: "center",
+                                pt: 0.5,
                               }}
                             >
-                              {loadChange > 0
-                                ? "↑"
-                                : loadChange < 0
-                                ? "↓"
-                                : "="}{" "}
-                              {Math.abs(loadChangePercent)}%
+                              +{lastSession.sets.length - 4} sets más
                             </Typography>
                           )}
-                        </Box>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "#999",
-                            fontSize: "0.75rem",
-                            mt: 0.5,
-                            display: "block",
-                          }}
-                        >
-                          Promedio: {Math.round(entry.avgLoad)} kg
-                        </Typography>
-                      </Box>
-
-                      {/* Métricas secundarias en fila */}
-                      <Box sx={{ display: "flex", gap: 1.5 }}>
-                        <Box
-                          sx={{
-                            flex: 1,
-                            bgcolor: "rgba(33, 150, 243, 0.15)",
-                            borderRadius: 2,
-                            p: 1.5,
-                            textAlign: "center",
-                            border: "1px solid rgba(33, 150, 243, 0.2)",
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: "#2196f3",
-                              display: "block",
-                              mb: 0.5,
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            🔢 Reps
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            sx={{ color: "#fff" }}
-                          >
-                            {entry.maxReps}
-                          </Typography>
-                        </Box>
-
-                        <Box
-                          sx={{
-                            flex: 1,
-                            bgcolor: "rgba(76, 175, 80, 0.15)",
-                            borderRadius: 2,
-                            p: 1.5,
-                            textAlign: "center",
-                            border: "1px solid rgba(76, 175, 80, 0.2)",
-                          }}
-                        >
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: "#4caf50",
-                              display: "block",
-                              mb: 0.5,
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            📊 Sets
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            sx={{ color: "#fff" }}
-                          >
-                            {entry.sets}
-                          </Typography>
-                        </Box>
-
-                        {entry.avgRir !== null && (
-                          <Box
-                            sx={{
-                              flex: 1,
-                              bgcolor: "rgba(32, 178, 170, 0.15)",
-                              borderRadius: 2,
-                              p: 1.5,
-                              textAlign: "center",
-                              border: "1px solid rgba(32, 178, 170, 0.2)",
-                            }}
-                          >
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "#20b2aa",
-                                display: "block",
-                                mb: 0.5,
-                                fontSize: "0.75rem",
-                              }}
-                            >
-                              ⚡ RIR
-                            </Typography>
-                            <Typography
-                              variant="h6"
-                              fontWeight="bold"
-                              sx={{ color: "#fff" }}
-                            >
-                              {entry.avgRir.toFixed(1)}
-                            </Typography>
-                          </Box>
-                        )}
+                        </Stack>
                       </Box>
                     </Box>
                   );
-                })}
-              </Stack>
-            ) : (
-              // VERSIÓN COMPACTA - La original
-              <Stack spacing={2}>
-                {exerciseHistory.map((entry, index) => (
-                  <Box
-                    key={index}
-                    sx={{
-                      bgcolor: entry.isSameDay
-                        ? "rgba(76, 175, 80, 0.15)"
-                        : "rgba(255, 255, 255, 0.05)",
-                      borderRadius: 2,
-                      p: 2,
-                      border: entry.isSameDay
-                        ? "2px solid #4caf50"
-                        : "1px solid rgba(255, 255, 255, 0.1)",
-                      transition: "all 0.2s ease",
-                      "&:hover": {
-                        bgcolor: entry.isSameDay
-                          ? "rgba(76, 175, 80, 0.2)"
-                          : "rgba(255, 255, 255, 0.08)",
-                        transform: "translateY(-2px)",
-                      },
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 1,
-                      }}
-                    >
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <Typography
-                          variant="subtitle1"
-                          fontWeight="bold"
-                          sx={{
-                            color: entry.isSameDay ? "#4caf50" : "#2196f3",
-                          }}
-                        >
-                          {entry.microName} - {entry.dayName}
-                        </Typography>
-                        {entry.isSameDay && (
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              bgcolor: "#4caf50",
-                              color: "#fff",
-                              px: 1,
-                              py: 0.5,
-                              borderRadius: 1,
-                              fontWeight: "bold",
-                            }}
-                          >
-                            Mismo día
-                          </Typography>
-                        )}
-                      </Box>
-                      {entry.fecha && (
-                        <Typography variant="caption" sx={{ color: "#4caf50" }}>
-                          📅{" "}
-                          {new Date(
-                            entry.fecha + "T12:00:00"
-                          ).toLocaleDateString("es-ES", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "2-digit",
-                          })}
-                        </Typography>
-                      )}
-                    </Box>
-
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(2, 1fr)",
-                        gap: 1.5,
-                        mt: 1.5,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          bgcolor: "rgba(255, 224, 130, 0.15)",
-                          borderRadius: 1,
-                          p: 1,
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "#ffe082", display: "block" }}
-                        >
-                          Carga Máx
-                        </Typography>
-                        <Typography
-                          variant="body1"
-                          fontWeight="bold"
-                          sx={{ color: "#fff" }}
-                        >
-                          {entry.maxLoad} kg
-                        </Typography>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          bgcolor: "rgba(255, 224, 130, 0.15)",
-                          borderRadius: 1,
-                          p: 1,
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "#ffe082", display: "block" }}
-                        >
-                          Carga Prom
-                        </Typography>
-                        <Typography
-                          variant="body1"
-                          fontWeight="bold"
-                          sx={{ color: "#fff" }}
-                        >
-                          {Math.round(entry.avgLoad)} kg
-                        </Typography>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          bgcolor: "rgba(33, 150, 243, 0.15)",
-                          borderRadius: 1,
-                          p: 1,
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "#2196f3", display: "block" }}
-                        >
-                          Reps Máx
-                        </Typography>
-                        <Typography
-                          variant="body1"
-                          fontWeight="bold"
-                          sx={{ color: "#fff" }}
-                        >
-                          {entry.maxReps}
-                        </Typography>
-                      </Box>
-
-                      <Box
-                        sx={{
-                          bgcolor: "rgba(76, 175, 80, 0.15)",
-                          borderRadius: 1,
-                          p: 1,
-                        }}
-                      >
-                        <Typography
-                          variant="caption"
-                          sx={{ color: "#4caf50", display: "block" }}
-                        >
-                          Sets
-                        </Typography>
-                        <Typography
-                          variant="body1"
-                          fontWeight="bold"
-                          sx={{ color: "#fff" }}
-                        >
-                          {entry.sets}
-                        </Typography>
-                      </Box>
-                    </Box>
-
-                    {entry.avgRir !== null && (
-                      <Box
-                        sx={{
-                          mt: 1.5,
-                          pt: 1.5,
-                          borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                        }}
-                      >
-                        <Typography variant="caption" sx={{ color: "#20b2aa" }}>
-                          RIR Promedio:{" "}
-                          <strong>{entry.avgRir.toFixed(1)}</strong>
-                        </Typography>
-                      </Box>
-                    )}
-                  </Box>
-                ))}
-              </Stack>
+                })()}
+              </>
             )}
 
             <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
@@ -2363,3 +2542,4 @@ export const StudentRoutine = () => {
     </Box>
   );
 };
+export default StudentRoutine;

@@ -8,34 +8,60 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
+      devOptions: {
+        enabled: true,
+        type: "module",
+      },
       manifest: {
-        name: "Fit Finance",
-        short_name: "FitFinance",
-        description: "Gestión de pagos y rutinas para gimnasios",
-        theme_color: "#222",
-        background_color: "#222",
+        name: "BraCamp",
+        short_name: "BraCamp",
+        description: "Gestión de pagos y rutinas para BraCamp Bodybuilding",
+        theme_color: "#000000",
+        background_color: "#000000",
         display: "standalone",
+        orientation: "portrait",
         start_url: "/",
+        scope: "/",
         icons: [
           {
-            src: "/assets/favicon.ico",
-            sizes: "48x48",
-            type: "image/x-icon",
-          },
-          {
-            src: "/assets/logo192.png",
+            src: "/logo6.png",
             sizes: "192x192",
             type: "image/png",
+            purpose: "any",
           },
           {
-            src: "/assets/icon-round.png",
+            src: "/logo6.png",
             sizes: "512x512",
             type: "image/png",
+            purpose: "any",
+          },
+          {
+            src: "/logo6.png",
+            sizes: "192x192 512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
       },
       workbox: {
-        // Puedes personalizar aquí para offline y push notifications
+        // Cache de runtime para mejor performance
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "google-fonts-cache",
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 año
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
     }),
   ],
