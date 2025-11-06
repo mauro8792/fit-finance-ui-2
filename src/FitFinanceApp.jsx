@@ -28,6 +28,7 @@ import MicrocycleEdit from './scene/coach/MicrocycleEdit';
 import MicrocycleDetail from './components/MicrocycleDetail';
 import DashboardMock from './components/DashboardMock';
 import Layout from './components/Layout';
+import { InstallPWABanner } from './components/InstallPWABanner';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
@@ -69,6 +70,7 @@ export const FitFinanceApp = () => {
     <ColorModeContext.Provider value={colorMode}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <InstallPWABanner />
         <Routes>
           {status === 'not-authenticated' ? (
             <>

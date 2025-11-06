@@ -9,6 +9,8 @@ const EditSetModal = ({ open, set, restTime, onSave, onClose, onStartTimer }) =>
     actualRpe: set.actualRpe || 0,
     notes: set.notes || '',
     order: typeof set.order === 'number' ? set.order : 0,
+    isExtra: set.isExtra || false,
+    status: set.status || 'completed',
   });
 
   useEffect(() => {
@@ -19,6 +21,8 @@ const EditSetModal = ({ open, set, restTime, onSave, onClose, onStartTimer }) =>
       actualRpe: set.actualRpe || 0,
       notes: set.notes || '',
       order: typeof set.order === 'number' ? set.order : 0,
+      isExtra: set.isExtra || false,
+      status: set.status || 'completed',
     });
   }, [set]);
   
@@ -63,7 +67,23 @@ const EditSetModal = ({ open, set, restTime, onSave, onClose, onStartTimer }) =>
         <form onSubmit={handleSubmit} className="modal-form">
           {/* Header */}
           <div className="modal-header">
-            <h3 className="modal-title">✏️ Editar Set</h3>
+            <h3 className="modal-title">
+              ✏️ Editar Set
+              {set.isExtra && (
+                <span style={{
+                  marginLeft: '8px',
+                  fontSize: '0.7em',
+                  backgroundColor: '#4caf50',
+                  color: 'white',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  verticalAlign: 'middle'
+                }}>
+                  EXTRA
+                </span>
+              )}
+            </h3>
             <button 
               type="button" 
               onClick={onClose} 
@@ -172,6 +192,96 @@ const EditSetModal = ({ open, set, restTime, onSave, onClose, onStartTimer }) =>
                 <span>0</span>
                 <span>10</span>
               </div>
+            </div>
+          </div>
+
+          {/* Estado del Set */}
+          <div className="form-field form-field-full">
+            <label className="form-label">
+              <span className="label-icon">🎯</span>
+              Estado del Set
+            </label>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(3, 1fr)',
+              gap: '8px',
+              marginTop: '8px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, status: 'completed' })}
+                style={{
+                  padding: '10px 6px',
+                  border: form.status === 'completed' ? '2px solid #4caf50' : '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '10px',
+                  backgroundColor: form.status === 'completed' ? 'rgba(76, 175, 80, 0.25)' : 'rgba(255,255,255,0.03)',
+                  color: form.status === 'completed' ? '#4caf50' : 'rgba(255,255,255,0.6)',
+                  fontSize: '11px',
+                  fontWeight: form.status === 'completed' ? 'bold' : '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '3px',
+                  minHeight: '55px',
+                  boxShadow: form.status === 'completed' ? '0 2px 8px rgba(76, 175, 80, 0.3)' : 'none'
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>✅</span>
+                <span>Completado</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, status: 'failed' })}
+                style={{
+                  padding: '10px 6px',
+                  border: form.status === 'failed' ? '2px solid #f44336' : '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '10px',
+                  backgroundColor: form.status === 'failed' ? 'rgba(244, 67, 54, 0.25)' : 'rgba(255,255,255,0.03)',
+                  color: form.status === 'failed' ? '#f44336' : 'rgba(255,255,255,0.6)',
+                  fontSize: '11px',
+                  fontWeight: form.status === 'failed' ? 'bold' : '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '3px',
+                  minHeight: '55px',
+                  boxShadow: form.status === 'failed' ? '0 2px 8px rgba(244, 67, 54, 0.3)' : 'none'
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>❌</span>
+                <span>Fallido</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, status: 'skipped' })}
+                style={{
+                  padding: '10px 6px',
+                  border: form.status === 'skipped' ? '2px solid #ff9800' : '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: '10px',
+                  backgroundColor: form.status === 'skipped' ? 'rgba(255, 152, 0, 0.25)' : 'rgba(255,255,255,0.03)',
+                  color: form.status === 'skipped' ? '#ff9800' : 'rgba(255,255,255,0.6)',
+                  fontSize: '11px',
+                  fontWeight: form.status === 'skipped' ? 'bold' : '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '3px',
+                  minHeight: '55px',
+                  boxShadow: form.status === 'skipped' ? '0 2px 8px rgba(255, 152, 0, 0.3)' : 'none'
+                }}
+              >
+                <span style={{ fontSize: '20px' }}>⏭️</span>
+                <span>Saltado</span>
+              </button>
             </div>
           </div>
 
