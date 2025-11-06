@@ -31,6 +31,28 @@
   animation: slideUp 0.3s ease-out;
   max-width: 500px;
   width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar personalizado */
+.modal-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+
+.modal-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 215, 0, 0.3);
+  border-radius: 10px;
+}
+
+.modal-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 215, 0, 0.5);
 }
 
 @keyframes slideUp {
@@ -429,5 +451,90 @@
 .form-input-small[type="number"]:hover::-webkit-inner-spin-button,
 .form-input-small[type="number"]:hover::-webkit-outer-spin-button {
   opacity: 1;
+}
+
+/* ===== RESPONSIVE - MOBILE ===== */
+@media (max-width: 600px) {
+  .modal-overlay {
+    padding: 10px;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+
+  .modal-container {
+    max-height: 95vh;
+  }
+
+  .modal-form {
+    padding: 20px 16px;
+  }
+
+  .modal-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+  }
+
+  .modal-title {
+    font-size: 18px;
+    gap: 6px;
+  }
+
+  .modal-close {
+    width: 28px;
+    height: 28px;
+    font-size: 18px;
+  }
+
+  .form-grid {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .form-label {
+    font-size: 11px;
+  }
+
+  .label-icon {
+    font-size: 14px;
+  }
+
+  .value-badge {
+    padding: 3px 10px;
+    font-size: 14px;
+    min-width: 35px;
+  }
+
+  .form-textarea {
+    min-height: 60px;
+    font-size: 14px;
+    padding: 10px 12px;
+  }
+
+  .form-input-small {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .modal-actions {
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .btn {
+    padding: 12px 18px;
+    font-size: 13px;
+  }
+
+  /* Ajuste para botones de estado en móvil */
+  .form-field-full button {
+    font-size: 10px !important;
+    padding: 8px 4px !important;
+    min-height: 50px !important;
+    gap: 2px !important;
+  }
+
+  .form-field-full button span:first-child {
+    font-size: 18px !important;
+  }
 }
 
