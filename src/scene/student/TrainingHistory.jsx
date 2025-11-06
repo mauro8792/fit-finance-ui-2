@@ -185,7 +185,8 @@ const TrainingHistory = () => {
       if (!day.exercises) return;
       
       day.exercises.forEach(exercise => {
-        const exerciseName = exercise.nombre || exercise.name;
+        // Obtener nombre desde el catálogo
+        const exerciseName = exercise.exerciseCatalog?.name || exercise.nombre || exercise.name;
         if (!exerciseName) return;
         
         const sets = exercise.sets || [];
@@ -985,7 +986,7 @@ const TrainingHistory = () => {
                           {day.exercises.map((exercise, exIndex) => (
                             <Chip 
                               key={exercise.id || exIndex}
-                              label={exercise.nombre}
+                              label={exercise.exerciseCatalog?.name || exercise.nombre || 'Ejercicio'}
                               size="small"
                               sx={{ 
                                 bgcolor: '#e3f2fd', 

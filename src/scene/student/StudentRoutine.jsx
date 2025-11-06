@@ -234,7 +234,7 @@ export const StudentRoutine = () => {
     if (!exercise || !micros || micros.length === 0) return [];
 
     const history = [];
-    const exerciseName = exercise.nombre || exercise.name;
+    const exerciseName = exercise.exerciseCatalog?.name || exercise.nombre || exercise.name;
     const exerciseId = exercise.id;
 
     // Obtener el número del día actual para priorizar el mismo día en microciclos anteriores
@@ -1203,7 +1203,7 @@ export const StudentRoutine = () => {
                                         fontSize: { xs: "1rem", sm: "1.2rem" },
                                       }}
                                     >
-                                      {ej.nombre || ej.name}
+                                      {ej.exerciseCatalog?.name || ej.nombre || ej.name || 'Ejercicio'}
                                     </Typography>
                                     <IconButton
                                       size="small"
@@ -1252,7 +1252,7 @@ export const StudentRoutine = () => {
                                           : reps;
 
                                       return `${
-                                        ej.grupoMuscular || ej.muscle
+                                        ej.exerciseCatalog?.muscleGroup || ej.grupoMuscular || ej.muscle
                                       } · ${correctSeries} series · Reps: ${correctReps} · Descanso: ${
                                         ej.descanso || ej.tempo
                                       }`;

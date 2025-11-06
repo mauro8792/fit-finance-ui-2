@@ -306,7 +306,7 @@ const MicrocycleDetail = () => {
                                   fontWeight: 600,
                                   fontSize: isMobile ? 11 : 12
                                 }}>
-                                  {ex.nombre || ex.name || 'Sin nombre'}
+                                  {ex.exerciseCatalog?.name || ex.nombre || ex.name || 'Sin nombre'}
                                 </td>
                                 <td style={{ 
                                   padding: '8px 6px', 
@@ -314,7 +314,7 @@ const MicrocycleDetail = () => {
                                   color: '#6c757d',
                                   fontSize: isMobile ? 10 : 11
                                 }}>
-                                  {ex.grupoMuscular || ex.muscle || '-'}
+                                  {ex.exerciseCatalog?.muscleGroup || ex.grupoMuscular || ex.muscle || '-'}
                                 </td>
                                 <td style={{ 
                                   padding: '8px 6px', 
@@ -453,7 +453,7 @@ const MicrocycleDetail = () => {
                                   fontWeight: 600, 
                                   marginBottom: 4
                                 }}>
-                                  {ex.nombre || ex.name} - Sets:
+                                  {ex.exerciseCatalog?.name || ex.nombre || ex.name} - Sets:
                                 </div>
                                 <table style={{ 
                                   width: "100%", 
