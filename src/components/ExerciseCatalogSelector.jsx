@@ -1,311 +1,180 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  TextField,
-  Button,
-  Box,
-  Chip,
-  Stack,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemText,
-  InputAdornment,
-  CircularProgress,
-  Alert,
-  Divider,
-  IconButton,
-} from '@mui/material';
-import {
-  Search as SearchIcon,
-  Close as CloseIcon,
-  Add as AddIcon,
-  FitnessCenter as FitnessIcon,
-} from '@mui/icons-material';
-import fitFinanceApi from '../api/fitFinanceApi';
+import { useState, useEffect } from 'react';
+import { getEnvVariables } from '../helpers';
 
-const MUSCLE_GROUPS = [
-  { value: 'pecho', label: 'Pecho', color: '#ff6b6b' },
-  { value: 'espalda', label: 'Espalda', color: '#4ecdc4' },
-  { value: 'piernas', label: 'Piernas', color: '#45b7d1' },
-  { value: 'hombros', label: 'Hombros', color: '#feca57' },
-  { value: 'brazos', label: 'Brazos', color: '#ee5a6f' },
-  { value: 'core', label: 'Core', color: '#ff9ff3' },
-  { value: 'cardio', label: 'Cardio', color: '#54a0ff' },
-];
+const { VITE_API_URL } = getEnvVariables();
 
-const ExerciseCatalogSelector = ({ open, onClose, onSelect, onCreateNew }) => {
+/**
+ * Selector en cascada de ejercicios del catálogo
+ * 1. Primero selecciona el grupo muscular
+ * 2. Luego selecciona el ejercicio específico de ese grupo
+ */
+const ExerciseCatalogSelector = ({ value, onChange, style }) => {
+  const [muscleGroups, setMuscleGroups] = useState([]);
   const [exercises, setExercises] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [selectedGroup, setSelectedGroup] = useState('');
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('');
 
-  // Cargar ejercicios
+  // Cargar grupos musculares al montar
   useEffect(() => {
-    if (open) {
-      loadExercises();
+    loadMuscleGroups();
+  }, []);
+
+  // Cargar ejercicios cuando cambia el grupo seleccionado
+  useEffect(() => {
+    if (selectedGroup) {
+      loadExercises(selectedGroup);
+    } else {
+      setExercises([]);
     }
-  }, [open, selectedMuscleGroup]);
+  }, [selectedGroup]);
 
-  const loadExercises = async () => {
-    setLoading(true);
-    setError(null);
+  const loadMuscleGroups = async () => {
     try {
-      const params = {};
-      if (selectedMuscleGroup) {
-        params.muscleGroup = selectedMuscleGroup;
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${VITE_API_URL}/exercise-catalog/muscle-groups`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setMuscleGroups(data);
+      } else {
+        setError('Error al cargar grupos musculares');
       }
-
-      const { data } = await fitFinanceApi.get('/exercise-catalog', { params });
-      setExercises(data);
     } catch (err) {
-      setError(err?.response?.data?.message || 'Error al cargar ejercicios');
+      setError('Error de red al cargar grupos musculares');
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Filtrar ejercicios por búsqueda local
-  const filteredExercises = exercises.filter((exercise) =>
-    exercise.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  const handleSelectExercise = (exercise) => {
-    onSelect(exercise);
-    handleClose();
-  };
-
-  const handleClose = () => {
-    setSearchTerm('');
-    setSelectedMuscleGroup('');
-    onClose();
-  };
-
-  const handleMuscleGroupClick = (group) => {
-    if (selectedMuscleGroup === group) {
-      setSelectedMuscleGroup(''); // Deseleccionar
-    } else {
-      setSelectedMuscleGroup(group);
+  const loadExercises = async (muscleGroup) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(
+        `${VITE_API_URL}/exercise-catalog?muscleGroup=${encodeURIComponent(muscleGroup)}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setExercises(data);
+      } else {
+        setError('Error al cargar ejercicios');
+      }
+    } catch (err) {
+      setError('Error de red al cargar ejercicios');
+      console.error(err);
     }
   };
 
+  const handleGroupChange = (e) => {
+    const group = e.target.value;
+    setSelectedGroup(group);
+    setSelectedExercise(null);
+    
+    // Limpiar selección de ejercicio
+    if (onChange) {
+      onChange({
+        exerciseId: null,
+        nombre: '',
+        grupoMuscular: group
+      });
+    }
+  };
+
+  const handleExerciseChange = (e) => {
+    const exerciseId = parseInt(e.target.value);
+    const exercise = exercises.find(ex => ex.id === exerciseId);
+    
+    if (exercise) {
+      setSelectedExercise(exercise);
+      
+      if (onChange) {
+        onChange({
+          exerciseId: exercise.id,
+          nombre: exercise.name,
+          grupoMuscular: exercise.muscleGroup
+        });
+      }
+    }
+  };
+
+  const selectStyle = {
+    padding: '6px',
+    borderRadius: '4px',
+    border: '1px solid #444',
+    background: '#333',
+    color: '#fff',
+    fontSize: '13px',
+    boxSizing: 'border-box',
+    width: '100%',
+    minWidth: 0,
+    ...style
+  };
+
+  if (loading) {
+    return (
+      <div style={{ color: '#aaa', fontSize: '13px', fontStyle: 'italic' }}>
+        Cargando catálogo...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ color: '#f44336', fontSize: '13px' }}>
+        {error}
+      </div>
+    );
+  }
+
   return (
-    <Dialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          maxHeight: '90vh',
-        },
-      }}
-    >
-      <DialogTitle
-        sx={{
-          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          color: 'white',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          py: 2,
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+      {/* Selector de grupo muscular */}
+      <select
+        value={selectedGroup}
+        onChange={handleGroupChange}
+        style={selectStyle}
+      >
+        <option value="">Grupo muscular</option>
+        {muscleGroups.map((group, index) => (
+          <option key={index} value={group}>
+            {group}
+          </option>
+        ))}
+      </select>
+
+      {/* Selector de ejercicio */}
+      <select
+        value={selectedExercise?.id || ''}
+        onChange={handleExerciseChange}
+        disabled={!selectedGroup}
+        style={{
+          ...selectStyle,
+          opacity: selectedGroup ? 1 : 0.5
         }}
       >
-        <Box display="flex" alignItems="center" gap={1}>
-          <FitnessIcon />
-          <span>Catálogo de Ejercicios</span>
-        </Box>
-        <IconButton onClick={handleClose} sx={{ color: 'white' }}>
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-
-      <DialogContent sx={{ p: 0 }}>
-        {/* Buscador */}
-        <Box sx={{ p: 2, pb: 1, bgcolor: '#f5f5f5' }}>
-          <TextField
-            fullWidth
-            placeholder="Buscar ejercicio..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              bgcolor: 'white',
-              borderRadius: 2,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-              },
-            }}
-          />
-        </Box>
-
-        {/* Filtros de grupo muscular */}
-        <Box sx={{ px: 2, pb: 2, bgcolor: '#f5f5f5' }}>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-            {MUSCLE_GROUPS.map((group) => (
-              <Chip
-                key={group.value}
-                label={group.label}
-                onClick={() => handleMuscleGroupClick(group.value)}
-                sx={{
-                  bgcolor:
-                    selectedMuscleGroup === group.value
-                      ? group.color
-                      : 'white',
-                  color:
-                    selectedMuscleGroup === group.value ? 'white' : '#333',
-                  fontWeight:
-                    selectedMuscleGroup === group.value ? 'bold' : 'normal',
-                  border: `2px solid ${group.color}`,
-                  '&:hover': {
-                    bgcolor:
-                      selectedMuscleGroup === group.value
-                        ? group.color
-                        : '#f0f0f0',
-                  },
-                  transition: 'all 0.2s',
-                  mb: 1,
-                }}
-              />
-            ))}
-            {selectedMuscleGroup && (
-              <Chip
-                label="Limpiar"
-                onClick={() => setSelectedMuscleGroup('')}
-                sx={{
-                  bgcolor: '#666',
-                  color: 'white',
-                  '&:hover': { bgcolor: '#555' },
-                  mb: 1,
-                }}
-              />
-            )}
-          </Stack>
-        </Box>
-
-        <Divider />
-
-        {/* Lista de ejercicios */}
-        <Box sx={{ minHeight: 300, maxHeight: 400, overflow: 'auto' }}>
-          {loading ? (
-            <Box
-              display="flex"
-              justifyContent="center"
-              alignItems="center"
-              py={4}
-            >
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Alert severity="error" sx={{ m: 2 }}>
-              {error}
-            </Alert>
-          ) : filteredExercises.length === 0 ? (
-            <Box textAlign="center" py={4}>
-              <FitnessIcon sx={{ fontSize: 60, color: '#ccc', mb: 2 }} />
-              <Box color="text.secondary">
-                {searchTerm
-                  ? 'No se encontraron ejercicios'
-                  : 'No hay ejercicios disponibles'}
-              </Box>
-            </Box>
-          ) : (
-            <List sx={{ p: 0 }}>
-              {filteredExercises.map((exercise) => (
-                <ListItem key={exercise.id} disablePadding>
-                  <ListItemButton
-                    onClick={() => handleSelectExercise(exercise)}
-                    sx={{
-                      py: 2,
-                      '&:hover': {
-                        bgcolor: '#e3f2fd',
-                      },
-                    }}
-                  >
-                    <ListItemText
-                      primary={exercise.name}
-                      secondary={
-                        <Box display="flex" alignItems="center" gap={1} mt={0.5}>
-                          <Chip
-                            label={exercise.muscleGroup}
-                            size="small"
-                            sx={{
-                              height: 20,
-                              fontSize: '0.7rem',
-                              bgcolor: MUSCLE_GROUPS.find(
-                                (g) => g.value === exercise.muscleGroup
-                              )?.color || '#ccc',
-                              color: 'white',
-                            }}
-                          />
-                          {exercise.isCustom && (
-                            <Chip
-                              label="Personalizado"
-                              size="small"
-                              sx={{
-                                height: 20,
-                                fontSize: '0.7rem',
-                                bgcolor: '#ff9800',
-                                color: 'white',
-                              }}
-                            />
-                          )}
-                        </Box>
-                      }
-                      primaryTypographyProps={{
-                        fontWeight: 500,
-                      }}
-                    />
-                  </ListItemButton>
-                </ListItem>
-              ))}
-            </List>
-          )}
-        </Box>
-
-        <Divider />
-
-        {/* Botón crear nuevo */}
-        {onCreateNew && (
-          <Box sx={{ p: 2, bgcolor: '#f5f5f5' }}>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<AddIcon />}
-              onClick={() => {
-                onCreateNew();
-                handleClose();
-              }}
-              sx={{
-                borderRadius: 2,
-                py: 1.5,
-                borderWidth: 2,
-                fontWeight: 'bold',
-                '&:hover': {
-                  borderWidth: 2,
-                  transform: 'translateY(-2px)',
-                },
-                transition: 'all 0.2s',
-              }}
-            >
-              Crear Ejercicio Personalizado
-            </Button>
-          </Box>
-        )}
-      </DialogContent>
-    </Dialog>
+        <option value="">
+          {selectedGroup ? 'Selecciona ejercicio' : 'Primero elige grupo'}
+        </option>
+        {exercises.map((exercise) => (
+          <option key={exercise.id} value={exercise.id}>
+            {exercise.name}
+          </option>
+        ))}
+      </select>
+    </div>
   );
 };
 
 export default ExerciseCatalogSelector;
-

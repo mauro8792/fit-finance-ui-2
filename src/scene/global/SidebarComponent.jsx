@@ -17,6 +17,7 @@ import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 
 import 'react-pro-sidebar/dist/css/styles.css';
 import { tokens } from '../../theme';
@@ -65,6 +66,7 @@ const SidebarComponent = () => {
           <Item title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Rutinas' to='/coach/routines' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Macrociclos' to='/coach/macrocycles' icon={<AssignmentIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Catálogo' to='/coach/exercise-catalog' icon={<LibraryBooksIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Horarios' to='/coach/schedule' icon={<ScheduleIcon />} selected={selected} setSelected={setSelected} />
         </>
       );

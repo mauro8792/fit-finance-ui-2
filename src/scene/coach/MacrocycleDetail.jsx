@@ -2,7 +2,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
-import MesocycleForm from './MesocycleForm';
+import MesocycleWizard from './MesocycleWizard';
+import { getEnvVariables } from '../../helpers/getEnvVariables';
+
+const { VITE_API_URL } = getEnvVariables();
 
 const MacrocycleDetail = () => {
   const { id } = useParams();
@@ -16,6 +19,66 @@ const MacrocycleDetail = () => {
 
   // Estilos responsivos
   const isMobile = window.innerWidth < 600;
+
+  // 🆕 Funciones helper para estados
+  const getStatusLabel = (status) => {
+    const labels = {
+      'draft': '📝 BORRADOR',
+      'published': '✅ PUBLICADA',
+      'active': '🟢 ACTIVA',
+      'paused': '⏸️ PAUSADA',
+      'completed': '✓ COMPLETADA',
+      'archived': '📦 ARCHIVADA'
+    };
+    return labels[status] || status;
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      'draft': '#777',
+      'published': '#2196f3',
+      'active': '#4caf50',
+      'paused': '#ff9800',
+      'completed': '#9e9e9e',
+      'archived': '#555'
+    };
+    return colors[status] || '#777';
+  };
+
+  const getStatusBgColor = (status) => {
+    const bgColors = {
+      'draft': 'rgba(119, 119, 119, 0.2)',
+      'published': 'rgba(33, 150, 243, 0.2)',
+      'active': 'rgba(76, 175, 80, 0.2)',
+      'paused': 'rgba(255, 152, 0, 0.2)',
+      'completed': 'rgba(158, 158, 158, 0.2)',
+      'archived': 'rgba(85, 85, 85, 0.2)'
+    };
+    return bgColors[status] || 'rgba(119, 119, 119, 0.2)';
+  };
+
+  // 🆕 Handler para cambiar estado de mesociclo
+  const handleChangeStatus = async (mesocycleId, newStatus) => {
+    try {
+      const response = await fetch(`${VITE_API_URL}/mesocycle/${mesocycleId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+
+      if (response.ok) {
+        alert(`✅ Mesociclo actualizado a ${getStatusLabel(newStatus)}`);
+        // Recargar mesociclos
+        const updatedMesocycles = await getMesocyclesByMacro(id);
+        setMesocycles(updatedMesocycles);
+      } else {
+        alert('❌ Error al actualizar el estado');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('❌ Error al actualizar el estado');
+    }
+  };
 
   // Cargar macrociclo y mesociclos
   useEffect(() => {
@@ -53,9 +116,10 @@ const MacrocycleDetail = () => {
   return (
     <div style={{ 
       background: '#181818', 
-      height: '100vh', 
+      minHeight: '100vh',
+      height: '100vh',
       padding: isMobile ? 8 : 16, 
-      overflow: 'hidden', 
+      overflow: 'auto', 
       display: 'flex', 
       flexDirection: 'column' 
     }}>
@@ -199,36 +263,31 @@ const MacrocycleDetail = () => {
               flexWrap: 'wrap', 
               gap: 12, 
               justifyContent: 'flex-start', 
-              marginBottom: 16 
+              marginBottom: 16,
+              maxWidth: '100%',
+              overflow: 'visible'
             }}>
-              {mesocycles.map((meso, index) => (
+              {mesocycles.map((meso, index) => {
+                const status = meso.status || 'draft';
+                return (
                 <div
                   key={meso.id}
                   style={{
                     background: '#181818',
                     borderRadius: 12,
                     boxShadow: '0 2px 12px #0003',
-                    padding: 16,
-                    minWidth: 220,
-                    maxWidth: 280,
-                    border: '2px solid #4caf50',
+                    padding: isMobile ? 12 : 16,
+                    minWidth: isMobile ? 160 : 220,
+                    maxWidth: isMobile ? 200 : 280,
+                    flex: isMobile ? '0 0 calc(50% - 6px)' : '0 0 auto',
+                    border: `2px solid ${getStatusColor(status)}`,
                     color: '#fff',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'flex-start',
-                    fontSize: 13,
-                    cursor: 'pointer',
+                    fontSize: isMobile ? 11 : 13,
                     transition: 'all 0.2s ease',
                     position: 'relative'
-                  }}
-                  onClick={() => navigate(`/coach/mesocycle/${meso.id}/microcycles`)}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 16px rgba(76, 175, 80, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 12px #0003';
                   }}
                 >
                   {/* Badge de número */}
@@ -236,7 +295,7 @@ const MacrocycleDetail = () => {
                     position: 'absolute',
                     top: -8,
                     right: -8,
-                    background: '#4caf50',
+                    background: getStatusColor(status),
                     color: '#fff',
                     borderRadius: '50%',
                     width: 24,
@@ -250,17 +309,36 @@ const MacrocycleDetail = () => {
                     {index + 1}
                   </div>
 
+                  {/* Badge de estado */}
+                  <div style={{
+                    backgroundColor: getStatusBgColor(status),
+                    color: getStatusColor(status),
+                    border: `1px solid ${getStatusColor(status)}`,
+                    borderRadius: 6,
+                    padding: '4px 8px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    marginBottom: 12,
+                    alignSelf: 'flex-start'
+                  }}>
+                    {getStatusLabel(status)}
+                  </div>
+
                   <div style={{ 
                     fontWeight: 700, 
-                    fontSize: 16, 
-                    color: '#4caf50', 
-                    marginBottom: 8 
-                  }}>
+                    fontSize: isMobile ? 13 : 16, 
+                    color: getStatusColor(status), 
+                    marginBottom: 8,
+                    cursor: 'pointer',
+                    wordBreak: 'break-word'
+                  }}
+                  onClick={() => navigate(`/coach/mesocycle/${meso.id}/microcycles`)}
+                  >
                     {meso.name}
                   </div>
                   
                   <div style={{ 
-                    fontSize: 12, 
+                    fontSize: isMobile ? 10 : 12, 
                     marginBottom: 4, 
                     color: '#ccc' 
                   }}>
@@ -268,7 +346,7 @@ const MacrocycleDetail = () => {
                   </div>
                   
                   <div style={{ 
-                    fontSize: 12, 
+                    fontSize: isMobile ? 10 : 12, 
                     marginBottom: 8, 
                     color: '#ccc' 
                   }}>
@@ -277,25 +355,177 @@ const MacrocycleDetail = () => {
 
                   {meso.objetivo && (
                     <div style={{ 
-                      fontSize: 11, 
+                      fontSize: isMobile ? 9 : 11, 
                       color: '#aaa', 
                       marginBottom: 12,
-                      lineHeight: 1.4
+                      lineHeight: 1.4,
+                      wordBreak: 'break-word'
                     }}>
                       <b>Objetivo:</b> {meso.objetivo}
                     </div>
                   )}
 
+                  {/* Botones de acción según estado */}
                   <div style={{ 
                     marginTop: 'auto',
-                    fontSize: 11,
-                    color: '#4caf50',
-                    fontWeight: 600
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6
                   }}>
-                    Click para ver microciclos →
+                    {status === 'draft' && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChangeStatus(meso.id, 'published');
+                          }}
+                          style={{
+                            background: '#4caf50',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: isMobile ? '5px 8px' : '6px 12px',
+                            fontSize: isMobile ? 9 : 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          ✅ Publicar
+                        </button>
+                      </>
+                    )}
+
+                    {status === 'published' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChangeStatus(meso.id, 'active');
+                        }}
+                        style={{
+                          background: '#4caf50',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: isMobile ? '5px 8px' : '6px 12px',
+                          fontSize: isMobile ? 9 : 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        🟢 Activar
+                      </button>
+                    )}
+
+                    {status === 'active' && (
+                      <>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChangeStatus(meso.id, 'paused');
+                          }}
+                          style={{
+                            background: '#ff9800',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '6px 12px',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          ⏸️ Pausar
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleChangeStatus(meso.id, 'completed');
+                          }}
+                          style={{
+                            background: '#9e9e9e',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: 6,
+                            padding: '6px 12px',
+                            fontSize: 11,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          ✓ Completar
+                        </button>
+                      </>
+                    )}
+
+                    {status === 'paused' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChangeStatus(meso.id, 'active');
+                        }}
+                        style={{
+                          background: '#4caf50',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: isMobile ? '5px 8px' : '6px 12px',
+                          fontSize: isMobile ? 9 : 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        🟢 Reanudar
+                      </button>
+                    )}
+
+                    {status === 'completed' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleChangeStatus(meso.id, 'archived');
+                        }}
+                        style={{
+                          background: '#555',
+                          color: '#fff',
+                          border: 'none',
+                          borderRadius: 6,
+                          padding: isMobile ? '5px 8px' : '6px 12px',
+                          fontSize: isMobile ? 9 : 11,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        📦 Archivar
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => navigate(`/coach/mesocycle/${meso.id}/microcycles`)}
+                      style={{
+                        background: 'transparent',
+                        color: getStatusColor(status),
+                        border: `1px solid ${getStatusColor(status)}`,
+                        borderRadius: 6,
+                        padding: '6px 12px',
+                        fontSize: 11,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      👁️ Ver Detalles
+                    </button>
                   </div>
                 </div>
-              ))}
+              );
+              })}
               
               {/* Card para crear nuevo mesociclo */}
               {!showForm && (
@@ -352,49 +582,26 @@ const MacrocycleDetail = () => {
         )}
       </div>
 
-      {/* Formulario de creación */}
+      {/* Wizard de creación de mesociclo */}
       {showForm && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: 20
-        }}>
-          <div style={{
-            background: '#222',
-            borderRadius: 16,
-            padding: 24,
-            maxWidth: 500,
-            width: '100%',
-            maxHeight: '90vh',
-            overflow: 'auto'
-          }}>
-            <MesocycleForm
-              macrocycleId={id}
-              onCreated={async (meso) => {
-                setShowForm(false);
-                setLoading(true);
-                try {
-                  await createMesocycle(id, meso);
-                  const nuevos = await getMesocyclesByMacro(id);
-                  setMesocycles(nuevos);
-                } catch {
-                  setError('Error al crear mesociclo');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              onCancel={() => setShowForm(false)}
-            />
-          </div>
-        </div>
+        <MesocycleWizard
+          macrocycleId={id}
+          studentId={macrocycle?.studentId}
+          studentName={macrocycle?.studentName || "Alumno"}
+          onCancel={() => setShowForm(false)}
+          onComplete={async () => {
+            setShowForm(false);
+            setLoading(true);
+            try {
+              const nuevos = await getMesocyclesByMacro(id);
+              setMesocycles(nuevos);
+            } catch {
+              setError('Error al cargar mesociclos');
+            } finally {
+              setLoading(false);
+            }
+          }}
+        />
       )}
     </div>
   );

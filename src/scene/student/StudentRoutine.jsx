@@ -19,12 +19,19 @@ import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import HistoryIcon from "@mui/icons-material/History";
 import TodayIcon from "@mui/icons-material/Today";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import {
   Box,
   Button,
   CircularProgress,
   Fab,
   IconButton,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
   Stack,
   Tab,
   Tabs,
@@ -38,6 +45,9 @@ import EditSetModal from "../../components/EditSetModal";
 import RestTimerWidget from "../../components/RestTimerWidget";
 import { useAuthStore } from "../../hooks";
 import { useRoutineStore } from "../../hooks/useRoutineStore";
+import { getEnvVariables } from "../../helpers/getEnvVariables";
+
+const { VITE_API_URL } = getEnvVariables();
 
 // Componente para ejercicios arrastrables
 const SortableExercise = ({ exercise, children }) => {
@@ -121,6 +131,10 @@ export const StudentRoutine = () => {
   const [selectedExercise, setSelectedExercise] = useState(null);
   const [exerciseHistory, setExerciseHistory] = useState([]);
   const [historyViewMode, setHistoryViewMode] = useState("friendly"); // 'friendly' o 'compact'
+  const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+  const [menuExercise, setMenuExercise] = useState(null);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [videoUrl, setVideoUrl] = useState("");
 
   // Timer de descanso
   const [showTimer, setShowTimer] = useState(false);
@@ -237,32 +251,39 @@ export const StudentRoutine = () => {
     fetchMacros();
   }, [student, getAllMacroCycles]);
 
-  // Cuando selecciona un macrocycle, buscar mesocycles y seleccionar el primero automáticamente
+  // Cuando selecciona un macrocycle, buscar mesocycles ACTIVOS/PUBLICADOS solamente
   useEffect(() => {
     const fetchMesos = async () => {
-      if (!selectedMacroId) return;
+      if (!selectedMacroId || !student?.id) return;
       setLoading(true);
       try {
-        const mesosResult = await getMesocyclesByMacro(selectedMacroId);
-        setMesos(mesosResult);
-        setMicros([]);
-        setMesoIdx(0);
-        setMicroIdx(0);
-        setDiaIdx(0);
-        if (mesosResult.length > 0) {
-          setSelectedMesoId(mesosResult[0].id);
+        // 🆕 Usar el nuevo endpoint que filtra por estado
+        const response = await fetch(`${VITE_API_URL}/mesocycle/student/${student.id}/active`);
+        const data = await response.json();
+        
+        if (data.mesocycle) {
+          // Solo mostrar el mesociclo activo/publicado
+          setMesos([data.mesocycle]);
+          setMicros([]);
+          setMesoIdx(0);
+          setMicroIdx(0);
+          setDiaIdx(0);
+          setSelectedMesoId(data.mesocycle.id);
+          setError(null);
         } else {
+          setMesos([]);
           setSelectedMesoId("");
-          setError("No hay mesociclos en tu rutina.");
+          setError(data.message || "No tienes una rutina activa asignada.");
         }
       } catch (err) {
-        setError(err.message || "Error cargando mesocycles");
+        setError(err.message || "Error cargando rutina activa");
+        setMesos([]);
       } finally {
         setLoading(false);
       }
     };
     fetchMesos();
-  }, [selectedMacroId, getMesocyclesByMacro]);
+  }, [selectedMacroId, student?.id]);
 
   // Cuando selecciona un mesocycle, buscar microcycles y seleccionar el primero automáticamente
   useEffect(() => {
@@ -640,6 +661,104 @@ export const StudentRoutine = () => {
     const history = getExerciseHistory(exercise);
     setExerciseHistory(history);
     setHistoryModalOpen(true);
+  };
+
+  // Funciones para el menú de opciones
+  const handleOpenMenu = (event, exercise) => {
+    console.log('🎯 handleOpenMenu LLAMADO');
+    console.log('📍 event.currentTarget:', event.currentTarget);
+    console.log('🏋️ exercise:', exercise);
+    setMenuAnchorEl(event.currentTarget);
+    setMenuExercise(exercise);
+    console.log('✅ Estados actualizados');
+  };
+
+  const handleCloseMenu = () => {
+    setMenuAnchorEl(null);
+    setMenuExercise(null);
+  };
+
+  // Funciones para el modal de video
+  const handleOpenVideo = (url) => {
+    console.log('🎬 handleOpenVideo - URL original:', url);
+    
+    // Convertir URL de YouTube a formato embed
+    let embedUrl = url;
+    
+    // Si es una URL de búsqueda de YouTube, no la podemos embedear
+    if (url.includes('youtube.com/results')) {
+      console.log('⚠️ URL de búsqueda de YouTube, abriendo en nueva pestaña');
+      window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    
+    // Convertir URL normal de YouTube a embed
+    if (url.includes('youtube.com/watch')) {
+      const videoId = url.split('v=')[1]?.split('&')[0];
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      console.log('✅ Convertido a embed URL:', embedUrl);
+    } else if (url.includes('youtu.be/')) {
+      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+      embedUrl = `https://www.youtube.com/embed/${videoId}`;
+      console.log('✅ Convertido a embed URL:', embedUrl);
+    }
+    
+    setVideoUrl(embedUrl);
+    setVideoModalOpen(true);
+    console.log('✅ Modal de video abierto');
+  };
+
+  const handleCloseVideo = () => {
+    setVideoModalOpen(false);
+    setVideoUrl("");
+  };
+
+  const handleMenuAction = (action) => {
+    console.log('🎯 handleMenuAction LLAMADO con acción:', action);
+    console.log('📋 menuExercise existe?', !!menuExercise);
+    
+    if (!menuExercise) {
+      console.log('❌ menuExercise es null/undefined, abortando');
+      return;
+    }
+    
+    console.log('📋 menuExercise completo:', menuExercise);
+    
+    // Guardar referencia al ejercicio antes de cerrar el menú
+    const exercise = menuExercise;
+    
+    // Cerrar el menú PRIMERO
+    handleCloseMenu();
+    
+    // Ejecutar acción DESPUÉS con un pequeño delay
+    setTimeout(() => {
+      console.log('⏰ Ejecutando acción después del timeout:', action);
+      
+      switch (action) {
+        case 'history':
+          console.log('📊 Abriendo historial...');
+          handleOpenHistory(exercise);
+          break;
+        case 'addSet':
+          console.log('➕ Agregando set extra...');
+          handleAddExtraSet(exercise);
+          break;
+        case 'video':
+          const videoUrlToOpen = exercise.exerciseCatalog?.videoUrl;
+          console.log('🎥 Intentando abrir video:', videoUrlToOpen);
+          if (videoUrlToOpen) {
+            console.log('✅ Abriendo video en modal...');
+            handleOpenVideo(videoUrlToOpen);
+          } else {
+            console.log('❌ No hay videoUrl disponible');
+            alert('Este ejercicio no tiene video disponible');
+          }
+          break;
+        default:
+          console.log('⚠️ Acción no reconocida:', action);
+          break;
+      }
+    }, 100);
   };
 
   const handleSaveSet = async (form) => {
@@ -1137,9 +1256,13 @@ export const StudentRoutine = () => {
                               flexShrink: 0,
                               bgcolor:
                                 realIdx === microIdx
-                                  ? "#ffe082"
+                                  ? micro.isDeload
+                                    ? "#64b5f6"
+                                    : "#ffe082"
+                                  : micro.isDeload
+                                  ? "rgba(33, 150, 243, 0.15)"
                                   : "rgba(255, 255, 255, 0.08)",
-                              color: realIdx === microIdx ? "#222" : "#fff",
+                              color: realIdx === microIdx ? "#222" : micro.isDeload ? "#64b5f6" : "#fff",
                               fontWeight: realIdx === microIdx ? 700 : 600,
                               fontSize: { xs: "0.65rem", sm: "0.85rem" },
                               backdropFilter: "blur(15px)",
@@ -1183,6 +1306,7 @@ export const StudentRoutine = () => {
                               setDiaIdx(0);
                             }}
                           >
+                            {micro.isDeload && "🔵 "}
                             {isMobile ? `M${realIdx + 1}` : micro.name}
                           </Button>
                         );
@@ -1239,6 +1363,34 @@ export const StudentRoutine = () => {
                   </IconButton>
                 </Box>
               )}
+              
+              {/* Alert de Semana de Descarga */}
+              {micros.length > 0 && micros[microIdx]?.isDeload && (
+                <Alert
+                  severity="info"
+                  icon="🔵"
+                  sx={{
+                    mt: 2,
+                    mb: 2,
+                    backgroundColor: "rgba(33, 150, 243, 0.15)",
+                    color: "#64b5f6",
+                    border: "1px solid rgba(33, 150, 243, 0.3)",
+                    borderRadius: "12px",
+                    backdropFilter: "blur(10px)",
+                    "& .MuiAlert-icon": {
+                      color: "#64b5f6",
+                    },
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                    Semana de Descarga
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#90caf9" }}>
+                    Reduce las cargas un 20-30% y aumenta el RIR +2-3 puntos. Esta semana es para recuperación y adaptación.
+                  </Typography>
+                </Alert>
+              )}
+              
               {/* Días selector - Solo días con ejercicios */}
               {selectedMesoId &&
                 micros.length > 0 &&
@@ -1487,53 +1639,6 @@ export const StudentRoutine = () => {
                                           </Typography>
                                           <IconButton
                                             size="small"
-                                            onClick={() =>
-                                              handleOpenHistory(ej)
-                                            }
-                                            sx={{
-                                              color: "#2196f3",
-                                              backgroundColor:
-                                                "rgba(33, 150, 243, 0.1)",
-                                              "&:hover": {
-                                                backgroundColor:
-                                                  "rgba(33, 150, 243, 0.2)",
-                                              },
-                                              width: { xs: 28, sm: 32 },
-                                              height: { xs: 28, sm: 32 },
-                                            }}
-                                            title="Ver historial"
-                                          >
-                                            <HistoryIcon fontSize="small" />
-                                          </IconButton>
-                                          <IconButton
-                                            size="small"
-                                            onClick={() =>
-                                              handleAddExtraSet(ej)
-                                            }
-                                            sx={{
-                                              color: "#4caf50",
-                                              backgroundColor:
-                                                "rgba(76, 175, 80, 0.1)",
-                                              "&:hover": {
-                                                backgroundColor:
-                                                  "rgba(76, 175, 80, 0.2)",
-                                              },
-                                              width: { xs: 28, sm: 32 },
-                                              height: { xs: 28, sm: 32 },
-                                              fontWeight: "bold",
-                                              fontSize: {
-                                                xs: "1.2rem",
-                                                sm: "1.4rem",
-                                              },
-                                            }}
-                                            title="Agregar set extra"
-                                          >
-                                            <span style={{ fontSize: "1.2em" }}>
-                                              +
-                                            </span>
-                                          </IconButton>
-                                          <IconButton
-                                            size="small"
                                             {...attributes}
                                             {...listeners}
                                             sx={{
@@ -1552,10 +1657,29 @@ export const StudentRoutine = () => {
                                                 cursor: "grabbing",
                                               },
                                               touchAction: "none",
+                                              mr: 1,
                                             }}
                                             title="Reordenar ejercicio"
                                           >
                                             <DragIndicatorIcon fontSize="small" />
+                                          </IconButton>
+                                          <IconButton
+                                            size="small"
+                                            onClick={(e) => handleOpenMenu(e, ej)}
+                                            sx={{
+                                              color: "rgba(0, 0, 0, 0.7)",
+                                              backgroundColor:
+                                                "rgba(0, 0, 0, 0.05)",
+                                              "&:hover": {
+                                                backgroundColor:
+                                                  "rgba(0, 0, 0, 0.1)",
+                                              },
+                                              width: { xs: 32, sm: 36 },
+                                              height: { xs: 32, sm: 36 },
+                                            }}
+                                            title="Opciones"
+                                          >
+                                            <MoreVertIcon fontSize="small" />
                                           </IconButton>
                                         </Box>
 
@@ -1851,6 +1975,8 @@ export const StudentRoutine = () => {
                                                         j === sets.length - 1;
                                                       const isExtraSet =
                                                         serie.isExtra === true;
+                                                      const isAmrapSet =
+                                                        serie.isAmrap === true;
                                                       const setStatus =
                                                         serie.status ||
                                                         "completed";
@@ -1869,6 +1995,10 @@ export const StudentRoutine = () => {
                                                         bgColor =
                                                           "rgba(255, 152, 0, 0.15)"; // Naranja claro para saltados
                                                         borderColor = "#ff9800";
+                                                      } else if (isAmrapSet) {
+                                                        bgColor =
+                                                          "rgba(255, 193, 7, 0.15)"; // Amarillo dorado para AMRAP
+                                                        borderColor = "#ffc107";
                                                       } else if (isExtraSet) {
                                                         bgColor =
                                                           "rgba(76, 175, 80, 0.15)"; // Verde claro para extras
@@ -1976,9 +2106,30 @@ export const StudentRoutine = () => {
                                                                   ⏭️
                                                                 </span>
                                                               )}
+                                                              {isAmrapSet && (
+                                                                <span
+                                                                  style={{
+                                                                    fontSize:
+                                                                      "0.7em",
+                                                                    backgroundColor:
+                                                                      "#ffc107",
+                                                                    color:
+                                                                      "#000",
+                                                                    padding:
+                                                                      "2px 6px",
+                                                                    borderRadius:
+                                                                      "4px",
+                                                                    fontWeight:
+                                                                      "bold",
+                                                                  }}
+                                                                >
+                                                                  🔥 AMRAP
+                                                                </span>
+                                                              )}
                                                               {setStatus ===
                                                                 "completed" &&
-                                                                isExtraSet && (
+                                                                isExtraSet &&
+                                                                !isAmrapSet && (
                                                                   <span
                                                                     style={{
                                                                       fontSize:
@@ -2000,7 +2151,8 @@ export const StudentRoutine = () => {
                                                                 )}
                                                               {setStatus ===
                                                                 "completed" &&
-                                                                !isExtraSet && (
+                                                                !isExtraSet &&
+                                                                !isAmrapSet && (
                                                                   <span>
                                                                     {ej.repeticiones ||
                                                                       ej.repRange}
@@ -2261,40 +2413,79 @@ export const StudentRoutine = () => {
             <Box
               sx={{
                 display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
+                flexDirection: "column",
+                gap: 2,
                 mb: 3,
               }}
             >
-              <Typography
-                variant="h5"
-                fontWeight="bold"
+              <Box
                 sx={{
-                  color: "#ffe082",
-                  fontSize: { xs: "1.2rem", sm: "1.5rem" },
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
                 }}
               >
-                💪{" "}
-                {selectedExercise?.exerciseCatalog?.name ||
-                  selectedExercise?.nombre ||
-                  selectedExercise?.name}
-              </Typography>
-              <Button
-                size="small"
-                onClick={() =>
-                  setHistoryViewMode(
-                    historyViewMode === "friendly" ? "compact" : "friendly"
-                  )
-                }
-                sx={{
-                  color: "#fff",
-                  fontSize: "0.75rem",
-                  textTransform: "none",
-                  "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)" },
-                }}
-              >
-                {historyViewMode === "friendly" ? "📊 Compacto" : "💚 Amigable"}
-              </Button>
+                <Typography
+                  variant="h5"
+                  fontWeight="bold"
+                  sx={{
+                    color: "#ffe082",
+                    fontSize: { xs: "1.2rem", sm: "1.5rem" },
+                  }}
+                >
+                  💪{" "}
+                  {selectedExercise?.exerciseCatalog?.name ||
+                    selectedExercise?.nombre ||
+                    selectedExercise?.name}
+                </Typography>
+                <Button
+                  size="small"
+                  onClick={() =>
+                    setHistoryViewMode(
+                      historyViewMode === "friendly" ? "compact" : "friendly"
+                    )
+                  }
+                  sx={{
+                    color: "#fff",
+                    fontSize: "0.75rem",
+                    textTransform: "none",
+                    "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)" },
+                  }}
+                >
+                  {historyViewMode === "friendly" ? "📊 Compacto" : "💚 Amigable"}
+                </Button>
+              </Box>
+
+              {/* Botón de Video Tutorial */}
+              {selectedExercise?.exerciseCatalog?.videoUrl && (
+                <Button
+                  variant="contained"
+                  startIcon={<span style={{ fontSize: "1.2em" }}>▶️</span>}
+                  onClick={() => {
+                    handleCloseMenu();
+                    setHistoryModalOpen(false);
+                    handleOpenVideo(selectedExercise.exerciseCatalog.videoUrl);
+                  }}
+                  sx={{
+                    background: 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)',
+                    color: '#fff',
+                    fontWeight: 600,
+                    fontSize: { xs: '0.85rem', sm: '0.95rem' },
+                    padding: { xs: '8px 16px', sm: '10px 24px' },
+                    borderRadius: '8px',
+                    textTransform: 'none',
+                    boxShadow: '0 4px 12px rgba(255, 68, 68, 0.4)',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #cc0000 0%, #990000 100%)',
+                      boxShadow: '0 6px 16px rgba(255, 68, 68, 0.6)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  Ver Técnica del Ejercicio
+                </Button>
+              )}
             </Box>
 
             {exerciseHistory.length === 0 ? (
@@ -2539,6 +2730,169 @@ export const StudentRoutine = () => {
             <TodayIcon />
           </Fab>
         )}
+
+      {/* Menú de Opciones del Ejercicio */}
+      {console.log('🎨 Renderizando Menu. menuAnchorEl:', menuAnchorEl, 'open:', Boolean(menuAnchorEl))}
+      <Menu
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleCloseMenu}
+        sx={{
+          zIndex: 99999,
+        }}
+        PaperProps={{
+          sx: {
+            background: 'linear-gradient(145deg, #2a2a2a, #1f1f1f)',
+            color: '#fff',
+            minWidth: 200,
+            borderRadius: 2,
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+            zIndex: 99999,
+          }
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem 
+          onClick={(e) => {
+            console.log('🖱️ Click en MenuItem: history');
+            e.stopPropagation();
+            handleMenuAction('history');
+          }}
+          sx={{
+            py: 1.5,
+            px: 2,
+            '&:hover': {
+              background: 'rgba(33, 150, 243, 0.1)',
+            }
+          }}
+        >
+          <ListItemIcon sx={{ color: '#2196f3' }}>
+            <HistoryIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Ver Historial" 
+            sx={{ color: '#fff' }}
+          />
+        </MenuItem>
+        
+        <MenuItem 
+          onClick={(e) => {
+            console.log('🖱️ Click en MenuItem: addSet');
+            e.stopPropagation();
+            handleMenuAction('addSet');
+          }}
+          sx={{
+            py: 1.5,
+            px: 2,
+            '&:hover': {
+              background: 'rgba(76, 175, 80, 0.1)',
+            }
+          }}
+        >
+          <ListItemIcon sx={{ color: '#4caf50' }}>
+            <AddCircleOutlineIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText 
+            primary="Agregar Set Extra" 
+            sx={{ color: '#fff' }}
+          />
+        </MenuItem>
+        
+        {menuExercise?.exerciseCatalog?.videoUrl && (
+          <MenuItem 
+            onClick={(e) => {
+              console.log('🖱️ Click en MenuItem: video');
+              e.stopPropagation();
+              handleMenuAction('video');
+            }}
+            sx={{
+              py: 1.5,
+              px: 2,
+              '&:hover': {
+                background: 'rgba(255, 68, 68, 0.1)',
+              }
+            }}
+          >
+            <ListItemIcon sx={{ color: '#ff4444' }}>
+              <VideoLibraryIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Ver Técnica" 
+              sx={{ color: '#fff' }}
+            />
+          </MenuItem>
+        )}
+      </Menu>
+
+      {/* Modal de Video */}
+      {videoModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.9)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 99999,
+            padding: isMobile ? "16px" : "24px",
+          }}
+          onClick={handleCloseVideo}
+        >
+          <div
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: isMobile ? "100%" : "900px",
+              aspectRatio: "16/9",
+              background: "#000",
+              borderRadius: isMobile ? "8px" : "12px",
+              overflow: "hidden",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.8)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Botón Cerrar */}
+            <IconButton
+              onClick={handleCloseVideo}
+              sx={{
+                position: "absolute",
+                top: isMobile ? 8 : 12,
+                right: isMobile ? 8 : 12,
+                zIndex: 100000,
+                background: "rgba(0,0,0,0.7)",
+                color: "#fff",
+                width: { xs: 36, sm: 44 },
+                height: { xs: 36, sm: 44 },
+                "&:hover": {
+                  background: "rgba(255,0,0,0.8)",
+                  transform: "scale(1.1)",
+                },
+                transition: "all 0.3s ease",
+              }}
+            >
+              <span style={{ fontSize: isMobile ? "1.2em" : "1.5em" }}>✕</span>
+            </IconButton>
+
+            {/* iframe de YouTube */}
+            <iframe
+              src={videoUrl}
+              title="Video del ejercicio"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              style={{
+                width: "100%",
+                height: "100%",
+                border: "none",
+              }}
+            />
+          </div>
+        </div>
+      )}
     </Box>
   );
 };

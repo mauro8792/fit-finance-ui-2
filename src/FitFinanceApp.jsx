@@ -26,6 +26,7 @@ import MicrocycleManager from './scene/coach/MicrocycleManager';
 
 import MicrocycleEdit from './scene/coach/MicrocycleEdit';
 import MicrocycleDetail from './components/MicrocycleDetail';
+import ExerciseCatalogManager from './scene/coach/ExerciseCatalogManager';
 import DashboardMock from './components/DashboardMock';
 import Layout from './components/Layout';
 import { InstallPWABanner } from './components/InstallPWABanner';
@@ -103,6 +104,7 @@ export const FitFinanceApp = () => {
                   <Route path="/coach/mesocycle/:mesocycleId/microcycles" element={<MicrocycleManager />} />
                   <Route path="/coach/mesocycle/:mesocycleId/microcycle/new" element={<MicrocycleEdit />} />
                   <Route path="/coach/mesocycle/:mesocycleId/microcycle/:microcycleId/edit" element={<MicrocycleEdit />} />
+                  <Route path="/coach/exercise-catalog" element={<ExerciseCatalogManager />} />
                   <Route path="*" element={<Navigate to="/coach/dashboard" />} />
                 </>
               )}
