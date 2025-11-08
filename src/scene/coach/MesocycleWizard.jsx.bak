@@ -1,0 +1,706 @@
+import React, { useState } from 'react';
+import { createCompleteRoutine as createCompleteRoutineAPI } from '../../api/fitFinanceApi';
+
+const MesocycleWizard = ({ macrocycleId, studentId, studentName, onCancel, onComplete }) => {
+  const [currentStep, setCurrentStep] = useState(1); // Empezar en 1 (que será el Mesociclo)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Estado del wizard (sin macrociclo, ya existe)
+  const [wizardData, setWizardData] = useState({
+    // Step 1: Mesociclo
+    mesocycles: [{
+      name: '',
+      startDate: '',
+      endDate: '',
+      objetivo: '',
+      microcycles: [] // Se llenará en step 2
+    }],
+    // Step 2: Microciclos (plantilla)
+    microcycleCount: 4,
+    microcycleDays: 7,
+    // Step 3: Días y ejercicios
+    days: []
+  });
+
+  const updateWizardData = (section, data) => {
+    setWizardData(prev => {
+      if (section === 'mesocycles') {
+        return {
+          ...prev,
+          mesocycles: [{
+            ...prev.mesocycles[0],
+            ...data
+          }]
+        };
+      }
+      return {
+        ...prev,
+        [section]: data
+      };
+    });
+  };
+
+  // Crear mesociclo completo con microciclos y días
+  const createCompleteMesocycle = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      console.log('🎯 Creando mesociclo con datos:', wizardData);
+
+      // Preparar los datos para el backend
+      const payload = {
+        studentId: studentId,
+        macrocycleId: macrocycleId, // Ya existe
+        mesocycles: wizardData.mesocycles.map(meso => ({
+          name: meso.name,
+          startDate: meso.startDate,
+          endDate: meso.endDate,
+          objetivo: meso.objetivo,
+          microcycles: generateMicrocycles(
+            wizardData.microcycleCount,
+            wizardData.microcycleDays,
+            wizardData.days
+          )
+        }))
+      };
+
+      console.log('📤 Payload para backend:', payload);
+
+      // Llamar al API
+      const result = await createCompleteRoutineAPI(payload);
+
+      console.log('✅ Mesociclo creado:', result);
+      setLoading(false);
+      
+      if (onComplete) {
+        onComplete(result);
+      }
+
+    } catch (err) {
+      setLoading(false);
+      setError('Error al crear el mesociclo: ' + (err.response?.data?.message || err.message));
+      console.error('❌ Error creando mesociclo:', err);
+    }
+  };
+
+  // Generar microciclos basados en la plantilla
+  const generateMicrocycles = (count, daysPerCycle, daysTemplate) => {
+    const microcycles = [];
+    for (let i = 0; i < count; i++) {
+      microcycles.push({
+        name: `Microciclo ${i + 1}`,
+        days: daysTemplate.map(dayTemplate => ({
+          dia: dayTemplate.dia,
+          nombre: dayTemplate.nombre,
+          esDescanso: dayTemplate.esDescanso,
+          exercises: dayTemplate.exercises || []
+        }))
+      });
+    }
+    return microcycles;
+  };
+
+  // Estilos
+  const isMobile = window.innerWidth < 768;
+  
+  const wizardStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    background: 'rgba(0, 0, 0, 0.85)',
+    backdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+    padding: isMobile ? '10px' : '20px',
+    overflowY: 'auto'
+  };
+
+  const containerStyle = {
+    background: 'linear-gradient(145deg, #2a2a2a, #1f1f1f)',
+    borderRadius: '20px',
+    maxWidth: '900px',
+    width: '100%',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
+    color: '#fff'
+  };
+
+  const headerStyle = {
+    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    padding: isMobile ? '20px' : '30px',
+    borderRadius: '20px 20px 0 0',
+    textAlign: 'center'
+  };
+
+  const stepIndicatorStyle = {
+    display: 'flex',
+    justifyContent: 'center',
+    gap: isMobile ? '8px' : '12px',
+    marginTop: '20px'
+  };
+
+  const stepCircleStyle = (stepNumber) => ({
+    width: isMobile ? '35px' : '45px',
+    height: isMobile ? '35px' : '45px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold',
+    fontSize: isMobile ? '16px' : '18px',
+    background: currentStep === stepNumber 
+      ? '#ffd700' 
+      : currentStep > stepNumber 
+        ? '#4caf50' 
+        : 'rgba(255, 255, 255, 0.2)',
+    color: currentStep === stepNumber || currentStep > stepNumber ? '#1a1a1a' : '#fff',
+    border: currentStep === stepNumber ? '3px solid #fff' : 'none',
+    transition: 'all 0.3s ease'
+  });
+
+  const contentStyle = {
+    padding: isMobile ? '20px' : '30px'
+  };
+
+  const buttonStyle = (type) => {
+    const baseStyle = {
+      padding: isMobile ? '12px 20px' : '14px 28px',
+      borderRadius: '10px',
+      border: 'none',
+      fontWeight: '700',
+      fontSize: isMobile ? '14px' : '16px',
+      cursor: 'pointer',
+      transition: 'all 0.2s ease'
+    };
+
+    if (type === 'primary') {
+      return {
+        ...baseStyle,
+        background: 'linear-gradient(135deg, #ffd700 0%, #ffb300 100%)',
+        color: '#1a1a1a',
+        boxShadow: '0 4px 15px rgba(255, 215, 0, 0.3)'
+      };
+    }
+
+    return {
+      ...baseStyle,
+      background: 'rgba(255, 255, 255, 0.1)',
+      color: '#fff',
+      border: '2px solid rgba(255, 255, 255, 0.2)'
+    };
+  };
+
+  return (
+    <div style={wizardStyle}>
+      <div style={containerStyle}>
+        {/* Header */}
+        <div style={headerStyle}>
+          <div style={{ position: 'relative' }}>
+            <h2 style={{ margin: 0, fontSize: isMobile ? '20px' : '24px' }}>
+              📝 Crear Mesociclo Completo
+            </h2>
+            <button
+              onClick={onCancel}
+              style={{
+                position: 'absolute',
+                top: '-5px',
+                right: '0',
+                background: 'rgba(255, 255, 255, 0.2)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '35px',
+                height: '35px',
+                color: '#fff',
+                fontSize: '20px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          <p style={{ margin: '10px 0 0 0', opacity: 0.9, fontSize: isMobile ? '13px' : '15px' }}>
+            Alumno: <strong>{studentName}</strong>
+          </p>
+
+          {/* Indicador de pasos */}
+          <div style={stepIndicatorStyle}>
+            <div style={stepCircleStyle(1)}>1</div>
+            <div style={stepCircleStyle(2)}>2</div>
+            <div style={stepCircleStyle(3)}>3</div>
+            <div style={stepCircleStyle(4)}>4</div>
+          </div>
+
+          <div style={{ marginTop: '15px', fontSize: isMobile ? '13px' : '14px', fontWeight: '600' }}>
+            {currentStep === 1 && 'Paso 1: Configurar Mesociclo'}
+            {currentStep === 2 && 'Paso 2: Configurar Microciclos'}
+            {currentStep === 3 && 'Paso 3: Configurar Días y Ejercicios'}
+            {currentStep === 4 && 'Paso 4: Revisar y Crear'}
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div style={contentStyle}>
+          {error && (
+            <div style={{
+              background: 'rgba(244, 67, 54, 0.2)',
+              border: '2px solid #f44336',
+              borderRadius: '10px',
+              padding: '15px',
+              marginBottom: '20px',
+              color: '#ff6b6b'
+            }}>
+              <strong>⚠️ Error:</strong> {error}
+            </div>
+          )}
+
+          {/* STEP 1: Mesociclo */}
+          {currentStep === 1 && (
+            <MesocycleStep 
+              data={wizardData.mesocycles[0]}
+              onChange={(data) => updateWizardData('mesocycles', data)}
+            />
+          )}
+
+          {/* STEP 2: Microciclos */}
+          {currentStep === 2 && (
+            <MicrocycleStep
+              microcycleCount={wizardData.microcycleCount}
+              microcycleDays={wizardData.microcycleDays}
+              onChange={(data) => {
+                updateWizardData('microcycleCount', data.microcycleCount);
+                updateWizardData('microcycleDays', data.microcycleDays);
+              }}
+            />
+          )}
+
+          {/* STEP 3: Días y Ejercicios */}
+          {currentStep === 3 && (
+            <DaysStep
+              days={wizardData.days}
+              microcycleDays={wizardData.microcycleDays}
+              onChange={(days) => updateWizardData('days', days)}
+            />
+          )}
+
+          {/* STEP 4: Resumen */}
+          {currentStep === 4 && (
+            <SummaryStep
+              mesocycle={wizardData.mesocycles[0]}
+              microcycleCount={wizardData.microcycleCount}
+              microcycleDays={wizardData.microcycleDays}
+              days={wizardData.days}
+            />
+          )}
+
+          {/* Botones de navegación */}
+          <div style={{ display: 'flex', gap: '12px', marginTop: '30px', justifyContent: 'space-between' }}>
+            <button
+              onClick={() => {
+                if (currentStep === 1) {
+                  onCancel();
+                } else {
+                  setCurrentStep(currentStep - 1);
+                }
+              }}
+              style={buttonStyle('secondary')}
+            >
+              {currentStep === 1 ? 'Cancelar' : '← Anterior'}
+            </button>
+
+            {currentStep < 4 ? (
+              <button
+                onClick={() => setCurrentStep(currentStep + 1)}
+                style={buttonStyle('primary')}
+              >
+                Siguiente →
+              </button>
+            ) : (
+              <button
+                onClick={createCompleteMesocycle}
+                style={buttonStyle('primary')}
+                disabled={loading}
+              >
+                {loading ? '⏳ Creando...' : '🚀 Crear Mesociclo Completo'}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente para Step 1: Mesociclo
+const MesocycleStep = ({ data, onChange }) => (
+  <div>
+    <h3 style={{ color: '#ffd700', marginBottom: '20px' }}>📋 Configuración del Mesociclo</h3>
+    
+    <div style={{ marginBottom: '20px' }}>
+      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+        Nombre del Mesociclo *
+      </label>
+      <input
+        type="text"
+        value={data.name}
+        onChange={(e) => onChange({ ...data, name: e.target.value })}
+        placeholder="ej. Hipertrofia General, Fuerza Máxima, etc."
+        style={{
+          width: '100%',
+          padding: '12px',
+          borderRadius: '8px',
+          border: '2px solid rgba(255, 255, 255, 0.1)',
+          background: 'rgba(255, 255, 255, 0.05)',
+          color: '#fff',
+          fontSize: '16px'
+        }}
+        required
+      />
+    </div>
+
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+          Fecha de Inicio *
+        </label>
+        <input
+          type="date"
+          value={data.startDate}
+          onChange={(e) => onChange({ ...data, startDate: e.target.value })}
+          style={{
+            width: '100%',
+            padding: '12px',
+            borderRadius: '8px',
+            border: '2px solid rgba(255, 255, 255, 0.1)',
+            background: 'rgba(255, 255, 255, 0.05)',
+            color: '#fff',
+            fontSize: '16px'
+          }}
+          required
+        />
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+          Fecha de Fin *
+        </label>
+        <input
+          type="date"
+          value={data.endDate}
+          onChange={(e) => onChange({ ...data, endDate: e.target.value })}
+          style={{
+            width: '100%',
+            padding: '12px',
+            borderRadius: '8px',
+            border: '2px solid rgba(255, 255, 255, 0.1)',
+            background: 'rgba(255, 255, 255, 0.05)',
+            color: '#fff',
+            fontSize: '16px'
+          }}
+          required
+        />
+      </div>
+    </div>
+
+    <div style={{ marginBottom: '20px' }}>
+      <label style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>
+        Objetivo *
+      </label>
+      <textarea
+        value={data.objetivo}
+        onChange={(e) => onChange({ ...data, objetivo: e.target.value })}
+        placeholder="Describe el objetivo principal de este mesociclo"
+        rows={4}
+        style={{
+          width: '100%',
+          padding: '12px',
+          borderRadius: '8px',
+          border: '2px solid rgba(255, 255, 255, 0.1)',
+          background: 'rgba(255, 255, 255, 0.05)',
+          color: '#fff',
+          fontSize: '16px',
+          resize: 'vertical',
+          fontFamily: 'inherit'
+        }}
+        required
+      />
+    </div>
+
+    <div style={{
+      background: 'rgba(76, 175, 80, 0.1)',
+      border: '2px solid rgba(76, 175, 80, 0.3)',
+      borderRadius: '10px',
+      padding: '15px',
+      marginTop: '20px'
+    }}>
+      <p style={{ margin: 0, color: '#81c784', fontSize: '14px' }}>
+        💡 <strong>Consejo:</strong> Define un nombre descriptivo, fechas realistas y un objetivo claro. En el siguiente paso definirás cuántos microciclos quieres crear dentro de este mesociclo.
+      </p>
+    </div>
+  </div>
+);
+
+// Componente para Step 2: Microciclos
+const MicrocycleStep = ({ microcycleCount, microcycleDays, onChange }) => (
+  <div>
+    <h3 style={{ color: '#ffd700', marginBottom: '20px' }}>📆 Configuración de Microciclos</h3>
+
+    <div style={{ marginBottom: '25px' }}>
+      <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', fontSize: '16px' }}>
+        Cantidad de microciclos a crear:
+      </label>
+      <input
+        type="number"
+        min="1"
+        max="12"
+        value={microcycleCount}
+        onChange={(e) => onChange({ microcycleCount: parseInt(e.target.value), microcycleDays })}
+        style={{
+          width: '120px',
+          padding: '12px',
+          borderRadius: '8px',
+          border: '2px solid rgba(255, 215, 0, 0.3)',
+          background: 'rgba(255, 255, 255, 0.05)',
+          color: '#fff',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}
+      />
+      <p style={{ fontSize: '13px', color: '#aaa', marginTop: '8px' }}>
+        Se crearán {microcycleCount} microciclos idénticos con esta plantilla
+      </p>
+    </div>
+
+    <div style={{ marginBottom: '25px' }}>
+      <label style={{ display: 'block', marginBottom: '12px', fontWeight: '600', fontSize: '16px' }}>
+        Plantilla de Microciclo ({microcycleDays} días):
+      </label>
+      <input
+        type="number"
+        min="1"
+        max="14"
+        value={microcycleDays}
+        onChange={(e) => onChange({ microcycleCount, microcycleDays: parseInt(e.target.value) })}
+        style={{
+          width: '120px',
+          padding: '12px',
+          borderRadius: '8px',
+          border: '2px solid rgba(255, 215, 0, 0.3)',
+          background: 'rgba(255, 255, 255, 0.05)',
+          color: '#fff',
+          fontSize: '18px',
+          fontWeight: 'bold',
+          textAlign: 'center'
+        }}
+      />
+      <p style={{ fontSize: '13px', color: '#aaa', marginTop: '8px' }}>
+        Cada microciclo tendrá {microcycleDays} días
+      </p>
+    </div>
+
+    <div style={{
+      background: 'rgba(33, 150, 243, 0.1)',
+      border: '2px solid rgba(33, 150, 243, 0.3)',
+      borderRadius: '10px',
+      padding: '15px',
+      marginTop: '20px'
+    }}>
+      <p style={{ margin: 0, color: '#64b5f6', fontSize: '14px' }}>
+        💡 <strong>Consejo:</strong> La mayoría de las rutinas usan microciclos de 7 días (1 semana). Puedes crear de 4 a 8 microciclos por mesociclo dependiendo de la duración del bloque de entrenamiento.
+      </p>
+    </div>
+  </div>
+);
+
+// Componente para Step 3: Días
+const DaysStep = ({ days, microcycleDays, onChange }) => {
+  // Inicializar días si está vacío
+  React.useEffect(() => {
+    if (days.length === 0) {
+      const initialDays = [];
+      for (let i = 1; i <= microcycleDays; i++) {
+        initialDays.push({
+          dia: i,
+          nombre: `Día ${i}`,
+          esDescanso: false,
+          exercises: []
+        });
+      }
+      onChange(initialDays);
+    }
+  }, [microcycleDays]);
+
+  const toggleRest = (dayIndex) => {
+    const newDays = [...days];
+    newDays[dayIndex].esDescanso = !newDays[dayIndex].esDescanso;
+    if (newDays[dayIndex].esDescanso) {
+      newDays[dayIndex].exercises = [];
+    }
+    onChange(newDays);
+  };
+
+  return (
+    <div>
+      <h3 style={{ color: '#ffd700', marginBottom: '20px' }}>
+        🗓️ Plantilla de Microciclo ({microcycleDays} días)
+      </h3>
+      
+      <p style={{ color: '#aaa', marginBottom: '20px', fontSize: '14px' }}>
+        Esta plantilla se aplicará a <strong>TODOS los microciclos</strong> que especificaste.
+        Define qué días son de descanso y cuáles son de entrenamiento.
+      </p>
+
+      <div style={{ display: 'grid', gap: '15px' }}>
+        {days.map((day, index) => (
+          <div
+            key={day.dia}
+            style={{
+              background: day.esDescanso 
+                ? 'rgba(255, 152, 0, 0.1)' 
+                : 'rgba(76, 175, 80, 0.1)',
+              border: `2px solid ${day.esDescanso ? 'rgba(255, 152, 0, 0.3)' : 'rgba(76, 175, 80, 0.3)'}`,
+              borderRadius: '10px',
+              padding: '15px'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                Día {day.dia}
+              </div>
+              <button
+                onClick={() => toggleRest(index)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: day.esDescanso ? '#ff9800' : '#4caf50',
+                  color: '#fff',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '13px'
+                }}
+              >
+                {day.esDescanso ? '⏭️ Descanso' : '💪 Ejercicio'}
+              </button>
+            </div>
+            
+            {day.esDescanso ? (
+              <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#ff9800' }}>
+                Día de descanso - No requiere configuración
+              </p>
+            ) : (
+              <p style={{ margin: '10px 0 0 0', fontSize: '13px', color: '#81c784' }}>
+                Día de entrenamiento - Los ejercicios se configurarán después de crear el mesociclo
+              </p>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div style={{
+        background: 'rgba(33, 150, 243, 0.1)',
+        border: '2px solid rgba(33, 150, 243, 0.3)',
+        borderRadius: '10px',
+        padding: '15px',
+        marginTop: '20px'
+      }}>
+        <p style={{ margin: 0, color: '#64b5f6', fontSize: '14px' }}>
+          💡 <strong>Importante:</strong> Esta plantilla se replicará en todos los microciclos. Los ejercicios específicos los podrás agregar después al acceder a cada microciclo individualmente.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Componente para Step 4: Resumen
+const SummaryStep = ({ mesocycle, microcycleCount, microcycleDays, days }) => {
+  const trainingDays = days.filter(d => !d.esDescanso).length;
+  const restDays = days.filter(d => d.esDescanso).length;
+
+  return (
+    <div>
+      <h3 style={{ color: '#ffd700', marginBottom: '20px' }}>📋 Resumen del Mesociclo</h3>
+
+      {/* Mesociclo */}
+      <div style={{
+        background: 'rgba(102, 126, 234, 0.1)',
+        border: '2px solid rgba(102, 126, 234, 0.3)',
+        borderRadius: '10px',
+        padding: '20px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ color: '#667eea', margin: '0 0 15px 0' }}>Mesociclo</h4>
+        <div style={{ fontSize: '14px', lineHeight: '1.8' }}>
+          <div><strong>Nombre:</strong> {mesocycle.name}</div>
+          <div><strong>Inicio:</strong> {mesocycle.startDate}</div>
+          <div><strong>Fin:</strong> {mesocycle.endDate}</div>
+          <div><strong>Objetivo:</strong> {mesocycle.objetivo}</div>
+        </div>
+      </div>
+
+      {/* Microciclos */}
+      <div style={{
+        background: 'rgba(76, 175, 80, 0.1)',
+        border: '2px solid rgba(76, 175, 80, 0.3)',
+        borderRadius: '10px',
+        padding: '20px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ color: '#4caf50', margin: '0 0 15px 0' }}>Microciclos</h4>
+        <div style={{ fontSize: '14px', lineHeight: '1.8' }}>
+          <div><strong>Cantidad:</strong> {microcycleCount} microciclos</div>
+          <div><strong>Duración:</strong> {microcycleDays} días por microciclo</div>
+          <div><strong>Total días:</strong> {microcycleCount * microcycleDays} días</div>
+        </div>
+      </div>
+
+      {/* Días */}
+      <div style={{
+        background: 'rgba(255, 215, 0, 0.1)',
+        border: '2px solid rgba(255, 215, 0, 0.3)',
+        borderRadius: '10px',
+        padding: '20px',
+        marginBottom: '20px'
+      }}>
+        <h4 style={{ color: '#ffd700', margin: '0 0 15px 0' }}>Plantilla de Días</h4>
+        <div style={{ fontSize: '14px', lineHeight: '1.8' }}>
+          <div><strong>Días de entrenamiento:</strong> {trainingDays} por microciclo</div>
+          <div><strong>Días de descanso:</strong> {restDays} por microciclo</div>
+          <div style={{ marginTop: '10px', color: '#aaa', fontSize: '13px' }}>
+            Los ejercicios se configurarán después al acceder a cada microciclo
+          </div>
+        </div>
+      </div>
+
+      {/* Confirmación */}
+      <div style={{
+        background: 'rgba(76, 175, 80, 0.15)',
+        border: '2px solid #4caf50',
+        borderRadius: '10px',
+        padding: '20px',
+        textAlign: 'center'
+      }}>
+        <h4 style={{ color: '#81c784', margin: '0 0 12px 0' }}>
+          ✅ ¿Todo se ve correcto?
+        </h4>
+        <p style={{ color: '#a5d6a7', margin: 0, fontSize: '14px' }}>
+          Revisa la información anterior. Una vez que hagas clic en "Crear Mesociclo Completo", 
+          se creará el mesociclo con todos los microciclos y días configurados.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+export default MesocycleWizard;
+

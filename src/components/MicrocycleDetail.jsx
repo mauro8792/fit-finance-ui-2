@@ -2,6 +2,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import fitFinanceApi from "../api/fitFinanceApi";
 import EditSetModal from "./EditSetModal";
+import EditMicrocycleSets from "./EditMicrocycleSets";
 import RestTimerWidget from "./RestTimerWidget";
 import './MicrocycleDetail.css';
 
@@ -28,6 +29,9 @@ const MicrocycleDetail = () => {
   // Estado para controlar días colapsados/expandidos
   const [collapsedDays, setCollapsedDays] = useState({});
 
+  // Estado para modal de edición de sets del microciclo
+  const [editSetsModalOpen, setEditSetsModalOpen] = useState(false);
+
   // Estilos responsivos
   const isMobile = window.innerWidth < 600;
 
@@ -39,11 +43,20 @@ const MicrocycleDetail = () => {
     }));
   };
 
-  useEffect(() => {
+  const fetchMicrocycle = () => {
+    setLoading(true);
     fitFinanceApi.get(`/microcycle/${id}`)
       .then((res) => setMicrocycle(res.data))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchMicrocycle();
   }, [id]);
+
+  const handleSaveEdits = () => {
+    fetchMicrocycle();
+  };
 
   const handleEditSet = (set, exercise) => {
     setSelectedSet(set);
@@ -62,6 +75,28 @@ const MicrocycleDetail = () => {
 
   const handleTimerDismiss = () => {
     setShowTimer(false);
+  };
+
+  const handleDeleteSet = async (setId, exerciseId) => {
+    const confirmMessage = '¿Estás seguro de eliminar este set? Esta acción no se puede deshacer.';
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await fitFinanceApi.delete(`/set/${setId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Recargar datos del microciclo
+      fetchMicrocycle();
+      
+      alert('Set eliminado exitosamente');
+    } catch (error) {
+      console.error('Error eliminando set:', error);
+      alert('Error al eliminar el set');
+    }
   };
 
   const handleSaveSet = async (form) => {
@@ -152,16 +187,46 @@ const MicrocycleDetail = () => {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
           border: '1px solid #e0e0e0'
         }}>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: isMobile ? 20 : 28, 
-            fontWeight: 600, 
-            color: '#2c3e50',
-            marginBottom: 8,
-            textAlign: 'center'
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 10
           }}>
-            {microcycle.name}
-          </h1>
+            <h1 style={{ 
+              margin: 0, 
+              fontSize: isMobile ? 20 : 28, 
+              fontWeight: 600, 
+              color: '#2c3e50',
+              flex: 1,
+              textAlign: isMobile ? 'center' : 'left'
+            }}>
+              {microcycle.name}
+            </h1>
+            <button
+              onClick={() => setEditSetsModalOpen(true)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: '#4caf50',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#66bb6a'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#4caf50'}
+            >
+              ✏️ Editar Sets
+            </button>
+          </div>
           <div style={{ 
             fontSize: isMobile ? 14 : 16, 
             color: '#7f8c8d',
@@ -221,7 +286,7 @@ const MicrocycleDetail = () => {
             );
             const totalExercises = sortedDays.reduce((sum, day) => sum + (day.exercises?.length || 0), 0);
             const totalSets = allSets.length;
-            const completedSets = allSets.filter(s => s.status === 'completed' || !s.status).length;
+            const completedSets = allSets.filter(s => s.status === 'completed').length;
             const extraSets = allSets.filter(s => s.isExtra).length;
             const failedSets = allSets.filter(s => s.status === 'failed').length;
             const skippedSets = allSets.filter(s => s.status === 'skipped').length;
@@ -329,7 +394,7 @@ const MicrocycleDetail = () => {
                   {sortedDays.map((day) => {
                     // Calcular estadísticas del día
                     const daySets = day.exercises.flatMap(ex => ex.sets || []);
-                    const dayCompleted = daySets.filter(s => s.status === 'completed' || !s.status).length;
+                    const dayCompleted = daySets.filter(s => s.status === 'completed').length;
                     const dayExtras = daySets.filter(s => s.isExtra).length;
                     const dayFailed = daySets.filter(s => s.status === 'failed').length;
                     const daySkipped = daySets.filter(s => s.status === 'skipped').length;
@@ -474,7 +539,7 @@ const MicrocycleDetail = () => {
                                 textAlign: 'left', 
                                 fontSize: isMobile ? 11 : 12,
                                 fontWeight: 700,
-                                width: '25%'
+                                width: '30%'
                               }}>
                                 Ejercicio
                               </th>
@@ -482,17 +547,9 @@ const MicrocycleDetail = () => {
                                 padding: '8px 6px', 
                                 textAlign: 'center', 
                                 fontSize: isMobile ? 10 : 11,
-                                width: '15%'
+                                width: '18%'
                               }}>
                                 Músculo
-                              </th>
-                              <th style={{ 
-                                padding: '8px 6px', 
-                                textAlign: 'center', 
-                                fontSize: isMobile ? 10 : 11,
-                                width: '10%'
-                              }}>
-                                Series
                               </th>
                               <th style={{ 
                                 padding: '8px 6px', 
@@ -506,7 +563,7 @@ const MicrocycleDetail = () => {
                                 padding: '8px 6px', 
                                 textAlign: 'center', 
                                 fontSize: isMobile ? 10 : 11,
-                                width: '10%'
+                                width: '12%'
                               }}>
                                 RIR
                               </th>
@@ -555,46 +612,11 @@ const MicrocycleDetail = () => {
                                 <td style={{ 
                                   padding: '8px 6px', 
                                   textAlign: 'center', 
-                                  color: '#28a745',
-                                  fontWeight: 600,
-                                  fontSize: isMobile ? 10 : 11,
-                                  cursor: 'pointer',
-                                  position: 'relative'
-                                }}
-                                onClick={() => handleEditExercise(ex, 'series')}
-                                title="Click para editar series"
-                                >
-                                  {/* Verificar si los datos están intercambiados y corregir */}
-                                  {(() => {
-                                    const series = ex.series || '';
-                                    const reps = ex.repeticiones || ex.repRange || '';
-                                    
-                                    // Si series contiene un guión (ej: "10-12"), probablemente son repeticiones intercambiadas
-                                    if (series.includes('-') && !reps.includes('-')) {
-                                      return reps || '-';
-                                    }
-                                    return series || '-';
-                                  })()}
-                                  <span style={{
-                                    position: 'absolute',
-                                    top: '2px',
-                                    right: '4px',
-                                    fontSize: '8px',
-                                    color: '#6c757d',
-                                    opacity: 0.5
-                                  }}>✏️</span>
-                                </td>
-                                <td style={{ 
-                                  padding: '8px 6px', 
-                                  textAlign: 'center', 
                                   color: '#007bff',
                                   fontWeight: 600,
-                                  fontSize: isMobile ? 10 : 11,
-                                  cursor: 'pointer',
-                                  position: 'relative'
+                                  fontSize: isMobile ? 10 : 11
                                 }}
-                                onClick={() => handleEditExercise(ex, 'repeticiones')}
-                                title="Click para editar repeticiones"
+                                title="Rango de repeticiones (solo lectura - edita con el botón 'Editar Sets')"
                                 >
                                   {/* Verificar si los datos están intercambiados y corregir */}
                                   {(() => {
@@ -607,14 +629,6 @@ const MicrocycleDetail = () => {
                                     }
                                     return reps || '-';
                                   })()}
-                                  <span style={{
-                                    position: 'absolute',
-                                    top: '2px',
-                                    right: '4px',
-                                    fontSize: '8px',
-                                    color: '#6c757d',
-                                    opacity: 0.5
-                                  }}>✏️</span>
                                 </td>
                                 <td style={{ 
                                   padding: '8px 6px', 
@@ -697,7 +711,7 @@ const MicrocycleDetail = () => {
                                   {/* Resumen de estadísticas */}
                                   {(() => {
                                     const totalSets = ex.sets.length;
-                                    const completedSets = ex.sets.filter(s => s.status === 'completed' || !s.status).length;
+                                    const completedSets = ex.sets.filter(s => s.status === 'completed').length;
                                     const failedSets = ex.sets.filter(s => s.status === 'failed').length;
                                     const skippedSets = ex.sets.filter(s => s.status === 'skipped').length;
                                     const extraSets = ex.sets.filter(s => s.isExtra).length;
@@ -785,6 +799,7 @@ const MicrocycleDetail = () => {
                                       <th style={{ padding: '4px 2px', textAlign: 'center', fontSize: isMobile ? 8 : 9 }}>RIR Real</th>
                                       <th style={{ padding: '4px 2px', textAlign: 'center', fontSize: isMobile ? 8 : 9 }}>RPE</th>
                                       <th style={{ padding: '4px 2px', textAlign: 'center', fontSize: isMobile ? 8 : 9 }}>Estado</th>
+                                      <th style={{ padding: '4px 2px', textAlign: 'center', fontSize: isMobile ? 8 : 9 }}>Acciones</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -795,7 +810,11 @@ const MicrocycleDetail = () => {
                                       let statusIcon = '';
                                       let statusText = '';
                                       
-                                      if (set.status === 'failed') {
+                                      if (set.status === 'pending') {
+                                        rowBackground = index % 2 === 0 ? '#444' : '#555'; // Color normal
+                                        statusIcon = '⏳';
+                                        statusText = 'Pendiente';
+                                      } else if (set.status === 'failed') {
                                         rowBackground = 'rgba(244, 67, 54, 0.2)'; // Rojo claro
                                         statusIcon = '❌';
                                         statusText = 'Fallido';
@@ -803,13 +822,18 @@ const MicrocycleDetail = () => {
                                         rowBackground = 'rgba(255, 152, 0, 0.2)'; // Naranja claro
                                         statusIcon = '⏭️';
                                         statusText = 'Saltado';
-                                      } else if (set.isExtra) {
-                                        rowBackground = 'rgba(76, 175, 80, 0.15)'; // Verde claro para extras
+                                      } else if (set.status === 'completed') {
+                                        if (set.isExtra) {
+                                          rowBackground = 'rgba(76, 175, 80, 0.15)'; // Verde claro para extras
+                                        } else {
+                                          rowBackground = 'rgba(76, 175, 80, 0.08)'; // Verde muy claro para completados normales
+                                        }
                                         statusIcon = '✓';
                                         statusText = 'Completado';
                                       } else {
-                                        statusIcon = '✓';
-                                        statusText = 'Completado';
+                                        // Fallback por si acaso
+                                        statusIcon = '⏳';
+                                        statusText = 'Pendiente';
                                       }
                                       
                                       return (
@@ -852,6 +876,28 @@ const MicrocycleDetail = () => {
                                           <td style={{ padding: '4px 2px', textAlign: 'center', color: rowColor, fontSize: isMobile ? 7 : 8 }}>
                                             <span style={{ marginRight: 2 }}>{statusIcon}</span>
                                             {statusText}
+                                          </td>
+                                          <td 
+                                            style={{ padding: '4px 2px', textAlign: 'center' }}
+                                            onClick={(e) => e.stopPropagation()}
+                                          >
+                                            <button
+                                              onClick={() => handleDeleteSet(set.id, ex.id)}
+                                              style={{
+                                                background: 'transparent',
+                                                border: 'none',
+                                                color: '#ff4d4f',
+                                                cursor: 'pointer',
+                                                fontSize: isMobile ? 14 : 16,
+                                                padding: '2px 4px',
+                                                transition: 'transform 0.2s'
+                                              }}
+                                              onMouseEnter={(e) => e.target.style.transform = 'scale(1.2)'}
+                                              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                              title="Eliminar set"
+                                            >
+                                              🗑️
+                                            </button>
                                           </td>
                                         </tr>
                                       );
@@ -966,7 +1012,7 @@ const MicrocycleDetail = () => {
               textAlign: 'center',
               fontSize: 18
             }}>
-              Editar {editField === 'series' ? 'Series' : 'Repeticiones'}
+              Editar {editField === 'series' ? 'Sets' : 'Repeticiones'}
             </h3>
             
             <div style={{ marginBottom: 16 }}>
@@ -1071,6 +1117,15 @@ const MicrocycleDetail = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de edición de sets del microciclo */}
+      <EditMicrocycleSets
+        open={editSetsModalOpen}
+        microcycleId={id}
+        microcycleName={microcycle?.name}
+        onClose={() => setEditSetsModalOpen(false)}
+        onSave={handleSaveEdits}
+      />
     </div>
   );
 };
