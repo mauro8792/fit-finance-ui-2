@@ -14,24 +14,25 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import HistoryIcon from "@mui/icons-material/History";
-import TodayIcon from "@mui/icons-material/Today";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import TodayIcon from "@mui/icons-material/Today";
 import VideoLibraryIcon from "@mui/icons-material/VideoLibrary";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import {
+  Alert,
   Box,
   Button,
   CircularProgress,
   Fab,
   IconButton,
-  Menu,
-  MenuItem,
   ListItemIcon,
   ListItemText,
+  Menu,
+  MenuItem,
   Stack,
   Tab,
   Tabs,
@@ -43,9 +44,9 @@ import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import EditSetModal from "../../components/EditSetModal";
 import RestTimerWidget from "../../components/RestTimerWidget";
+import { getEnvVariables } from "../../helpers/getEnvVariables";
 import { useAuthStore } from "../../hooks";
 import { useRoutineStore } from "../../hooks/useRoutineStore";
-import { getEnvVariables } from "../../helpers/getEnvVariables";
 
 const { VITE_API_URL } = getEnvVariables();
 
@@ -257,18 +258,20 @@ export const StudentRoutine = () => {
       if (!selectedMacroId || !student?.id) return;
       setLoading(true);
       try {
-        // 🆕 Usar el nuevo endpoint que filtra por estado
-        const response = await fetch(`${VITE_API_URL}/mesocycle/student/${student.id}/active`);
+        // 🆕 Usar el nuevo endpoint que devuelve TODOS los mesociclos activos/publicados
+        const response = await fetch(
+          `${VITE_API_URL}/mesocycle/student/${student.id}/active`
+        );
         const data = await response.json();
-        
-        if (data.mesocycle) {
-          // Solo mostrar el mesociclo activo/publicado
-          setMesos([data.mesocycle]);
+
+        if (data.mesocycles && data.mesocycles.length > 0) {
+          // Mostrar todos los mesociclos disponibles (activos/publicados)
+          setMesos(data.mesocycles);
           setMicros([]);
           setMesoIdx(0);
           setMicroIdx(0);
           setDiaIdx(0);
-          setSelectedMesoId(data.mesocycle.id);
+          setSelectedMesoId(data.mesocycles[0].id);
           setError(null);
         } else {
           setMesos([]);
@@ -665,12 +668,12 @@ export const StudentRoutine = () => {
 
   // Funciones para el menú de opciones
   const handleOpenMenu = (event, exercise) => {
-    console.log('🎯 handleOpenMenu LLAMADO');
-    console.log('📍 event.currentTarget:', event.currentTarget);
-    console.log('🏋️ exercise:', exercise);
+    console.log("🎯 handleOpenMenu LLAMADO");
+    console.log("📍 event.currentTarget:", event.currentTarget);
+    console.log("🏋️ exercise:", exercise);
     setMenuAnchorEl(event.currentTarget);
     setMenuExercise(exercise);
-    console.log('✅ Estados actualizados');
+    console.log("✅ Estados actualizados");
   };
 
   const handleCloseMenu = () => {
@@ -680,32 +683,32 @@ export const StudentRoutine = () => {
 
   // Funciones para el modal de video
   const handleOpenVideo = (url) => {
-    console.log('🎬 handleOpenVideo - URL original:', url);
-    
+    console.log("🎬 handleOpenVideo - URL original:", url);
+
     // Convertir URL de YouTube a formato embed
     let embedUrl = url;
-    
+
     // Si es una URL de búsqueda de YouTube, no la podemos embedear
-    if (url.includes('youtube.com/results')) {
-      console.log('⚠️ URL de búsqueda de YouTube, abriendo en nueva pestaña');
-      window.open(url, '_blank', 'noopener,noreferrer');
+    if (url.includes("youtube.com/results")) {
+      console.log("⚠️ URL de búsqueda de YouTube, abriendo en nueva pestaña");
+      window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
-    
+
     // Convertir URL normal de YouTube a embed
-    if (url.includes('youtube.com/watch')) {
-      const videoId = url.split('v=')[1]?.split('&')[0];
+    if (url.includes("youtube.com/watch")) {
+      const videoId = url.split("v=")[1]?.split("&")[0];
       embedUrl = `https://www.youtube.com/embed/${videoId}`;
-      console.log('✅ Convertido a embed URL:', embedUrl);
-    } else if (url.includes('youtu.be/')) {
-      const videoId = url.split('youtu.be/')[1]?.split('?')[0];
+      console.log("✅ Convertido a embed URL:", embedUrl);
+    } else if (url.includes("youtu.be/")) {
+      const videoId = url.split("youtu.be/")[1]?.split("?")[0];
       embedUrl = `https://www.youtube.com/embed/${videoId}`;
-      console.log('✅ Convertido a embed URL:', embedUrl);
+      console.log("✅ Convertido a embed URL:", embedUrl);
     }
-    
+
     setVideoUrl(embedUrl);
     setVideoModalOpen(true);
-    console.log('✅ Modal de video abierto');
+    console.log("✅ Modal de video abierto");
   };
 
   const handleCloseVideo = () => {
@@ -714,48 +717,48 @@ export const StudentRoutine = () => {
   };
 
   const handleMenuAction = (action) => {
-    console.log('🎯 handleMenuAction LLAMADO con acción:', action);
-    console.log('📋 menuExercise existe?', !!menuExercise);
-    
+    console.log("🎯 handleMenuAction LLAMADO con acción:", action);
+    console.log("📋 menuExercise existe?", !!menuExercise);
+
     if (!menuExercise) {
-      console.log('❌ menuExercise es null/undefined, abortando');
+      console.log("❌ menuExercise es null/undefined, abortando");
       return;
     }
-    
-    console.log('📋 menuExercise completo:', menuExercise);
-    
+
+    console.log("📋 menuExercise completo:", menuExercise);
+
     // Guardar referencia al ejercicio antes de cerrar el menú
     const exercise = menuExercise;
-    
+
     // Cerrar el menú PRIMERO
     handleCloseMenu();
-    
+
     // Ejecutar acción DESPUÉS con un pequeño delay
     setTimeout(() => {
-      console.log('⏰ Ejecutando acción después del timeout:', action);
-      
+      console.log("⏰ Ejecutando acción después del timeout:", action);
+
       switch (action) {
-        case 'history':
-          console.log('📊 Abriendo historial...');
+        case "history":
+          console.log("📊 Abriendo historial...");
           handleOpenHistory(exercise);
           break;
-        case 'addSet':
-          console.log('➕ Agregando set extra...');
+        case "addSet":
+          console.log("➕ Agregando set extra...");
           handleAddExtraSet(exercise);
           break;
-        case 'video':
+        case "video":
           const videoUrlToOpen = exercise.exerciseCatalog?.videoUrl;
-          console.log('🎥 Intentando abrir video:', videoUrlToOpen);
+          console.log("🎥 Intentando abrir video:", videoUrlToOpen);
           if (videoUrlToOpen) {
-            console.log('✅ Abriendo video en modal...');
+            console.log("✅ Abriendo video en modal...");
             handleOpenVideo(videoUrlToOpen);
           } else {
-            console.log('❌ No hay videoUrl disponible');
-            alert('Este ejercicio no tiene video disponible');
+            console.log("❌ No hay videoUrl disponible");
+            alert("Este ejercicio no tiene video disponible");
           }
           break;
         default:
-          console.log('⚠️ Acción no reconocida:', action);
+          console.log("⚠️ Acción no reconocida:", action);
           break;
       }
     }, 100);
@@ -766,7 +769,19 @@ export const StudentRoutine = () => {
     const token = localStorage.getItem("token");
 
     // Guardar el estado actual de navegación antes de hacer cambios
+    const currentMesoIdx = mesoIdx; // Preservar el índice del mesociclo
+    const currentMicroIdx = microIdx; // Preservar el índice del microciclo
+    const currentDiaIdx = diaIdx; // Preservar el índice del día
     const currentMicroId = micros[microIdx]?.id;
+
+    console.log("🔍 ANTES DE GUARDAR - Estado actual:", {
+      mesoIdx: currentMesoIdx,
+      microIdx: currentMicroIdx,
+      diaIdx: currentDiaIdx,
+      microId: currentMicroId,
+      selectedMesoId,
+    });
+
     const currentDayId = (() => {
       const diasConEjercicios = micros[microIdx].days
         .filter(
@@ -835,21 +850,44 @@ export const StudentRoutine = () => {
       throw new Error(errorData?.message || "Error al guardar");
     }
 
-    // Recargar los microciclos y mantener la navegación en el mismo lugar
-    const microsResult = await fetchMicrocyclesByMesocycle(selectedMesoId);
-    setMicros(microsResult);
+    // Recargar los microciclos SIN disparar el useEffect que resetea índices
+    const refreshResponse = await fetch(
+      `${apiUrl}/microcycle/mesocycle/${selectedMesoId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const microsResult = await refreshResponse.json();
 
-    // Restaurar la navegación al mismo microciclo y día
+    console.log("📦 Microciclos recibidos:", {
+      totalMicros: microsResult.length,
+      microIds: microsResult.map((m) => ({ id: m.id, name: m.name })),
+      buscandoMicroId: currentMicroId,
+    });
+
+    // Calcular los nuevos índices ANTES de actualizar el estado
+    let newMicroIdx = currentMicroIdx;
+    let newDayIdx = currentDiaIdx;
+
     if (currentMicroId && currentDayId) {
-      // Encontrar el índice del microciclo actual
-      const newMicroIdx = microsResult.findIndex(
+      // Encontrar el índice del microciclo actual por ID
+      const foundMicroIdx = microsResult.findIndex(
         (micro) => micro.id === currentMicroId
       );
-      if (newMicroIdx !== -1) {
-        setMicroIdx(newMicroIdx);
+
+      console.log("🔎 Búsqueda de microciclo:", {
+        buscando: currentMicroId,
+        encontrado: foundMicroIdx,
+        existe: foundMicroIdx !== -1,
+      });
+
+      if (foundMicroIdx !== -1) {
+        newMicroIdx = foundMicroIdx;
 
         // Encontrar el índice del día actual dentro del microciclo
-        const diasConEjercicios = microsResult[newMicroIdx].days
+        const diasConEjercicios = microsResult[foundMicroIdx].days
           .filter(
             (day) =>
               !day.esDescanso && day.exercises && day.exercises.length > 0
@@ -863,14 +901,26 @@ export const StudentRoutine = () => {
             return getDayNumber(a) - getDayNumber(b);
           });
 
-        const newDayIdx = diasConEjercicios.findIndex(
+        const foundDayIdx = diasConEjercicios.findIndex(
           (day) => day.id === currentDayId
         );
-        if (newDayIdx !== -1) {
-          setDiaIdx(newDayIdx);
+
+        if (foundDayIdx !== -1) {
+          newDayIdx = foundDayIdx;
         }
       }
     }
+
+    // Actualizar todo junto en un solo batch
+    console.log("✅ DESPUÉS DE GUARDAR - Restaurando a:", {
+      newMicroIdx,
+      newDayIdx,
+      microsResultLength: microsResult.length,
+    });
+
+    setMicros(microsResult);
+    setMicroIdx(newMicroIdx);
+    setDiaIdx(newDayIdx);
   };
 
   return (
@@ -1029,7 +1079,7 @@ export const StudentRoutine = () => {
                     // El resto se resetea en el useEffect de selectedMesoId
                   }}
                   variant="scrollable"
-                  scrollButtons="auto"
+                  scrollButtons={true}
                   allowScrollButtonsMobile
                   sx={{
                     mb: { xs: 1, sm: 1 },
@@ -1041,8 +1091,21 @@ export const StudentRoutine = () => {
                       overflow: "auto !important",
                     },
                     "& .MuiTabs-scrollButtons": {
-                      width: { xs: 28, sm: 32 },
+                      width: { xs: 32, sm: 40 },
                       color: "#20b2aa",
+                      backgroundColor: "rgba(32, 178, 170, 0.1)",
+                      borderRadius: "8px",
+                      margin: "0 4px",
+                      "&:hover": {
+                        backgroundColor: "rgba(32, 178, 170, 0.25)",
+                      },
+                      "&.Mui-disabled": {
+                        opacity: 0.3,
+                      },
+                    },
+                    "& .MuiTabs-scrollButtons svg": {
+                      fontSize: { xs: "1.2rem", sm: "1.5rem" },
+                      fontWeight: "bold",
                     },
                     "& .MuiTab-root": {
                       backgroundColor: "rgba(32, 178, 170, 0.15)",
@@ -1083,9 +1146,16 @@ export const StudentRoutine = () => {
                     },
                   }}
                 >
-                  {mesos.map((meso) => (
-                    <Tab key={meso.id} label={meso.name} />
-                  ))}
+                  {mesos.map((meso, index) => {
+                    const isActive = meso.status === "active";
+                    const badge = isActive ? "✅" : "📋";
+                    return (
+                      <Tab
+                        key={meso.id}
+                        label={`${badge} Mesociclo ${index + 1}`}
+                      />
+                    );
+                  })}
                 </Tabs>
               ) : mesos.length === 1 ? (
                 // Mostrar solo el título cuando hay un único mesociclo
@@ -1109,7 +1179,7 @@ export const StudentRoutine = () => {
                       boxShadow: "0 4px 12px rgba(32, 178, 170, 0.4)",
                     }}
                   >
-                    🎯 {mesos[0].name}
+                    {mesos[0].status === "active" ? "✅" : "📋"} Mesociclo 1
                   </Typography>
                 </Box>
               ) : null}
@@ -1140,33 +1210,38 @@ export const StudentRoutine = () => {
                       backgroundColor:
                         microIdx <= 0
                           ? "rgba(255, 255, 255, 0.05)"
-                          : "rgba(255, 224, 130, 0.2)",
+                          : "rgba(255, 224, 130, 0.3)",
                       color:
-                        microIdx <= 0 ? "rgba(255, 255, 255, 0.3)" : "#ffe082",
+                        microIdx <= 0 ? "rgba(255, 255, 255, 0.3)" : "#ffd54f",
                       backdropFilter: "blur(10px)",
-                      border: `1px solid ${
+                      border: `2px solid ${
                         microIdx <= 0
                           ? "rgba(255, 255, 255, 0.1)"
-                          : "rgba(255, 224, 130, 0.4)"
+                          : "rgba(255, 224, 130, 0.6)"
                       }`,
-                      width: { xs: 32, sm: 40 },
-                      height: { xs: 32, sm: 40 },
+                      width: { xs: 40, sm: 48 },
+                      height: { xs: 40, sm: 48 },
                       boxShadow:
                         microIdx <= 0
                           ? "none"
-                          : "0 2px 8px rgba(255, 224, 130, 0.2)",
+                          : "0 4px 12px rgba(255, 224, 130, 0.4)",
                       "&:hover": {
                         backgroundColor:
                           microIdx <= 0
                             ? "rgba(255, 255, 255, 0.05)"
-                            : "rgba(255, 224, 130, 0.3)",
-                        transform: microIdx <= 0 ? "none" : "translateY(-1px)",
+                            : "rgba(255, 224, 130, 0.5)",
+                        transform: microIdx <= 0 ? "none" : "scale(1.1)",
+                        boxShadow:
+                          microIdx <= 0
+                            ? "none"
+                            : "0 6px 16px rgba(255, 224, 130, 0.5)",
                       },
-                      transition: "all 0.2s ease",
+                      transition: "all 0.3s ease",
                     }}
                   >
                     <ArrowBackIosNewIcon
-                      fontSize={isMobile ? "small" : "medium"}
+                      fontSize="medium"
+                      sx={{ fontWeight: "bold" }}
                     />
                   </IconButton>
 
@@ -1262,7 +1337,12 @@ export const StudentRoutine = () => {
                                   : micro.isDeload
                                   ? "rgba(33, 150, 243, 0.15)"
                                   : "rgba(255, 255, 255, 0.08)",
-                              color: realIdx === microIdx ? "#222" : micro.isDeload ? "#64b5f6" : "#fff",
+                              color:
+                                realIdx === microIdx
+                                  ? "#222"
+                                  : micro.isDeload
+                                  ? "#64b5f6"
+                                  : "#fff",
                               fontWeight: realIdx === microIdx ? 700 : 600,
                               fontSize: { xs: "0.65rem", sm: "0.85rem" },
                               backdropFilter: "blur(15px)",
@@ -1327,43 +1407,46 @@ export const StudentRoutine = () => {
                       backgroundColor:
                         microIdx >= micros.length - 1
                           ? "rgba(255, 255, 255, 0.05)"
-                          : "rgba(255, 224, 130, 0.2)",
+                          : "rgba(255, 224, 130, 0.3)",
                       color:
                         microIdx >= micros.length - 1
                           ? "rgba(255, 255, 255, 0.3)"
-                          : "#ffe082",
+                          : "#ffd54f",
                       backdropFilter: "blur(10px)",
-                      border: `1px solid ${
+                      border: `2px solid ${
                         microIdx >= micros.length - 1
                           ? "rgba(255, 255, 255, 0.1)"
-                          : "rgba(255, 224, 130, 0.4)"
+                          : "rgba(255, 224, 130, 0.6)"
                       }`,
-                      width: { xs: 32, sm: 40 },
-                      height: { xs: 32, sm: 40 },
+                      width: { xs: 40, sm: 48 },
+                      height: { xs: 40, sm: 48 },
                       boxShadow:
                         microIdx >= micros.length - 1
                           ? "none"
-                          : "0 2px 8px rgba(255, 224, 130, 0.2)",
+                          : "0 4px 12px rgba(255, 224, 130, 0.4)",
                       "&:hover": {
                         backgroundColor:
                           microIdx >= micros.length - 1
                             ? "rgba(255, 255, 255, 0.05)"
-                            : "rgba(255, 224, 130, 0.3)",
+                            : "rgba(255, 224, 130, 0.5)",
                         transform:
+                          microIdx >= micros.length - 1 ? "none" : "scale(1.1)",
+                        boxShadow:
                           microIdx >= micros.length - 1
                             ? "none"
-                            : "translateY(-1px)",
+                            : "0 6px 16px rgba(255, 224, 130, 0.5)",
                       },
-                      transition: "all 0.2s ease",
+                      transition: "all 0.3s ease",
                     }}
                   >
                     <ArrowForwardIosIcon
-                      fontSize={isMobile ? "small" : "medium"}
+                      fontSize="medium"
+                      sx={{ fontWeight: "bold" }}
                     />
                   </IconButton>
                 </Box>
               )}
-              
+
               {/* Alert de Semana de Descarga */}
               {micros.length > 0 && micros[microIdx]?.isDeload && (
                 <Alert
@@ -1386,11 +1469,12 @@ export const StudentRoutine = () => {
                     Semana de Descarga
                   </Typography>
                   <Typography variant="caption" sx={{ color: "#90caf9" }}>
-                    Reduce las cargas un 20-30% y aumenta el RIR +2-3 puntos. Esta semana es para recuperación y adaptación.
+                    Reduce las cargas un 20-30% y aumenta el RIR +2-3 puntos.
+                    Esta semana es para recuperación y adaptación.
                   </Typography>
                 </Alert>
               )}
-              
+
               {/* Días selector - Solo días con ejercicios */}
               {selectedMesoId &&
                 micros.length > 0 &&
@@ -1665,7 +1749,9 @@ export const StudentRoutine = () => {
                                           </IconButton>
                                           <IconButton
                                             size="small"
-                                            onClick={(e) => handleOpenMenu(e, ej)}
+                                            onClick={(e) =>
+                                              handleOpenMenu(e, ej)
+                                            }
                                             sx={{
                                               color: "rgba(0, 0, 0, 0.7)",
                                               backgroundColor:
@@ -2149,13 +2235,13 @@ export const StudentRoutine = () => {
                                                                     EXTRA
                                                                   </span>
                                                                 )}
-                                                              {setStatus ===
-                                                                "completed" &&
-                                                                !isExtraSet &&
+                                                              {!isExtraSet &&
                                                                 !isAmrapSet && (
                                                                   <span>
-                                                                    {ej.repeticiones ||
-                                                                      ej.repRange}
+                                                                    {serie.reps ||
+                                                                      ej.repeticiones ||
+                                                                      ej.repRange ||
+                                                                      ""}
                                                                   </span>
                                                                 )}
                                                             </div>
@@ -2174,12 +2260,23 @@ export const StudentRoutine = () => {
                                                                 "none",
                                                               color: "#222",
                                                               fontWeight:
-                                                                serie.reps > 0
+                                                                serie.reps &&
+                                                                !serie.reps.includes(
+                                                                  "-"
+                                                                ) &&
+                                                                serie.reps !==
+                                                                  "0"
                                                                   ? "bold"
                                                                   : "normal",
                                                             }}
                                                           >
-                                                            {serie.reps || 0}
+                                                            {serie.reps &&
+                                                            !serie.reps.includes(
+                                                              "-"
+                                                            ) &&
+                                                            serie.reps !== "0"
+                                                              ? serie.reps
+                                                              : "-"}
                                                           </td>
                                                           <td
                                                             style={{
@@ -2200,7 +2297,7 @@ export const StudentRoutine = () => {
                                                                   : "normal",
                                                             }}
                                                           >
-                                                            {serie.load || 0}
+                                                            {serie.load || "-"}
                                                           </td>
                                                           <td
                                                             style={{
@@ -2452,7 +2549,9 @@ export const StudentRoutine = () => {
                     "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)" },
                   }}
                 >
-                  {historyViewMode === "friendly" ? "📊 Compacto" : "💚 Amigable"}
+                  {historyViewMode === "friendly"
+                    ? "📊 Compacto"
+                    : "💚 Amigable"}
                 </Button>
               </Box>
 
@@ -2467,20 +2566,22 @@ export const StudentRoutine = () => {
                     handleOpenVideo(selectedExercise.exerciseCatalog.videoUrl);
                   }}
                   sx={{
-                    background: 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)',
-                    color: '#fff',
+                    background:
+                      "linear-gradient(135deg, #ff4444 0%, #cc0000 100%)",
+                    color: "#fff",
                     fontWeight: 600,
-                    fontSize: { xs: '0.85rem', sm: '0.95rem' },
-                    padding: { xs: '8px 16px', sm: '10px 24px' },
-                    borderRadius: '8px',
-                    textTransform: 'none',
-                    boxShadow: '0 4px 12px rgba(255, 68, 68, 0.4)',
-                    '&:hover': {
-                      background: 'linear-gradient(135deg, #cc0000 0%, #990000 100%)',
-                      boxShadow: '0 6px 16px rgba(255, 68, 68, 0.6)',
-                      transform: 'translateY(-2px)',
+                    fontSize: { xs: "0.85rem", sm: "0.95rem" },
+                    padding: { xs: "8px 16px", sm: "10px 24px" },
+                    borderRadius: "8px",
+                    textTransform: "none",
+                    boxShadow: "0 4px 12px rgba(255, 68, 68, 0.4)",
+                    "&:hover": {
+                      background:
+                        "linear-gradient(135deg, #cc0000 0%, #990000 100%)",
+                      boxShadow: "0 6px 16px rgba(255, 68, 68, 0.6)",
+                      transform: "translateY(-2px)",
                     },
-                    transition: 'all 0.3s ease',
+                    transition: "all 0.3s ease",
                   }}
                 >
                   Ver Técnica del Ejercicio
@@ -2732,7 +2833,12 @@ export const StudentRoutine = () => {
         )}
 
       {/* Menú de Opciones del Ejercicio */}
-      {console.log('🎨 Renderizando Menu. menuAnchorEl:', menuAnchorEl, 'open:', Boolean(menuAnchorEl))}
+      {console.log(
+        "🎨 Renderizando Menu. menuAnchorEl:",
+        menuAnchorEl,
+        "open:",
+        Boolean(menuAnchorEl)
+      )}
       <Menu
         anchorEl={menuAnchorEl}
         open={Boolean(menuAnchorEl)}
@@ -2742,85 +2848,76 @@ export const StudentRoutine = () => {
         }}
         PaperProps={{
           sx: {
-            background: 'linear-gradient(145deg, #2a2a2a, #1f1f1f)',
-            color: '#fff',
+            background: "linear-gradient(145deg, #2a2a2a, #1f1f1f)",
+            color: "#fff",
             minWidth: 200,
             borderRadius: 2,
-            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+            boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
             zIndex: 99999,
-          }
+          },
         }}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
       >
-        <MenuItem 
+        <MenuItem
           onClick={(e) => {
-            console.log('🖱️ Click en MenuItem: history');
+            console.log("🖱️ Click en MenuItem: history");
             e.stopPropagation();
-            handleMenuAction('history');
+            handleMenuAction("history");
           }}
           sx={{
             py: 1.5,
             px: 2,
-            '&:hover': {
-              background: 'rgba(33, 150, 243, 0.1)',
-            }
+            "&:hover": {
+              background: "rgba(33, 150, 243, 0.1)",
+            },
           }}
         >
-          <ListItemIcon sx={{ color: '#2196f3' }}>
+          <ListItemIcon sx={{ color: "#2196f3" }}>
             <HistoryIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText 
-            primary="Ver Historial" 
-            sx={{ color: '#fff' }}
-          />
+          <ListItemText primary="Ver Historial" sx={{ color: "#fff" }} />
         </MenuItem>
-        
-        <MenuItem 
+
+        <MenuItem
           onClick={(e) => {
-            console.log('🖱️ Click en MenuItem: addSet');
+            console.log("🖱️ Click en MenuItem: addSet");
             e.stopPropagation();
-            handleMenuAction('addSet');
+            handleMenuAction("addSet");
           }}
           sx={{
             py: 1.5,
             px: 2,
-            '&:hover': {
-              background: 'rgba(76, 175, 80, 0.1)',
-            }
+            "&:hover": {
+              background: "rgba(76, 175, 80, 0.1)",
+            },
           }}
         >
-          <ListItemIcon sx={{ color: '#4caf50' }}>
+          <ListItemIcon sx={{ color: "#4caf50" }}>
             <AddCircleOutlineIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText 
-            primary="Agregar Set Extra" 
-            sx={{ color: '#fff' }}
-          />
+          <ListItemText primary="Agregar Set Extra" sx={{ color: "#fff" }} />
         </MenuItem>
-        
+
         {menuExercise?.exerciseCatalog?.videoUrl && (
-          <MenuItem 
+          <MenuItem
             onClick={(e) => {
-              console.log('🖱️ Click en MenuItem: video');
+              console.log("🖱️ Click en MenuItem: video");
               e.stopPropagation();
-              handleMenuAction('video');
+              handleMenuAction("video");
             }}
             sx={{
               py: 1.5,
               px: 2,
-              '&:hover': {
-                background: 'rgba(255, 68, 68, 0.1)',
-              }
+              "&:hover": {
+                background: "rgba(255, 68, 68, 0.1)",
+              },
             }}
           >
-            <ListItemIcon sx={{ color: '#ff4444' }}>
+            <ListItemIcon sx={{ color: "#ff4444" }}>
               <VideoLibraryIcon fontSize="small" />
             </ListItemIcon>
-            <ListItemText 
-              primary="Ver Técnica" 
-              sx={{ color: '#fff' }}
-            />
+            <ListItemText primary="Ver Técnica" sx={{ color: "#fff" }} />
           </MenuItem>
         )}
       </Menu>
