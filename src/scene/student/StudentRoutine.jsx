@@ -861,9 +861,18 @@ export const StudentRoutine = () => {
     );
     const microsResult = await refreshResponse.json();
 
+    // ✅ ORDENAR los microciclos de forma consistente ANTES de buscar
+    const sortedMicrosResult = [...microsResult].sort((a, b) => {
+      const getNumber = (name) => {
+        const match = name.match(/\d+/);
+        return match ? parseInt(match[0]) : 0;
+      };
+      return getNumber(a.name) - getNumber(b.name);
+    });
+
     console.log("📦 Microciclos recibidos:", {
-      totalMicros: microsResult.length,
-      microIds: microsResult.map((m) => ({ id: m.id, name: m.name })),
+      totalMicros: sortedMicrosResult.length,
+      microIds: sortedMicrosResult.map((m) => ({ id: m.id, name: m.name })),
       buscandoMicroId: currentMicroId,
     });
 
@@ -873,7 +882,7 @@ export const StudentRoutine = () => {
 
     if (currentMicroId && currentDayId) {
       // Encontrar el índice del microciclo actual por ID
-      const foundMicroIdx = microsResult.findIndex(
+      const foundMicroIdx = sortedMicrosResult.findIndex(
         (micro) => micro.id === currentMicroId
       );
 
@@ -887,7 +896,7 @@ export const StudentRoutine = () => {
         newMicroIdx = foundMicroIdx;
 
         // Encontrar el índice del día actual dentro del microciclo
-        const diasConEjercicios = microsResult[foundMicroIdx].days
+        const diasConEjercicios = sortedMicrosResult[foundMicroIdx].days
           .filter(
             (day) =>
               !day.esDescanso && day.exercises && day.exercises.length > 0
@@ -915,10 +924,10 @@ export const StudentRoutine = () => {
     console.log("✅ DESPUÉS DE GUARDAR - Restaurando a:", {
       newMicroIdx,
       newDayIdx,
-      microsResultLength: microsResult.length,
+      microsResultLength: sortedMicrosResult.length,
     });
 
-    setMicros(microsResult);
+    setMicros(sortedMicrosResult);
     setMicroIdx(newMicroIdx);
     setDiaIdx(newDayIdx);
   };
