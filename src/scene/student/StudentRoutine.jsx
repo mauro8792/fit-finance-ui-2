@@ -2482,6 +2482,7 @@ export const StudentRoutine = () => {
         onSave={handleSaveSet}
         onClose={() => setEditModalOpen(false)}
         onStartTimer={handleStartTimer}
+        canConfigureAmrap={false}
       />
 
       {/* Modal de Historial del Ejercicio */}
