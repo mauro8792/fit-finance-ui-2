@@ -8,6 +8,7 @@ const EditSetModal = ({
   onSave,
   onClose,
   onStartTimer,
+  canConfigureAmrap = true,
 }) => {
   const [form, setForm] = useState({
     reps: set.reps || 0,
@@ -54,7 +55,13 @@ const EditSetModal = ({
     setLoading(true);
     setError(null);
     try {
-      await onSave(form);
+      const payload = { ...form };
+      if (!canConfigureAmrap) {
+        delete payload.isAmrap;
+        delete payload.amrapInstruction;
+        delete payload.amrapNotes;
+      }
+      await onSave(payload);
       setLoading(false);
       onClose();
 
@@ -338,7 +345,8 @@ const EditSetModal = ({
             </div>
           </div>
 
-          {/* AMRAP Configuration */}
+          {/* AMRAP Configuration (solo coach) */}
+          {canConfigureAmrap && (
           <div
             className="form-field form-field-full"
             style={{
@@ -487,6 +495,7 @@ const EditSetModal = ({
               </>
             )}
           </div>
+          )}
 
           {/* Campo de notas */}
           <div className="form-field form-field-full">

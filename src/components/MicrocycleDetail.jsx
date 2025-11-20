@@ -5,6 +5,9 @@ import EditSetModal from "./EditSetModal";
 import EditMicrocycleSets from "./EditMicrocycleSets";
 import RestTimerWidget from "./RestTimerWidget";
 import './MicrocycleDetail.css';
+import AddExerciseModal from "./AddExerciseModal";
+import ConfirmDeleteExerciseModal from "./ConfirmDeleteExerciseModal";
+import ConfirmDeleteSetModal from "./ConfirmDeleteSetModal";
 
 const MicrocycleDetail = () => {
   const { id } = useParams();
@@ -31,6 +34,11 @@ const MicrocycleDetail = () => {
 
   // Estado para modal de edición de sets del microciclo
   const [editSetsModalOpen, setEditSetsModalOpen] = useState(false);
+  const [addExerciseModalOpen, setAddExerciseModalOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [exerciseToDelete, setExerciseToDelete] = useState(null);
+  const [setToDelete, setSetToDelete] = useState(null);
+  const [confirmDeleteSetOpen, setConfirmDeleteSetOpen] = useState(false);
 
   // Estilos responsivos
   const isMobile = window.innerWidth < 600;
@@ -77,26 +85,37 @@ const MicrocycleDetail = () => {
     setShowTimer(false);
   };
 
-  const handleDeleteSet = async (setId, exerciseId) => {
-    const confirmMessage = '¿Estás seguro de eliminar este set? Esta acción no se puede deshacer.';
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
+  const handleConfirmDelete = async (replicateForward) => {
+    if (!exerciseToDelete) return;
     try {
       const token = localStorage.getItem('token');
-      await fitFinanceApi.delete(`/set/${setId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
-      // Recargar datos del microciclo
+      if (replicateForward) {
+        await fitFinanceApi.post(`/exercise/${exerciseToDelete.id}/delete-template`, {
+          fromMicrocycle: parseInt(id)
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        await fitFinanceApi.delete(`/exercise/${exerciseToDelete.id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      setConfirmDeleteOpen(false);
+      setExerciseToDelete(null);
       fetchMicrocycle();
-      
-      alert('Set eliminado exitosamente');
-    } catch (error) {
-      console.error('Error eliminando set:', error);
-      alert('Error al eliminar el set');
+    } catch (err) {
+      console.error('Error eliminando ejercicio:', err);
+      alert('Error al eliminar el ejercicio');
     }
+  };
+
+  const handleDeleteSet = async (setId, exerciseId) => {
+    // Abrir modal de confirmación con opción de replicar
+    const exercise = microcycle?.days
+      ?.flatMap((d) => d.exercises || [])
+      ?.find((ex) => ex.id === exerciseId);
+    setSetToDelete({ setId, exercise });
+    setConfirmDeleteSetOpen(true);
   };
 
   const handleSaveSet = async (form) => {
@@ -125,15 +144,30 @@ const MicrocycleDetail = () => {
     setLoadingUpdate(true);
     try {
       const token = localStorage.getItem('token');
-      
-      // Usar el endpoint update-template para que se replique a microciclos siguientes
-      await fitFinanceApi.put(`/exercise/${selectedExercise.id}/update-template`, {
-        field: editField,
-        value: editValue.toString(),
-        fromMicrocycle: parseInt(id) // desde este microciclo hacia adelante
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+
+      // Preguntar si se replica a microciclos siguientes
+      const replicate = window.confirm('¿Querés replicar este cambio a los microciclos posteriores? (Nunca hacia atrás)');
+
+      if (replicate) {
+        // Actualizar plantilla desde este microciclo hacia adelante
+        await fitFinanceApi.put(`/exercise/${selectedExercise.id}/update-template`, {
+          field: editField,
+          value: editValue.toString(),
+          fromMicrocycle: parseInt(id)
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        // Crear override solo para el día/microciclo actual
+        await fitFinanceApi.post(`/exercise/${selectedExercise.id}/override`, {
+          field: editField,
+          value: editValue.toString(),
+          scope: 'solo-dia',
+          microcycleId: parseInt(id)
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
       
       // Refresca el microciclo
       const res = await fitFinanceApi.get(`/microcycle/${id}`);
@@ -145,7 +179,9 @@ const MicrocycleDetail = () => {
       setEditField('');
       setEditValue('');
       
-      alert('¡Ejercicio actualizado! Los cambios se aplicaron a este microciclo y todos los siguientes.');
+      alert(replicate 
+        ? '¡Ejercicio actualizado! Los cambios se aplicaron a este microciclo y los siguientes.'
+        : '¡Ejercicio actualizado solo en este microciclo!');
     } catch (error) {
       console.error('Error al actualizar ejercicio:', error);
       alert('Error al actualizar el ejercicio');
@@ -225,6 +261,29 @@ const MicrocycleDetail = () => {
               onMouseLeave={(e) => e.currentTarget.style.background = '#4caf50'}
             >
               ✏️ Editar Sets
+            </button>
+
+            <button
+              onClick={() => setAddExerciseModalOpen(true)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 8,
+                border: 'none',
+                background: '#1976d2',
+                color: '#fff',
+                cursor: 'pointer',
+                fontSize: 14,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.2s',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#1e88e5'}
+              onMouseLeave={(e) => e.currentTarget.style.background = '#1976d2'}
+            >
+              ➕ Agregar ejercicio
             </button>
           </div>
           <div style={{ 
@@ -583,6 +642,14 @@ const MicrocycleDetail = () => {
                               }}>
                                 Sets
                               </th>
+                              <th style={{ 
+                                padding: '8px 6px', 
+                                textAlign: 'center', 
+                                fontSize: isMobile ? 10 : 11,
+                                width: '10%'
+                              }}>
+                                Acciones
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
@@ -615,9 +682,10 @@ const MicrocycleDetail = () => {
                                   color: '#007bff',
                                   fontWeight: 600,
                                   fontSize: isMobile ? 10 : 11
-                                }}
-                                title="Rango de repeticiones (solo lectura - edita con el botón 'Editar Sets')"
-                                >
+                            }}
+                            title="Clic para editar repeticiones"
+                            onClick={() => handleEditExercise(ex, 'repeticiones')}
+                            >
                                   {/* Verificar si los datos están intercambiados y corregir */}
                                   {(() => {
                                     const series = ex.series || '';
@@ -636,7 +704,10 @@ const MicrocycleDetail = () => {
                                   color: '#6f42c1',
                                   fontWeight: 600,
                                   fontSize: isMobile ? 10 : 11
-                                }}>
+                            }}
+                            title="Clic para editar RIR esperado"
+                            onClick={() => handleEditExercise(ex, 'rirEsperado')}
+                            >
                                   {ex.rirEsperado || '-'}
                                 </td>
                                 <td style={{ 
@@ -644,7 +715,10 @@ const MicrocycleDetail = () => {
                                   textAlign: 'center', 
                                   color: '#fd7e14',
                                   fontSize: isMobile ? 10 : 11
-                                }}>
+                            }}
+                            title="Clic para editar descanso"
+                            onClick={() => handleEditExercise(ex, 'descanso')}
+                            >
                                   {ex.descanso ? `${ex.descanso}min` : '-'}
                                 </td>
                                 <td style={{ 
@@ -670,6 +744,28 @@ const MicrocycleDetail = () => {
                                   ) : (
                                     <span style={{ color: '#777', fontSize: 9 }}>Sin sets</span>
                                   )}
+                                </td>
+                                <td style={{ 
+                                  padding: '8px 6px', 
+                                  textAlign: 'center'
+                                }}>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setExerciseToDelete(ex);
+                                      setConfirmDeleteOpen(true);
+                                    }}
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: '#ff4d4f',
+                                      cursor: 'pointer',
+                                      fontSize: isMobile ? 14 : 16,
+                                    }}
+                                    title="Eliminar ejercicio"
+                                  >
+                                    🗑️
+                                  </button>
                                 </td>
                               </tr>
                             ))}
@@ -981,6 +1077,7 @@ const MicrocycleDetail = () => {
         onSave={handleSaveSet}
         onClose={() => setEditModalOpen(false)}
         onStartTimer={handleStartTimer}
+        canConfigureAmrap={true}
       />
 
       {/* Modal de edición de ejercicios para entrenador */}
@@ -1125,6 +1222,51 @@ const MicrocycleDetail = () => {
         microcycleName={microcycle?.name}
         onClose={() => setEditSetsModalOpen(false)}
         onSave={handleSaveEdits}
+      />
+
+      {/* Modal para agregar ejercicio */}
+      <AddExerciseModal
+        open={addExerciseModalOpen}
+        microcycleId={id}
+        days={microcycle?.days || []}
+        onClose={() => setAddExerciseModalOpen(false)}
+        onSaved={handleSaveEdits}
+      />
+
+      <ConfirmDeleteExerciseModal
+        open={confirmDeleteOpen}
+        exerciseName={exerciseToDelete ? (exerciseToDelete.exerciseCatalog?.name || exerciseToDelete.nombre || exerciseToDelete.name) : ''}
+        onCancel={() => { setConfirmDeleteOpen(false); setExerciseToDelete(null); }}
+        onConfirm={handleConfirmDelete}
+      />
+
+      <ConfirmDeleteSetModal
+        open={confirmDeleteSetOpen}
+        setLabel={setToDelete ? `Set de ${setToDelete.exercise?.exerciseCatalog?.name || setToDelete.exercise?.nombre || ''}` : ''}
+        onCancel={() => { setConfirmDeleteSetOpen(false); setSetToDelete(null); }}
+        onConfirm={async (replicateForward) => {
+          if (!setToDelete) return;
+          try {
+            const token = localStorage.getItem('token');
+            if (replicateForward) {
+              await fitFinanceApi.post(`/set/${setToDelete.setId}/delete-template`, {
+                fromMicrocycle: parseInt(id)
+              }, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+            } else {
+              await fitFinanceApi.delete(`/set/${setToDelete.setId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+              });
+            }
+            setConfirmDeleteSetOpen(false);
+            setSetToDelete(null);
+            fetchMicrocycle();
+          } catch (err) {
+            console.error('Error eliminando set:', err);
+            alert('Error al eliminar el set');
+          }
+        }}
       />
     </div>
   );
