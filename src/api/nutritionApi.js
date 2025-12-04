@@ -150,3 +150,39 @@ export const getTopFoods = async (studentId, limit = 10) => {
   return response.data;
 };
 
+// ========== RECETAS ==========
+
+export const getRecipes = async (studentId, search = '') => {
+  const params = search ? `?search=${encodeURIComponent(search)}` : '';
+  const response = await financeApi.get(
+    `/nutrition/recipes/${studentId}${params}`
+  );
+  return response.data;
+};
+
+export const getRecipe = async (recipeId) => {
+  const response = await financeApi.get(`/nutrition/recipes/detail/${recipeId}`);
+  return response.data;
+};
+
+export const createRecipe = async (studentId, recipeData) => {
+  const response = await financeApi.post(
+    `/nutrition/recipes/${studentId}`,
+    recipeData
+  );
+  return response.data;
+};
+
+export const updateRecipe = async (recipeId, recipeData) => {
+  const response = await financeApi.put(
+    `/nutrition/recipes/${recipeId}`,
+    recipeData
+  );
+  return response.data;
+};
+
+export const deleteRecipe = async (recipeId) => {
+  const response = await financeApi.delete(`/nutrition/recipes/${recipeId}`);
+  return response.data;
+};
+

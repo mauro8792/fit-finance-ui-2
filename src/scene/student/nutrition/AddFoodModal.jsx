@@ -8,18 +8,25 @@ import {
   InputAdornment,
   CircularProgress,
   Chip,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckIcon from '@mui/icons-material/Check';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import BlenderIcon from '@mui/icons-material/Blender';
 import { tokens } from '../../../theme';
-import { getFoodItems, getMealTypes, addFoodLogEntry } from '../../../api/nutritionApi';
+import { getFoodItems, getMealTypes, addFoodLogEntry, getRecipes } from '../../../api/nutritionApi';
 
 const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selectedDate }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
+  const [tabValue, setTabValue] = useState(0); // 0: Alimentos, 1: Recetas
   const [foods, setFoods] = useState([]);
+  const [recipes, setRecipes] = useState([]);
   const [filteredFoods, setFilteredFoods] = useState([]);
+  const [filteredRecipes, setFilteredRecipes] = useState([]);
   const [mealTypes, setMealTypes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -27,26 +34,36 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
   const [error, setError] = useState(null);
 
   const [selectedFood, setSelectedFood] = useState(null);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [quantity, setQuantity] = useState(100);
   const [selectedMealType, setSelectedMealType] = useState('');
+
+  // El item seleccionado puede ser un alimento o una receta
+  const selectedItem = selectedFood || selectedRecipe;
+  const isRecipe = !!selectedRecipe;
 
   useEffect(() => {
     if (open && studentId) {
       setSelectedFood(null);
+      setSelectedRecipe(null);
       setQuantity(100);
       setSearchText('');
       setError(null);
       setSelectedMealType('');
+      setTabValue(0);
       
       setLoading(true);
       Promise.all([
         getFoodItems(studentId),
         getMealTypes(studentId),
+        getRecipes(studentId),
       ])
-        .then(([foodsData, mealTypesData]) => {
+        .then(([foodsData, mealTypesData, recipesData]) => {
           setFoods(foodsData || []);
           setFilteredFoods(foodsData || []);
           setMealTypes(mealTypesData || []);
+          setRecipes(recipesData || []);
+          setFilteredRecipes(recipesData || []);
           
           if (selectedMeal && mealTypesData) {
             const found = mealTypesData.find(m => m.name === selectedMeal);
@@ -57,6 +74,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
           console.error('Error loading data:', err);
           setFoods([]);
           setMealTypes([]);
+          setRecipes([]);
         })
         .finally(() => setLoading(false));
     }
@@ -65,28 +83,49 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
   useEffect(() => {
     if (searchText.trim() === '') {
       setFilteredFoods(foods);
+      setFilteredRecipes(recipes);
     } else {
-      const filtered = foods.filter(food => 
-        food.name.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredFoods(filtered);
+      const searchLower = searchText.toLowerCase();
+      setFilteredFoods(foods.filter(food => 
+        food.name.toLowerCase().includes(searchLower)
+      ));
+      setFilteredRecipes(recipes.filter(recipe => 
+        recipe.name.toLowerCase().includes(searchLower)
+      ));
     }
-  }, [searchText, foods]);
+  }, [searchText, foods, recipes]);
 
   const calculateMacros = () => {
-    if (!selectedFood || !quantity) return null;
+    if (!selectedItem || !quantity) return null;
     const factor = quantity / 100;
     return {
-      calories: (selectedFood.caloriesPer100g * factor).toFixed(1),
-      protein: (selectedFood.proteinPer100g * factor).toFixed(1),
-      carbs: (selectedFood.carbsPer100g * factor).toFixed(1),
-      fat: (selectedFood.fatPer100g * factor).toFixed(1),
+      calories: (selectedItem.caloriesPer100g * factor).toFixed(1),
+      protein: (selectedItem.proteinPer100g * factor).toFixed(1),
+      carbs: (selectedItem.carbsPer100g * factor).toFixed(1),
+      fat: (selectedItem.fatPer100g * factor).toFixed(1),
     };
   };
 
+  const handleSelectFood = (food) => {
+    setSelectedFood(food);
+    setSelectedRecipe(null);
+  };
+
+  const handleSelectRecipe = (recipe) => {
+    setSelectedRecipe(recipe);
+    setSelectedFood(null);
+    // Para recetas, sugerir el total de gramos como cantidad inicial
+    setQuantity(recipe.totalGrams || 100);
+  };
+
+  const handleBack = () => {
+    setSelectedFood(null);
+    setSelectedRecipe(null);
+  };
+
   const handleSave = async () => {
-    if (!selectedFood || !quantity) {
-      setError('Seleccioná un alimento y una cantidad');
+    if (!selectedItem || !quantity) {
+      setError('Seleccioná un alimento o receta y una cantidad');
       return;
     }
 
@@ -94,12 +133,19 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
     setError(null);
     
     try {
-      await addFoodLogEntry(studentId, {
+      const entryData = {
         date: selectedDate,
-        foodItemId: selectedFood.id,
         quantityGrams: parseInt(quantity),
         mealTypeId: selectedMealType || undefined,
-      });
+      };
+
+      if (isRecipe) {
+        entryData.recipeId = selectedRecipe.id;
+      } else {
+        entryData.foodItemId = selectedFood.id;
+      }
+
+      await addFoodLogEntry(studentId, entryData);
       
       onSuccess();
       onClose();
@@ -178,14 +224,45 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
           <div style={{ padding: '40px', textAlign: 'center' }}>
             <CircularProgress />
           </div>
-        ) : !selectedFood ? (
-          /* PASO 1: Seleccionar alimento */
+        ) : !selectedItem ? (
+          /* PASO 1: Seleccionar alimento o receta */
           <>
+            {/* Tabs para cambiar entre Alimentos y Recetas */}
+            <Box sx={{ 
+              borderBottom: `1px solid ${colors.primary[400]}`, 
+              backgroundColor: colors.primary[600],
+              flexShrink: 0 
+            }}>
+              <Tabs
+                value={tabValue}
+                onChange={(e, v) => setTabValue(v)}
+                variant="fullWidth"
+                sx={{
+                  minHeight: '42px',
+                  '& .MuiTab-root': {
+                    color: colors.grey[400],
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    minHeight: '42px',
+                  },
+                  '& .Mui-selected': {
+                    color: colors.orangeAccent[400],
+                  },
+                  '& .MuiTabs-indicator': {
+                    backgroundColor: colors.orangeAccent[500],
+                  },
+                }}
+              >
+                <Tab icon={<RestaurantIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Alimentos (${filteredFoods.length})`} />
+                <Tab icon={<BlenderIcon sx={{ fontSize: 18 }} />} iconPosition="start" label={`Recetas (${filteredRecipes.length})`} />
+              </Tabs>
+            </Box>
+
             {/* Buscador */}
             <div style={{ padding: '16px', backgroundColor: colors.primary[600], borderBottom: `1px solid ${colors.primary[400]}`, flexShrink: 0 }}>
               <input
                 type="text"
-                placeholder="Buscar alimento..."
+                placeholder={tabValue === 0 ? "Buscar alimento..." : "Buscar receta..."}
                 value={searchText}
                 onChange={(e) => setSearchText(e.target.value)}
                 style={{
@@ -203,53 +280,96 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                   backgroundSize: '16px 16px'
                 }}
               />
-              <p style={{ margin: '8px 0 0 0', fontSize: '12px', color: colors.grey[400] }}>
-                {filteredFoods.length} alimentos disponibles
-              </p>
             </div>
 
-            {/* Lista de alimentos scrolleable */}
+            {/* Lista de alimentos o recetas scrolleable */}
             <div style={{
               flex: '1 1 0',
               overflowY: 'scroll',
               backgroundColor: colors.primary[500],
               WebkitOverflowScrolling: 'touch'
             }}>
-              {filteredFoods.length > 0 ? (
-                <div style={{ width: '100%' }}>
-                  {filteredFoods.map((food) => (
-                    <div
-                      key={food.id}
-                      onClick={() => setSelectedFood(food)}
-                      style={{
-                        padding: '16px 20px',
-                        borderBottom: `1px solid ${colors.primary[600]}`,
-                        cursor: 'pointer',
-                        backgroundColor: colors.primary[500],
-                        minHeight: '60px',
-                        display: 'block',
-                        width: '100%',
-                        boxSizing: 'border-box',
-                        transition: 'all 0.2s ease'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.primary[600]}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.primary[500]}
-                    >
-                      <div style={{ fontSize: '16px', color: colors.grey[100], fontWeight: '500', marginBottom: '4px' }}>
-                        {food.name}
+              {tabValue === 0 ? (
+                // ALIMENTOS
+                filteredFoods.length > 0 ? (
+                  <div style={{ width: '100%' }}>
+                    {filteredFoods.map((food) => (
+                      <div
+                        key={food.id}
+                        onClick={() => handleSelectFood(food)}
+                        style={{
+                          padding: '16px 20px',
+                          borderBottom: `1px solid ${colors.primary[600]}`,
+                          cursor: 'pointer',
+                          backgroundColor: colors.primary[500],
+                          minHeight: '60px',
+                          display: 'block',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.primary[600]}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.primary[500]}
+                      >
+                        <div style={{ fontSize: '16px', color: colors.grey[100], fontWeight: '500', marginBottom: '4px' }}>
+                          {food.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: colors.grey[400] }}>
+                          P:{food.proteinPer100g}g | H:{food.carbsPer100g}g | G:{food.fatPer100g}g | {food.caloriesPer100g}kcal
+                        </div>
                       </div>
-                      <div style={{ fontSize: '12px', color: colors.grey[400] }}>
-                        P:{food.proteinPer100g}g | H:{food.carbsPer100g}g | G:{food.fatPer100g}g | {food.caloriesPer100g}kcal
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center' }}>
+                    <p style={{ color: colors.grey[400], margin: 0 }}>
+                      No se encontraron alimentos
+                    </p>
+                  </div>
+                )
               ) : (
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <p style={{ color: colors.grey[400], margin: 0 }}>
-                    No se encontraron alimentos
-                  </p>
-                </div>
+                // RECETAS
+                filteredRecipes.length > 0 ? (
+                  <div style={{ width: '100%' }}>
+                    {filteredRecipes.map((recipe) => (
+                      <div
+                        key={recipe.id}
+                        onClick={() => handleSelectRecipe(recipe)}
+                        style={{
+                          padding: '16px 20px',
+                          borderBottom: `1px solid ${colors.primary[600]}`,
+                          cursor: 'pointer',
+                          backgroundColor: colors.primary[500],
+                          minHeight: '60px',
+                          display: 'block',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.primary[600]}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.primary[500]}
+                      >
+                        <div style={{ fontSize: '16px', color: colors.grey[100], fontWeight: '500', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <BlenderIcon sx={{ fontSize: 16, color: colors.orangeAccent[400] }} />
+                          {recipe.name}
+                        </div>
+                        <div style={{ fontSize: '12px', color: colors.grey[400] }}>
+                          {recipe.totalGrams}g total • P:{Math.round(recipe.proteinPer100g)}g | H:{Math.round(recipe.carbsPer100g)}g | G:{Math.round(recipe.fatPer100g)}g | {Math.round(recipe.caloriesPer100g)}kcal/100g
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ padding: '40px', textAlign: 'center' }}>
+                    <BlenderIcon sx={{ fontSize: 48, color: colors.grey[600], mb: 1 }} />
+                    <p style={{ color: colors.grey[400], margin: 0 }}>
+                      No tenés recetas creadas
+                    </p>
+                    <p style={{ color: colors.grey[500], margin: '8px 0 0 0', fontSize: '12px' }}>
+                      Creá recetas desde la pestaña "Recetas"
+                    </p>
+                  </div>
+                )
               )}
             </div>
           </>
@@ -261,18 +381,20 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
             padding: '16px 20px',
             WebkitOverflowScrolling: 'touch'
           }}>
-            {/* Alimento seleccionado */}
+            {/* Alimento o receta seleccionada */}
             <Box sx={{ 
               p: 2, 
               mb: 2, 
-              bgcolor: colors.orangeAccent[700], 
+              bgcolor: isRecipe ? colors.blueAccent[700] : colors.orangeAccent[700], 
               borderRadius: 1,
             }}>
-              <Typography variant="subtitle1" fontWeight="bold" color={colors.grey[100]}>
-                {selectedFood.name}
+              <Typography variant="subtitle1" fontWeight="bold" color={colors.grey[100]} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                {isRecipe && <BlenderIcon sx={{ fontSize: 18 }} />}
+                {selectedItem.name}
               </Typography>
               <Typography variant="caption" color={colors.grey[200]}>
-                {selectedFood.caloriesPer100g} kcal / 100g
+                {Math.round(selectedItem.caloriesPer100g)} kcal / 100g
+                {isRecipe && ` • Receta de ${selectedItem.totalGrams}g`}
               </Typography>
             </Box>
 
@@ -404,10 +526,10 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
           flexShrink: 0,
           backgroundColor: colors.primary[600]
         }}>
-          {selectedFood ? (
+          {selectedItem ? (
             <>
               <Button 
-                onClick={() => setSelectedFood(null)}
+                onClick={handleBack}
                 variant="outlined"
                 fullWidth
                 disabled={saving}
@@ -421,7 +543,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={!selectedFood || !quantity || saving}
+                disabled={!selectedItem || !quantity || saving}
                 variant="contained"
                 fullWidth
                 startIcon={saving ? <CircularProgress size={20} /> : <CheckIcon />}

@@ -14,13 +14,15 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import SettingsIcon from '@mui/icons-material/Settings';
+import BlenderIcon from '@mui/icons-material/Blender';
 import { tokens } from '../../../theme';
 import { useAuthStore } from '../../../hooks';
 import DailyTracker from './DailyTracker';
 import FoodLibrary from './FoodLibrary';
 import WeeklySummary from './WeeklySummary';
 import MealTypesConfig from './MealTypesConfig';
-import { initializeFoodLibrary, initializeMealTypes, getNutritionProfile } from '../../../api/nutritionApi';
+import RecipesList from './RecipesList';
+import { initializeFoodLibrary, initializeMealTypes, getNutritionProfile, getFoodItems } from '../../../api/nutritionApi';
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -47,6 +49,7 @@ export const NutritionDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [hasFoods, setHasFoods] = useState(true); // Asumir que sí hay hasta verificar
 
   const studentId = student?.id;
 
@@ -60,6 +63,10 @@ export const NutritionDashboard = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // Verificar si ya tiene alimentos cargados
+      const foods = await getFoodItems(studentId);
+      setHasFoods(foods && foods.length > 0);
       
       // Intentar cargar el perfil nutricional
       const profileData = await getNutritionProfile(studentId);
@@ -83,6 +90,9 @@ export const NutritionDashboard = () => {
         initializeFoodLibrary(studentId),
         initializeMealTypes(studentId),
       ]);
+      
+      // Marcar que ya tiene alimentos
+      setHasFoods(true);
       
       // Recargar datos
       await loadInitialData();
@@ -217,25 +227,27 @@ export const NutritionDashboard = () => {
         </Alert>
       )}
 
-      {/* Botón de inicialización (solo mostrar si es necesario) */}
-      <Box mb={2}>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={handleInitialize}
-          disabled={initializing}
-          sx={{ 
-            color: colors.grey[300],
-            borderColor: colors.grey[600],
-            '&:hover': {
-              borderColor: colors.orangeAccent[500],
-              color: colors.orangeAccent[500],
-            }
-          }}
-        >
-          {initializing ? 'Inicializando...' : '🔄 Cargar alimentos base'}
-        </Button>
-      </Box>
+      {/* Botón de inicialización - solo si no hay alimentos */}
+      {!hasFoods && (
+        <Box mb={2}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleInitialize}
+            disabled={initializing}
+            sx={{ 
+              backgroundColor: colors.orangeAccent[600],
+              color: '#fff',
+              fontWeight: 'bold',
+              '&:hover': {
+                backgroundColor: colors.orangeAccent[700],
+              }
+            }}
+          >
+            {initializing ? 'Cargando...' : '📦 Cargar alimentos base'}
+          </Button>
+        </Box>
+      )}
 
       {/* Tabs */}
       <Box
@@ -285,6 +297,11 @@ export const NutritionDashboard = () => {
             label="Alimentos"
           />
           <Tab
+            icon={<BlenderIcon />}
+            iconPosition="start"
+            label="Recetas"
+          />
+          <Tab
             icon={<SettingsIcon />}
             iconPosition="start"
             label="Comidas"
@@ -311,6 +328,9 @@ export const NutritionDashboard = () => {
           <FoodLibrary studentId={studentId} />
         </TabPanel>
         <TabPanel value={tabValue} index={3}>
+          <RecipesList studentId={studentId} />
+        </TabPanel>
+        <TabPanel value={tabValue} index={4}>
           <MealTypesConfig studentId={studentId} />
         </TabPanel>
       </Box>
