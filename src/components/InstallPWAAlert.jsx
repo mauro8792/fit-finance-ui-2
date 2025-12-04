@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Box, Button, Typography, Slide } from '@mui/material';
+import { Box, Button, Typography, Slide, IconButton } from '@mui/material';
+import CloseIcon from '@mui/icons-material/Close';
 
 function isMobileDevice() {
   return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -10,6 +11,10 @@ export const InstallPWAAlert = () => {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
+    // Verificar si ya se descartó
+    const dismissed = localStorage.getItem('pwa-alert-dismissed') === 'true';
+    if (dismissed) return;
+
     if (!isMobileDevice()) return;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -33,6 +38,11 @@ export const InstallPWAAlert = () => {
     }
   };
 
+  const handleDismiss = () => {
+    setShow(false);
+    localStorage.setItem('pwa-alert-dismissed', 'true');
+  };
+
   if (!show) return null;
 
   return (
@@ -52,6 +62,23 @@ export const InstallPWAAlert = () => {
         zIndex: 9999,
         textAlign: 'center',
       }}>
+        {/* Botón X para cerrar */}
+        <IconButton
+          size="small"
+          onClick={handleDismiss}
+          sx={{
+            position: 'absolute',
+            top: 4,
+            right: 4,
+            color: '#fff',
+            '&:hover': {
+              bgcolor: 'rgba(255,255,255,0.1)',
+            },
+          }}
+        >
+          <CloseIcon fontSize="small" />
+        </IconButton>
+
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           ¿Querés instalar la app en tu celular?
         </Typography>

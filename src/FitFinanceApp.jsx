@@ -18,12 +18,14 @@ import { StudentRoutine } from './scene/student/StudentRoutine';
 import { StudentFees } from './scene/student/StudentFees';
 import TrainingHistory from './scene/student/TrainingHistory';
 import { HealthDashboard } from './scene/student/health';
+import { NutritionDashboard } from './scene/student/nutrition';
 import { PaymentSuccess } from './scene/payments/PaymentSuccess';
 import { PaymentFailure } from './scene/payments/PaymentFailure';
 import { PaymentPending } from './scene/payments/PaymentPending';
 import StudentDetail from './scene/coach/StudentDetail';
 import MacrocycleDetail from './scene/coach/MacrocycleDetail';
 import MicrocycleManager from './scene/coach/MicrocycleManager';
+import StudentNutritionView from './scene/coach/StudentNutritionView';
 
 import MicrocycleEdit from './scene/coach/MicrocycleEdit';
 import MicrocycleDetail from './components/MicrocycleDetail';
@@ -88,6 +90,7 @@ export const FitFinanceApp = () => {
                   <Route path="/student/fees" element={<StudentFees />} />
                   <Route path="/student/routine" element={<StudentRoutine />} />
                   <Route path="/student/progress" element={<HealthDashboard />} />
+                  <Route path="/student/nutrition" element={<NutritionDashboard />} />
                   <Route path="/student/history" element={<TrainingHistory />} />
                   <Route path="/student/payment-success" element={<PaymentSuccess />} />
                   <Route path="/student/payment-failure" element={<PaymentFailure />} />
@@ -101,6 +104,7 @@ export const FitFinanceApp = () => {
                   <Route path="/" element={<CoachDashboard coachUserId={user?.id} />} />
                   <Route path="/coach/dashboard" element={<CoachDashboard coachUserId={user?.id} />} />
                   <Route path="/coach/alumno/:id" element={<StudentDetail />} />
+                  <Route path="/coach/alumno/:studentId/nutricion" element={<StudentNutritionView />} />
                   <Route path="/coach/macrocycle/:id" element={<MacrocycleDetail />} />
                   <Route path="/coach/microcycle/:id" element={<MicrocycleDetail />} />
                   <Route path="/coach/mesocycle/:mesocycleId/microcycles" element={<MicrocycleManager />} />
