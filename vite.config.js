@@ -1,5 +1,5 @@
-import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
@@ -7,14 +7,16 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Vendor chunks - divide las dependencias grandes
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-mui': ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers', '@emotion/react', '@emotion/styled'],
-          'vendor-charts': ['recharts', 'chart.js', 'react-chartjs-2'],
-          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
-          'vendor-utils': ['axios', 'dayjs', 'date-fns'],
+        manualChunks(id) {
+          // Agrupa todas las dependencias de node_modules en un solo chunk vendor
+          if (id.includes("node_modules")) {
+            // Separa MUI que es muy grande
+            if (id.includes("@mui") || id.includes("@emotion")) {
+              return "vendor-mui";
+            }
+            // El resto de node_modules va junto
+            return "vendor";
+          }
         },
       },
     },
@@ -31,7 +33,8 @@ export default defineConfig({
       manifest: {
         name: "BraCamp Bodybuilding",
         short_name: "BraCamp",
-        description: "Gestión de pagos, rutinas y nutrición para BraCamp Bodybuilding",
+        description:
+          "Gestión de pagos, rutinas y nutrición para BraCamp Bodybuilding",
         theme_color: "#000000",
         background_color: "#000000",
         display: "standalone",
