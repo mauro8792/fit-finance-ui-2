@@ -226,7 +226,7 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
 
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: 20, color: '#aaa' }}>
+      <div style={{ textAlign: 'center', padding: 20, color: 'rgba(255,255,255,0.7)' }}>
         Cargando...
       </div>
     );
@@ -237,7 +237,7 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
     return (
       <div style={{ textAlign: 'center', padding: 16 }}>
         <div style={{ fontSize: 24, marginBottom: 8 }}>🎯</div>
-        <div style={{ fontSize: 14, color: '#222', marginBottom: 12 }}>
+        <div style={{ fontSize: 14, color: '#fff', marginBottom: 12 }}>
           Sin objetivos nutricionales
         </div>
         <button
@@ -246,7 +246,7 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
             padding: '10px 20px',
             borderRadius: 8,
             border: 'none',
-            background: '#222',
+            background: 'rgba(0,0,0,0.4)',
             color: '#fff',
             fontWeight: 600,
             cursor: 'pointer',
@@ -264,14 +264,14 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
     return (
       <div style={{ padding: 8 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 14, fontWeight: 700, color: '#222' }}>🎯 Objetivos</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>🎯 Objetivos</span>
           <button
             onClick={() => setEditing(true)}
             style={{
               padding: '4px 10px',
               borderRadius: 6,
               border: 'none',
-              background: '#222',
+              background: 'rgba(0,0,0,0.4)',
               color: '#fff',
               fontSize: 11,
               cursor: 'pointer',
@@ -282,35 +282,35 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
         </div>
 
         <div style={{ textAlign: 'center', marginBottom: 12 }}>
-          <div style={{ fontSize: 28, fontWeight: 700, color: '#222' }}>
+          <div style={{ fontSize: 32, fontWeight: 700, color: '#fff' }}>
             {profile.targetDailyCalories}
           </div>
-          <div style={{ fontSize: 12, color: '#444' }}>kcal/día</div>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>kcal/día</div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#3b82f6' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6' }}>
               {profile.targetProteinGrams}g
             </div>
-            <div style={{ fontSize: 10, color: '#666' }}>Proteína</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>Proteína</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#f59e0b' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#f59e0b' }}>
               {profile.targetCarbsGrams}g
             </div>
-            <div style={{ fontSize: 10, color: '#666' }}>Carbos</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>Carbos</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#ef4444' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#ef4444' }}>
               {profile.targetFatGrams}g
             </div>
-            <div style={{ fontSize: 10, color: '#666' }}>Grasas</div>
+            <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>Grasas</div>
           </div>
         </div>
 
         {profile.currentWeight && (
-          <div style={{ textAlign: 'center', marginTop: 8, fontSize: 11, color: '#666' }}>
+          <div style={{ textAlign: 'center', marginTop: 10, fontSize: 11, color: 'rgba(255,255,255,0.6)' }}>
             Peso: {profile.currentWeight}kg | {profile.trainingDaysPerWeek}x/sem
           </div>
         )}

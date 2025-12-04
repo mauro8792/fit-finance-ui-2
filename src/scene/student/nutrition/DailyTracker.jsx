@@ -30,6 +30,7 @@ import TodayIcon from '@mui/icons-material/Today';
 import { tokens } from '../../../theme';
 import { getNutritionDashboard, deleteFoodLogEntry } from '../../../api/nutritionApi';
 import AddFoodModal from './AddFoodModal';
+import NutritionAlerts from './NutritionAlerts';
 
 const MacroProgress = ({ label, current, target, color, unit = 'g' }) => {
   const theme = useTheme();
@@ -362,6 +363,15 @@ const DailyTracker = ({ studentId, profile }) => {
           </IconButton>
         )}
       </Box>
+
+      {/* Alertas inteligentes (solo para el día actual) */}
+      {selectedDate === new Date().toISOString().split('T')[0] && (
+        <NutritionAlerts
+          consumed={consumed}
+          targets={targets}
+          entriesCount={Object.values(dashboard?.entriesByMeal || {}).flat().length}
+        />
+      )}
 
       {/* Resumen de macros */}
       <Card

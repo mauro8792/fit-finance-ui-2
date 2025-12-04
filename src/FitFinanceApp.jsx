@@ -25,6 +25,7 @@ import { PaymentPending } from './scene/payments/PaymentPending';
 import StudentDetail from './scene/coach/StudentDetail';
 import MacrocycleDetail from './scene/coach/MacrocycleDetail';
 import MicrocycleManager from './scene/coach/MicrocycleManager';
+import StudentNutritionView from './scene/coach/StudentNutritionView';
 
 import MicrocycleEdit from './scene/coach/MicrocycleEdit';
 import MicrocycleDetail from './components/MicrocycleDetail';
@@ -103,6 +104,7 @@ export const FitFinanceApp = () => {
                   <Route path="/" element={<CoachDashboard coachUserId={user?.id} />} />
                   <Route path="/coach/dashboard" element={<CoachDashboard coachUserId={user?.id} />} />
                   <Route path="/coach/alumno/:id" element={<StudentDetail />} />
+                  <Route path="/coach/alumno/:studentId/nutricion" element={<StudentNutritionView />} />
                   <Route path="/coach/macrocycle/:id" element={<MacrocycleDetail />} />
                   <Route path="/coach/microcycle/:id" element={<MicrocycleDetail />} />
                   <Route path="/coach/mesocycle/:mesocycleId/microcycles" element={<MicrocycleManager />} />

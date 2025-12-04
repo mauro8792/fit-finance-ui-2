@@ -1,9 +1,47 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Typography,
+  Card,
+  CardContent,
+  Grid,
+  Avatar,
+  Chip,
+  CircularProgress,
+  LinearProgress,
+  Breadcrumbs,
+  Link,
+  IconButton,
+} from '@mui/material';
+import HomeIcon from '@mui/icons-material/Home';
+import PersonIcon from '@mui/icons-material/Person';
+import EmailIcon from '@mui/icons-material/Email';
+import PhoneIcon from '@mui/icons-material/Phone';
+import CakeIcon from '@mui/icons-material/Cake';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import RestaurantIcon from '@mui/icons-material/Restaurant';
+import AddIcon from '@mui/icons-material/Add';
 import { useAuthStore } from '../../hooks';
 import RoutineWizard from './RoutineWizard';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
 import NutritionProfileCard from './NutritionProfileCard';
+
+const COLORS = {
+  bg: '#0d0d0d',
+  card: '#1a1a2e',
+  cardDark: '#141428',
+  text: '#e0e0e0',
+  textMuted: '#888',
+  border: 'rgba(255,255,255,0.1)',
+  green: '#4cceac',
+  orange: '#ff9800',
+  blue: '#6870fa',
+  purple: '#a855f7',
+  pink: '#ec4899',
+  gold: '#ffd700',
+};
 
 const StudentDetail = () => {
   const { id } = useParams();
@@ -20,236 +58,512 @@ const StudentDetail = () => {
   useEffect(() => {
     setLoading(true);
     getStudentById(id)
-      .then((data) => {
-        setStudent(data);
-      })
-      .catch((err) => {
-        setError(err);
-      })
+      .then((data) => setStudent(data))
+      .catch((err) => setError(err))
       .finally(() => setLoading(false));
 
-    // Traer macro-ciclos del alumno
     setLoadingMacros(true);
     getAllMacroCycles()
-      .then((allMacros) => {
-        setMacros(allMacros.filter(m => m.studentId == id));
-      })
+      .then((allMacros) => setMacros(allMacros.filter(m => m.studentId == id)))
       .finally(() => setLoadingMacros(false));
   }, [id, getStudentById, getAllMacroCycles]);
 
-  if (loading) return <div style={{textAlign:'center',marginTop:40}}>Cargando datos del alumno...</div>;
-  if (error) return <div style={{textAlign:'center',marginTop:40}}>Error al cargar datos del alumno</div>;
-  if (!student) return <div style={{textAlign:'center',marginTop:40}}>No se encontró el alumno</div>;
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: COLORS.bg, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Box textAlign="center">
+          <CircularProgress sx={{ color: COLORS.purple, mb: 2 }} size={48} />
+          <Typography color={COLORS.textMuted}>Cargando datos del alumno...</Typography>
+        </Box>
+      </Box>
+    );
+  }
 
-  // Estilos responsivos inline (CSS-in-JS)
-  const isMobile = window.innerWidth < 600;
+  if (error || !student) {
+    return (
+      <Box sx={{ minHeight: '100vh', backgroundColor: COLORS.bg, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Typography color="error">Error al cargar datos del alumno</Typography>
+      </Box>
+    );
+  }
+
+  const studentName = student.user?.fullName || `${student.firstName} ${student.lastName}`;
+  const studentInitial = studentName.charAt(0).toUpperCase();
+
+  const reloadData = () => {
+    setLoading(true);
+    getStudentById(id)
+      .then((data) => setStudent(data))
+      .catch((err) => setError(err))
+      .finally(() => setLoading(false));
+    
+    setLoadingMacros(true);
+    getAllMacroCycles()
+      .then((allMacros) => setMacros(allMacros.filter(m => m.studentId == id)))
+      .finally(() => setLoadingMacros(false));
+  };
 
   return (
-    <div style={{ background: '#181818', height: '100vh', padding: isMobile ? 8 : 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      {/* Cards superiores */}
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16, marginBottom: 20, justifyContent: 'center', flex: '0 0 auto' }}>
-        {/* Card Alumno */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#7b6be6 60%,#5e4bb7)', borderRadius: 18, color: '#fff', padding: isMobile ? 16 : 20, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 700, marginBottom: 6 }}>{student.user?.fullName || student.firstName + ' ' + student.lastName}</div>
-          <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Email:</b> {student.user?.email || student.email}</div>
-          <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Teléfono:</b> {student.user?.phone || student.phone || '-'}</div>
-          {student.birthDate && <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Nacimiento:</b> {new Date(student.birthDate).toLocaleDateString()}</div>}
-          {student.startDate && <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Alta:</b> {new Date(student.startDate).toLocaleDateString()}</div>}
-          {typeof student.isActive === 'boolean' && <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 4 }}><b>Estado:</b> {student.isActive ? 'Activo' : 'Inactivo'}</div>}
-        </div>
-        {/* Card Deporte */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#f093fb 60%,#f5576c)', borderRadius: 18, color: '#fff', padding: isMobile ? 16 : 20, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontSize: isMobile ? 18 : 20, fontWeight: 700, marginBottom: 6 }}>Información Deportiva</div>
-          
-          <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 600, marginBottom: 6 }}>
-            Disciplina: {student.sport?.name || '-'}
-          </div>
-          
-          {student.sportPlan ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: isMobile ? 13 : 14, marginBottom: 3 }}>
-                <b>Plan:</b> {student.sportPlan.name}
-              </div>
-              <div style={{ fontSize: isMobile ? 12 : 13, marginBottom: 3 }}>
-                <b>Precio:</b> ${student.sportPlan.monthlyFee}/mes
-              </div>
-              <div style={{ fontSize: isMobile ? 12 : 13, marginBottom: 3 }}>
-                <b>Frecuencia:</b> {student.sportPlan.weeklyFrequency}x por semana
-              </div>
-              {student.sportPlan.description && (
-                <div style={{ fontSize: isMobile ? 11 : 12, marginTop: 6, fontStyle: 'italic' }}>
-                  {student.sportPlan.description}
-                </div>
-              )}
-            </div>
-          ) : student.sport ? (
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: isMobile ? 12 : 13, fontStyle: 'italic' }}>
-                Usando precio base: ${student.sport.monthlyFee}/mes
-              </div>
-            </div>
-          ) : null}
-        </div>
-        {/* Card Nutrición */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#43e97b 60%,#38f9d7)', borderRadius: 18, color: '#222', padding: isMobile ? 12 : 16, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column' }}>
-          <NutritionProfileCard 
-            studentId={student.id} 
-            studentName={student.user?.fullName || `${student.firstName} ${student.lastName}`}
-          />
-        </div>
-      </div>
+    <Box sx={{ minHeight: '100vh', backgroundColor: COLORS.bg }}>
+      {/* Header Premium */}
+      <Box sx={{ 
+        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+        borderBottom: `1px solid ${COLORS.border}`,
+        px: { xs: 2, md: 4 },
+        py: 3,
+      }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs sx={{ mb: 2, '& .MuiBreadcrumbs-separator': { color: COLORS.textMuted } }}>
+          <Link
+            underline="hover"
+            sx={{ display: 'flex', alignItems: 'center', color: COLORS.textMuted, cursor: 'pointer' }}
+            onClick={() => navigate('/coach/dashboard')}
+          >
+            <HomeIcon sx={{ mr: 0.5, fontSize: 18 }} />
+            Dashboard
+          </Link>
+          <Typography sx={{ display: 'flex', alignItems: 'center', color: COLORS.purple }}>
+            <PersonIcon sx={{ mr: 0.5, fontSize: 18 }} />
+            {studentName}
+          </Typography>
+        </Breadcrumbs>
 
-      {/* Grid de macro-ciclos */}
-      <div style={{ background: '#222', borderRadius: 16, padding: isMobile ? 6 : 8, margin: '0 auto', maxWidth: 1200, boxShadow: '0 2px 16px #0002', flex: '0 0 auto', position: 'relative' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <h3 style={{ color: '#ffd700', fontWeight: 700, fontSize: isMobile ? 14 : 16, margin: 0 }}>Rutinas (Macro-ciclos)</h3>
-        </div>
-        
-        {loadingMacros ? (
-          <div style={{ textAlign: 'center', color: '#aaa', margin: 4, fontSize: 13 }}>Cargando macro-ciclos...</div>
-        ) : macros.length === 0 ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 60, gap: 8 }}>
-            <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>No hay rutinas para este alumno.</div>
-            {!showRoutineWizard && (
-              <button 
-                style={{
-                  padding: isMobile ? '8px 16px' : '10px 20px',
-                  borderRadius: 8,
-                  border: 'none',
+        {/* Main Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, flexWrap: 'wrap' }}>
+          <Avatar 
+            sx={{ 
+              width: 72, 
+              height: 72, 
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              fontSize: 28,
+              fontWeight: 700,
+              boxShadow: '0 4px 20px rgba(102, 126, 234, 0.4)',
+            }}
+          >
+            {studentInitial}
+          </Avatar>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" color={COLORS.text}>
+              {studentName}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+              <Chip 
+                label={student.isActive ? '✅ Activo' : '❌ Inactivo'} 
+                size="small"
+                sx={{ 
+                  backgroundColor: student.isActive ? 'rgba(76,206,172,0.2)' : 'rgba(244,67,54,0.2)',
+                  color: student.isActive ? COLORS.green : '#f44336',
                   fontWeight: 600,
-                  cursor: 'pointer',
-                  fontSize: isMobile ? 12 : 14,
-                  boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)',
-                  color: '#fff',
-                  letterSpacing: 0.3,
-                  transition: 'all 0.2s ease',
-                  transform: 'translateY(0)',
                 }}
-                onClick={() => setShowRoutineWizard(true)}
-                onMouseEnter={(e) => {
-                  e.target.style.transform = 'translateY(-1px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
-                }}
-                onMouseLeave={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = '0 2px 8px rgba(102, 126, 234, 0.3)';
-                }}
-              >
-                🚀 Crear Primera Rutina
-              </button>
-            )}
-          </div>
-        ) : (
-          <div>
-            {/* Grid de rutinas existentes */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'flex-start', marginBottom: 16 }}>
-              {macros.map(macro => (
-                <div
-                  key={macro.id}
-                  style={{
-                    background: '#181818',
-                    borderRadius: 12,
-                    boxShadow: '0 2px 12px #0003',
-                    padding: 12,
-                    minWidth: 200,
-                    maxWidth: 240,
-                    border: '2px solid #ffd700',
-                    color: '#fff',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    fontSize: 13,
+              />
+              {student.sport?.name && (
+                <Chip 
+                  icon={<FitnessCenterIcon sx={{ fontSize: 16 }} />}
+                  label={student.sport.name} 
+                  size="small"
+                  sx={{ 
+                    backgroundColor: 'rgba(168,85,247,0.2)',
+                    color: COLORS.purple,
+                    fontWeight: 600,
+                    '& .MuiChip-icon': { color: COLORS.purple },
+                  }}
+                />
+              )}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {/* Content */}
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
+        <Grid container spacing={3}>
+          {/* Card Información Personal */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, rgba(102,126,234,0.15) 0%, rgba(118,75,162,0.1) 100%)',
+              border: `1px solid rgba(102,126,234,0.3)`,
+              borderRadius: 3,
+              height: '100%',
+            }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <PersonIcon sx={{ color: COLORS.blue }} />
+                  <Typography variant="h6" fontWeight="bold" color={COLORS.text}>
+                    Información Personal
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 36, height: 36, borderRadius: 2, 
+                      background: 'rgba(104,112,250,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <EmailIcon sx={{ color: COLORS.blue, fontSize: 18 }} />
+                    </Box>
+                    <Box>
+                      <Typography fontSize={11} color={COLORS.textMuted}>Email</Typography>
+                      <Typography fontSize={14} color={COLORS.text} fontWeight={500}>
+                        {student.user?.email || student.email || '-'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 36, height: 36, borderRadius: 2, 
+                      background: 'rgba(76,206,172,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <PhoneIcon sx={{ color: COLORS.green, fontSize: 18 }} />
+                    </Box>
+                    <Box>
+                      <Typography fontSize={11} color={COLORS.textMuted}>Teléfono</Typography>
+                      <Typography fontSize={14} color={COLORS.text} fontWeight={500}>
+                        {student.user?.phone || student.phone || '-'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 36, height: 36, borderRadius: 2, 
+                      background: 'rgba(236,72,153,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <CakeIcon sx={{ color: COLORS.pink, fontSize: 18 }} />
+                    </Box>
+                    <Box>
+                      <Typography fontSize={11} color={COLORS.textMuted}>Nacimiento</Typography>
+                      <Typography fontSize={14} color={COLORS.text} fontWeight={500}>
+                        {student.birthDate ? new Date(student.birthDate).toLocaleDateString() : '-'}
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ 
+                      width: 36, height: 36, borderRadius: 2, 
+                      background: 'rgba(255,152,0,0.2)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <CalendarTodayIcon sx={{ color: COLORS.orange, fontSize: 18 }} />
+                    </Box>
+                    <Box>
+                      <Typography fontSize={11} color={COLORS.textMuted}>Fecha de Alta</Typography>
+                      <Typography fontSize={14} color={COLORS.text} fontWeight={500}>
+                        {student.startDate ? new Date(student.startDate).toLocaleDateString() : '-'}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Card Información Deportiva */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, rgba(168,85,247,0.15) 0%, rgba(236,72,153,0.1) 100%)',
+              border: `1px solid rgba(168,85,247,0.3)`,
+              borderRadius: 3,
+              height: '100%',
+            }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <FitnessCenterIcon sx={{ color: COLORS.purple }} />
+                  <Typography variant="h6" fontWeight="bold" color={COLORS.text}>
+                    Plan Deportivo
+                  </Typography>
+                </Box>
+
+                {student.sport ? (
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Box sx={{ 
+                      display: 'inline-block',
+                      background: 'linear-gradient(135deg, rgba(168,85,247,0.3) 0%, rgba(236,72,153,0.2) 100%)',
+                      borderRadius: 3,
+                      px: 3, py: 2, mb: 2,
+                    }}>
+                      <Typography variant="h5" fontWeight="bold" color={COLORS.purple}>
+                        {student.sport.name}
+                      </Typography>
+                    </Box>
+
+                    {student.sportPlan ? (
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        <Box sx={{ 
+                          background: 'rgba(0,0,0,0.2)', 
+                          borderRadius: 2, 
+                          p: 1.5,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}>
+                          <Typography fontSize={13} color={COLORS.textMuted}>Plan</Typography>
+                          <Typography fontSize={14} fontWeight={600} color={COLORS.text}>
+                            {student.sportPlan.name}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ 
+                          background: 'rgba(0,0,0,0.2)', 
+                          borderRadius: 2, 
+                          p: 1.5,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}>
+                          <Typography fontSize={13} color={COLORS.textMuted}>Precio</Typography>
+                          <Typography fontSize={14} fontWeight={600} color={COLORS.green}>
+                            ${student.sportPlan.monthlyFee}/mes
+                          </Typography>
+                        </Box>
+                        <Box sx={{ 
+                          background: 'rgba(0,0,0,0.2)', 
+                          borderRadius: 2, 
+                          p: 1.5,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}>
+                          <Typography fontSize={13} color={COLORS.textMuted}>Frecuencia</Typography>
+                          <Typography fontSize={14} fontWeight={600} color={COLORS.orange}>
+                            {student.sportPlan.weeklyFrequency}x/semana
+                          </Typography>
+                        </Box>
+                        {student.sportPlan.description && (
+                          <Typography fontSize={12} color={COLORS.textMuted} fontStyle="italic" mt={1}>
+                            {student.sportPlan.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography fontSize={13} color={COLORS.textMuted}>
+                        Precio base: ${student.sport.monthlyFee}/mes
+                      </Typography>
+                    )}
+                  </Box>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 4, color: COLORS.textMuted }}>
+                    <FitnessCenterIcon sx={{ fontSize: 48, opacity: 0.3, mb: 1 }} />
+                    <Typography>Sin disciplina asignada</Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Card Nutrición */}
+          <Grid item xs={12} md={4}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, rgba(76,206,172,0.15) 0%, rgba(56,249,215,0.1) 100%)',
+              border: `1px solid rgba(76,206,172,0.3)`,
+              borderRadius: 3,
+              height: '100%',
+            }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <RestaurantIcon sx={{ color: COLORS.green }} />
+                  <Typography variant="h6" fontWeight="bold" color={COLORS.text}>
+                    Objetivos Nutricionales
+                  </Typography>
+                </Box>
+
+                <NutritionProfileCard 
+                  studentId={student.id} 
+                  studentName={studentName}
+                />
+
+                <Box
+                  onClick={() => navigate(`/coach/alumno/${student.id}/nutricion`)}
+                  sx={{
+                    mt: 2,
+                    p: 1.5,
+                    borderRadius: 2,
+                    background: 'linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%)',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={() => navigate(`/coach/macrocycle/${macro.id}`)}
-                  title="Ver detalle del macro-ciclo"
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 4px 16px rgba(255, 215, 0, 0.3)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 12px #0003';
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 1,
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.3) 100%)',
+                      transform: 'translateY(-1px)',
+                    },
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 16, color: '#ffd700', marginBottom: 4 }}>{macro.name}</div>
-                  <div style={{ fontSize: 12, marginBottom: 2, color: '#ccc' }}><b>Inicio:</b> {macro.startDate ? new Date(macro.startDate).toLocaleDateString() : '-'}</div>
-                  <div style={{ fontSize: 12, marginBottom: 2, color: '#ccc' }}><b>Fin:</b> {macro.endDate ? new Date(macro.endDate).toLocaleDateString() : '-'}</div>
-                  {macro.observaciones && <div style={{ fontSize: 11, marginTop: 4, color: '#aaa' }}><b>Obs.:</b> {macro.observaciones}</div>}
-                </div>
-              ))}
-              
-              {/* Card para crear nueva rutina */}
+                  <Typography fontSize={13} fontWeight={600} color={COLORS.text}>
+                    📊 Ver Historial Completo
+                  </Typography>
+                </Box>
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Rutinas */}
+          <Grid item xs={12}>
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, rgba(30,30,47,0.9) 0%, rgba(21,21,33,0.9) 100%)',
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 3,
+            }}>
+              <CardContent>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ fontSize: 24 }}>🏋️</Box>
+                    <Typography variant="h6" fontWeight="bold" color={COLORS.gold}>
+                      Rutinas (Macro-ciclos)
+                    </Typography>
+                  </Box>
+                  {macros.length > 0 && !showRoutineWizard && (
+                    <Chip 
+                      label={`${macros.length} rutina${macros.length > 1 ? 's' : ''}`}
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(255,215,0,0.2)',
+                        color: COLORS.gold,
+                        fontWeight: 600,
+                      }}
+                    />
+                  )}
+                </Box>
+
+                {loadingMacros ? (
+                  <Box sx={{ textAlign: 'center', py: 4 }}>
+                    <CircularProgress sx={{ color: COLORS.gold }} size={32} />
+                  </Box>
+                ) : macros.length === 0 && !showRoutineWizard ? (
+                  <Box sx={{ 
+                    textAlign: 'center', 
+                    py: 6, 
+                    background: 'rgba(0,0,0,0.2)', 
+                    borderRadius: 3,
+                  }}>
+                    <Box sx={{ fontSize: 48, mb: 2 }}>🏃‍♂️</Box>
+                    <Typography color={COLORS.textMuted} mb={2}>
+                      No hay rutinas para este alumno
+                    </Typography>
+                    <Box
+                      onClick={() => setShowRoutineWizard(true)}
+                      sx={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        px: 3,
+                        py: 1.5,
+                        borderRadius: 2,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          boxShadow: '0 4px 20px rgba(102,126,234,0.4)',
+                        },
+                      }}
+                    >
+                      <Typography fontWeight={600} color="#fff">
+                        🚀 Crear Primera Rutina
+                      </Typography>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    {macros.map(macro => (
+                      <Box
+                        key={macro.id}
+                        onClick={() => navigate(`/coach/macrocycle/${macro.id}`)}
+                        sx={{
+                          minWidth: 220,
+                          maxWidth: 280,
+                          p: 2,
+                          borderRadius: 3,
+                          background: 'linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%)',
+                          border: `2px solid ${COLORS.gold}`,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-3px)',
+                            boxShadow: `0 8px 24px rgba(255,215,0,0.2)`,
+                            borderColor: '#ffed4a',
+                          },
+                        }}
+                      >
+                        <Typography variant="h6" fontWeight="bold" color={COLORS.gold} mb={1}>
+                          {macro.name}
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                          <Typography fontSize={12} color={COLORS.textMuted}>
+                            📅 Inicio: {macro.startDate ? new Date(macro.startDate).toLocaleDateString() : '-'}
+                          </Typography>
+                          <Typography fontSize={12} color={COLORS.textMuted}>
+                            🏁 Fin: {macro.endDate ? new Date(macro.endDate).toLocaleDateString() : '-'}
+                          </Typography>
+                        </Box>
+                        {macro.observaciones && (
+                          <Typography fontSize={11} color={COLORS.textMuted} mt={1} fontStyle="italic">
+                            {macro.observaciones}
+                          </Typography>
+                        )}
+                      </Box>
+                    ))}
+
+                    {/* Card Nueva Rutina */}
               {!showRoutineWizard && (
-                <div
-                  style={{
+                      <Box
+                        onClick={() => setShowRoutineWizard(true)}
+                        sx={{
+                          minWidth: 220,
+                          maxWidth: 280,
+                          minHeight: 140,
+                          p: 2,
+                          borderRadius: 3,
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    borderRadius: 12,
-                    boxShadow: '0 2px 12px rgba(102, 126, 234, 0.3)',
-                    padding: 12,
-                    minWidth: 200,
-                    maxWidth: 240,
-                    border: '2px dashed rgba(255, 255, 255, 0.3)',
-                    color: '#fff',
+                          border: '2px dashed rgba(255,255,255,0.3)',
+                          cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minHeight: 120,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                  }}
-                  onClick={() => setShowRoutineWizard(true)}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'translateY(-2px)';
-                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.6)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'translateY(0)';
-                    e.target.style.boxShadow = '0 2px 12px rgba(102, 126, 234, 0.3)';
-                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.3)';
-                  }}
-                >
-                  <div style={{ fontSize: 32, marginBottom: 8 }}>+</div>
-                  <div style={{ fontSize: 14, fontWeight: 600, textAlign: 'center' }}>
+                          transition: 'all 0.2s',
+                          '&:hover': {
+                            transform: 'translateY(-3px)',
+                            boxShadow: '0 8px 24px rgba(102,126,234,0.4)',
+                            borderColor: 'rgba(255,255,255,0.6)',
+                          },
+                        }}
+                      >
+                        <AddIcon sx={{ fontSize: 36, color: '#fff', mb: 1 }} />
+                        <Typography fontWeight={600} color="#fff">
                     Nueva Rutina
-                  </div>
-                  <div style={{ fontSize: 11, opacity: 0.8, textAlign: 'center', marginTop: 4 }}>
+                        </Typography>
+                        <Typography fontSize={11} color="rgba(255,255,255,0.7)">
                     Crear macrociclo
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
 
-      {/* Nuevo Wizard Completo */}
+      {/* Routine Wizard */}
       {showRoutineWizard && (
         <RoutineWizard
           studentId={student.id}
-          studentName={student.user?.fullName || `${student.firstName} ${student.lastName}`}
+          studentName={studentName}
           onCancel={() => setShowRoutineWizard(false)}
           onComplete={() => {
             setShowRoutineWizard(false);
-            // Recargar datos
-            setLoading(true);
-            getStudentById(id)
-              .then((data) => setStudent(data))
-              .catch((err) => setError(err))
-              .finally(() => setLoading(false));
-            
-            setLoadingMacros(true);
-            getAllMacroCycles()
-              .then((allMacros) => setMacros(allMacros.filter(m => m.studentId == id)))
-              .finally(() => setLoadingMacros(false));
+            reloadData();
           }}
         />
       )}
-    </div>
+    </Box>
   );
 };
 

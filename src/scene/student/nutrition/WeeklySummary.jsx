@@ -15,10 +15,25 @@ import {
   TableRow,
   Paper,
   useMediaQuery,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import TodayIcon from '@mui/icons-material/Today';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceLine,
+  AreaChart,
+  Area,
+  Legend,
+} from 'recharts';
 import { tokens } from '../../../theme';
 import { getWeeklySummary } from '../../../api/nutritionApi';
 
@@ -240,6 +255,136 @@ const WeeklySummary = ({ studentId, profile }) => {
                 Grasas/día
               </Typography>
             </Box>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Gráfico de Calorías por día */}
+      <Card sx={{ backgroundColor: colors.primary[600], mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight="bold" color={colors.grey[100]} mb={2}>
+            📊 Calorías por día
+          </Typography>
+          
+          <Box sx={{ width: '100%', height: isMobile ? 200 : 280 }}>
+            <ResponsiveContainer>
+              <BarChart
+                data={summary?.days?.map(day => ({
+                  name: day.dayName?.substring(0, 3) || day.date?.substring(8, 10),
+                  calorias: Math.round(day.consumed?.calories || 0),
+                  objetivo: targets.dailyCalories || targets.targetDailyCalories || 0,
+                }))}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.grey[700]} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: colors.grey[400], fontSize: 11 }}
+                  axisLine={{ stroke: colors.grey[600] }}
+                />
+                <YAxis 
+                  tick={{ fill: colors.grey[400], fontSize: 11 }}
+                  axisLine={{ stroke: colors.grey[600] }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: colors.primary[500], 
+                    border: `1px solid ${colors.grey[600]}`,
+                    borderRadius: 8,
+                  }}
+                  labelStyle={{ color: colors.grey[100] }}
+                />
+                <ReferenceLine 
+                  y={targets.dailyCalories || targets.targetDailyCalories || 0} 
+                  stroke={colors.greenAccent[400]} 
+                  strokeDasharray="5 5"
+                  label={{ 
+                    value: 'Objetivo', 
+                    fill: colors.greenAccent[400], 
+                    fontSize: 10,
+                    position: 'right'
+                  }}
+                />
+                <Bar 
+                  dataKey="calorias" 
+                  fill={colors.orangeAccent[500]}
+                  radius={[4, 4, 0, 0]}
+                  name="Calorías"
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </Box>
+        </CardContent>
+      </Card>
+
+      {/* Gráfico de Macros tendencia */}
+      <Card sx={{ backgroundColor: colors.primary[600], mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" fontWeight="bold" color={colors.grey[100]} mb={2}>
+            📈 Tendencia de Macros
+          </Typography>
+          
+          <Box sx={{ width: '100%', height: isMobile ? 200 : 280 }}>
+            <ResponsiveContainer>
+              <AreaChart
+                data={summary?.days?.map(day => ({
+                  name: day.dayName?.substring(0, 3) || day.date?.substring(8, 10),
+                  proteinas: Math.round(day.consumed?.protein || 0),
+                  carbos: Math.round(day.consumed?.carbs || 0),
+                  grasas: Math.round(day.consumed?.fat || 0),
+                }))}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke={colors.grey[700]} />
+                <XAxis 
+                  dataKey="name" 
+                  tick={{ fill: colors.grey[400], fontSize: 11 }}
+                  axisLine={{ stroke: colors.grey[600] }}
+                />
+                <YAxis 
+                  tick={{ fill: colors.grey[400], fontSize: 11 }}
+                  axisLine={{ stroke: colors.grey[600] }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: colors.primary[500], 
+                    border: `1px solid ${colors.grey[600]}`,
+                    borderRadius: 8,
+                  }}
+                  labelStyle={{ color: colors.grey[100] }}
+                />
+                <Legend 
+                  wrapperStyle={{ fontSize: 11, color: colors.grey[300] }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="proteinas" 
+                  stackId="1"
+                  stroke={colors.blueAccent[400]} 
+                  fill={colors.blueAccent[400]}
+                  fillOpacity={0.6}
+                  name="Proteínas (g)"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="carbos" 
+                  stackId="1"
+                  stroke={colors.orangeAccent[400]} 
+                  fill={colors.orangeAccent[400]}
+                  fillOpacity={0.6}
+                  name="Carbos (g)"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="grasas" 
+                  stackId="1"
+                  stroke={colors.redAccent[400]} 
+                  fill={colors.redAccent[400]}
+                  fillOpacity={0.6}
+                  name="Grasas (g)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </Box>
         </CardContent>
       </Card>
