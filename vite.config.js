@@ -11,9 +11,10 @@ export default defineConfig({
           // Vendor chunks - divide las dependencias grandes
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-mui': ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers', '@emotion/react', '@emotion/styled'],
-          'vendor-charts': ['recharts'],
+          'vendor-charts': ['recharts', 'chart.js', 'react-chartjs-2'],
           'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
-          'vendor-utils': ['axios', 'dayjs', 'zustand'],
+          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
+          'vendor-utils': ['axios', 'dayjs', 'date-fns'],
         },
       },
     },
