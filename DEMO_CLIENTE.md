@@ -8,7 +8,7 @@
 👤 **Credenciales de Prueba:**
 
 - **Usuario:** demo@fitfinance.com
-- **Contraseña:** Demo123!
+- **Contraseña:** Demo123! dd
 
 ## 🚀 Funcionalidades Implementadas:
 
