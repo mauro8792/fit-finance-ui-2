@@ -9,10 +9,6 @@ import {
   CardContent,
   IconButton,
   Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   FormControl,
   InputLabel,
   Select,
@@ -330,135 +326,211 @@ const FoodLibrary = ({ studentId }) => {
         </Box>
       )}
 
-      {/* Dialog para crear/editar alimento */}
-      <Dialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            backgroundColor: colors.primary[500],
-            backgroundImage: 'none',
-          },
-        }}
-      >
-        <DialogTitle sx={{ color: colors.grey[100] }}>
-          {editingFood ? 'Editar Alimento' : 'Nuevo Alimento'}
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <TextField
-              label="Nombre del alimento"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              fullWidth
+      {/* Modal personalizado para crear/editar alimento */}
+      {dialogOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 1300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleCloseDialog();
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: colors.primary[500],
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '500px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <Box
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  color: colors.grey[100],
-                  '& fieldset': { borderColor: colors.grey[600] },
-                },
-                '& .MuiInputLabel-root': { color: colors.grey[400] },
+                p: 2,
+                borderBottom: `1px solid ${colors.grey[700]}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
               }}
-            />
-
-            <FormControl fullWidth>
-              <InputLabel sx={{ color: colors.grey[400] }}>Categoría</InputLabel>
-              <Select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                label="Categoría"
-                sx={{
-                  color: colors.grey[100],
-                  '& .MuiOutlinedInput-notchedOutline': { borderColor: colors.grey[600] },
-                }}
-              >
-                {categories.map((cat) => (
-                  <MenuItem key={cat.value} value={cat.value}>
-                    {CATEGORY_LABELS[cat.value] || cat.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <Typography variant="subtitle2" color={colors.grey[300]} mt={1}>
-              Valores por 100g:
-            </Typography>
-
-            <Box display="flex" gap={2}>
-              <TextField
-                label="Proteínas (g)"
-                type="number"
-                value={formData.proteinPer100g}
-                onChange={(e) => setFormData({ ...formData, proteinPer100g: e.target.value })}
-                sx={{
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': {
-                    color: colors.grey[100],
-                    '& fieldset': { borderColor: colors.grey[600] },
-                  },
-                  '& .MuiInputLabel-root': { color: colors.grey[400] },
-                }}
-              />
-              <TextField
-                label="Hidratos (g)"
-                type="number"
-                value={formData.carbsPer100g}
-                onChange={(e) => setFormData({ ...formData, carbsPer100g: e.target.value })}
-                sx={{
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': {
-                    color: colors.grey[100],
-                    '& fieldset': { borderColor: colors.grey[600] },
-                  },
-                  '& .MuiInputLabel-root': { color: colors.grey[400] },
-                }}
-              />
-              <TextField
-                label="Grasas (g)"
-                type="number"
-                value={formData.fatPer100g}
-                onChange={(e) => setFormData({ ...formData, fatPer100g: e.target.value })}
-                sx={{
-                  flex: 1,
-                  '& .MuiOutlinedInput-root': {
-                    color: colors.grey[100],
-                    '& fieldset': { borderColor: colors.grey[600] },
-                  },
-                  '& .MuiInputLabel-root': { color: colors.grey[400] },
-                }}
-              />
+            >
+              <Typography variant="h6" color={colors.grey[100]} fontWeight="bold">
+                {editingFood ? 'Editar Alimento' : 'Nuevo Alimento'}
+              </Typography>
+              <IconButton onClick={handleCloseDialog} sx={{ color: colors.grey[400] }}>
+                ✕
+              </IconButton>
             </Box>
 
-            <Card sx={{ backgroundColor: colors.primary[600] }}>
-              <CardContent>
-                <Typography variant="body2" color={colors.grey[400]}>
-                  Calorías calculadas:
+            {/* Content */}
+            <Box
+              sx={{
+                p: 2,
+                flex: 1,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+              }}
+            >
+              <TextField
+                label="Nombre del alimento"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                fullWidth
+                autoComplete="off"
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    color: colors.grey[100],
+                    '& fieldset': { borderColor: colors.grey[600] },
+                  },
+                  '& .MuiInputLabel-root': { color: colors.grey[400] },
+                }}
+              />
+
+              {/* Categoría con Chips */}
+              <Box>
+                <Typography variant="subtitle2" color={colors.grey[400]} mb={1}>
+                  Categoría:
                 </Typography>
-                <Typography variant="h5" color={colors.greenAccent[400]} fontWeight="bold">
-                  {calculateCalories()} kcal / 100g
-                </Typography>
-              </CardContent>
-            </Card>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleCloseDialog} sx={{ color: colors.grey[300] }}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={!formData.name}
-            sx={{
-              backgroundColor: colors.orangeAccent[500],
-              '&:hover': { backgroundColor: colors.orangeAccent[600] },
-            }}
-          >
-            {editingFood ? 'Guardar' : 'Crear'}
-          </Button>
-        </DialogActions>
-      </Dialog>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  {categories.map((cat) => (
+                    <Chip
+                      key={cat.value}
+                      label={CATEGORY_LABELS[cat.value] || cat.label}
+                      onClick={() => setFormData({ ...formData, category: cat.value })}
+                      sx={{
+                        backgroundColor: formData.category === cat.value
+                          ? colors.orangeAccent[600]
+                          : colors.primary[600],
+                        color: formData.category === cat.value
+                          ? '#fff'
+                          : colors.grey[300],
+                        fontWeight: formData.category === cat.value ? 'bold' : 'normal',
+                        '&:hover': {
+                          backgroundColor: formData.category === cat.value
+                            ? colors.orangeAccent[700]
+                            : colors.primary[550],
+                        },
+                      }}
+                    />
+                  ))}
+                </Box>
+              </Box>
+
+              <Typography variant="subtitle2" color={colors.grey[300]} mt={1}>
+                Valores por 100g:
+              </Typography>
+
+              <Box display="flex" gap={2} flexWrap="wrap">
+                <TextField
+                  label="Proteínas (g)"
+                  type="number"
+                  inputMode="decimal"
+                  value={formData.proteinPer100g}
+                  onChange={(e) => setFormData({ ...formData, proteinPer100g: e.target.value })}
+                  autoComplete="off"
+                  sx={{
+                    flex: 1,
+                    minWidth: '80px',
+                    '& .MuiOutlinedInput-root': {
+                      color: colors.grey[100],
+                      '& fieldset': { borderColor: colors.grey[600] },
+                    },
+                    '& .MuiInputLabel-root': { color: colors.grey[400] },
+                  }}
+                />
+                <TextField
+                  label="Hidratos (g)"
+                  type="number"
+                  inputMode="decimal"
+                  value={formData.carbsPer100g}
+                  onChange={(e) => setFormData({ ...formData, carbsPer100g: e.target.value })}
+                  autoComplete="off"
+                  sx={{
+                    flex: 1,
+                    minWidth: '80px',
+                    '& .MuiOutlinedInput-root': {
+                      color: colors.grey[100],
+                      '& fieldset': { borderColor: colors.grey[600] },
+                    },
+                    '& .MuiInputLabel-root': { color: colors.grey[400] },
+                  }}
+                />
+                <TextField
+                  label="Grasas (g)"
+                  type="number"
+                  inputMode="decimal"
+                  value={formData.fatPer100g}
+                  onChange={(e) => setFormData({ ...formData, fatPer100g: e.target.value })}
+                  autoComplete="off"
+                  sx={{
+                    flex: 1,
+                    minWidth: '80px',
+                    '& .MuiOutlinedInput-root': {
+                      color: colors.grey[100],
+                      '& fieldset': { borderColor: colors.grey[600] },
+                    },
+                    '& .MuiInputLabel-root': { color: colors.grey[400] },
+                  }}
+                />
+              </Box>
+
+              <Card sx={{ backgroundColor: colors.primary[600] }}>
+                <CardContent>
+                  <Typography variant="body2" color={colors.grey[400]}>
+                    Calorías calculadas:
+                  </Typography>
+                  <Typography variant="h5" color={colors.greenAccent[400]} fontWeight="bold">
+                    {calculateCalories()} kcal / 100g
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Box>
+
+            {/* Footer */}
+            <Box
+              sx={{
+                p: 2,
+                borderTop: `1px solid ${colors.grey[700]}`,
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: 2,
+              }}
+            >
+              <Button onClick={handleCloseDialog} sx={{ color: colors.grey[300] }}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                variant="contained"
+                disabled={!formData.name}
+                sx={{
+                  backgroundColor: colors.orangeAccent[500],
+                  '&:hover': { backgroundColor: colors.orangeAccent[600] },
+                }}
+              >
+                {editingFood ? 'Guardar' : 'Crear'}
+              </Button>
+            </Box>
+          </div>
+        </div>
+      )}
     </Box>
   );
 };

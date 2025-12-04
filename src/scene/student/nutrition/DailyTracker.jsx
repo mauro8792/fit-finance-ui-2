@@ -147,7 +147,14 @@ const MealCard = ({ mealName, entries, totals, onDelete, onAddFood, colors, isMo
                   {entries.map((entry) => (
                     <TableRow key={entry.id}>
                       <TableCell sx={{ color: colors.grey[100], borderColor: colors.primary[500] }}>
-                        {entry.foodItem?.name || 'Alimento'}
+                        {entry.recipe ? (
+                          <Box display="flex" alignItems="center" gap={0.5}>
+                            <span>🍳</span>
+                            <span>{entry.recipe.name}</span>
+                          </Box>
+                        ) : (
+                          entry.foodItem?.name || 'Alimento'
+                        )}
                       </TableCell>
                       <TableCell align="right" sx={{ color: colors.grey[300], borderColor: colors.primary[500] }}>
                         {entry.quantityGrams}g

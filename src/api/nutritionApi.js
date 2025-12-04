@@ -87,6 +87,22 @@ export const getNutritionProfile = async (studentId) => {
   return response.data;
 };
 
+export const createOrUpdateNutritionProfile = async (studentId, profileData) => {
+  const response = await financeApi.post(
+    `/nutrition/profile/${studentId}`,
+    profileData
+  );
+  return response.data;
+};
+
+export const calculateSuggestedCalories = async (data) => {
+  const response = await financeApi.post(
+    '/nutrition/profile/calculate-calories',
+    data
+  );
+  return response.data;
+};
+
 export const getActivityFactors = async () => {
   const response = await financeApi.get('/nutrition/profile/activity-factors');
   return response.data;

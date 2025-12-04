@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
 import RoutineWizard from './RoutineWizard';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
+import NutritionProfileCard from './NutritionProfileCard';
 
 const StudentDetail = () => {
   const { id } = useParams();
@@ -89,9 +90,12 @@ const StudentDetail = () => {
             </div>
           ) : null}
         </div>
-        {/* Card vacía */}
-        <div style={{ flex: 1, background: 'linear-gradient(135deg,#43e97b 60%,#38f9d7)', borderRadius: 18, color: '#222', padding: isMobile ? 16 : 20, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Placeholder para futuro */}
+        {/* Card Nutrición */}
+        <div style={{ flex: 1, background: 'linear-gradient(135deg,#43e97b 60%,#38f9d7)', borderRadius: 18, color: '#222', padding: isMobile ? 12 : 16, minWidth: 220, boxShadow: '0 2px 16px #0002', display: 'flex', flexDirection: 'column' }}>
+          <NutritionProfileCard 
+            studentId={student.id} 
+            studentName={student.user?.fullName || `${student.firstName} ${student.lastName}`}
+          />
         </div>
       </div>
 
