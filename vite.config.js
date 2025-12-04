@@ -4,6 +4,21 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Vendor chunks - divide las dependencias grandes
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-mui': ['@mui/material', '@mui/icons-material', '@mui/x-date-pickers', '@emotion/react', '@emotion/styled'],
+          'vendor-charts': ['recharts', 'chart.js', 'react-chartjs-2'],
+          'vendor-dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
+          'vendor-redux': ['@reduxjs/toolkit', 'react-redux'],
+          'vendor-utils': ['axios', 'dayjs', 'date-fns'],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
@@ -62,6 +77,8 @@ export default defineConfig({
         ],
       },
       workbox: {
+        // Aumentar límite para archivos grandes (3 MB)
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         // Cache de runtime para mejor performance
         runtimeCaching: [
           {
