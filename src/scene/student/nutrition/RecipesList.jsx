@@ -254,15 +254,7 @@ const RecipesList = ({ studentId }) => {
                   />
                   <Chip
                     size="small"
-                    label={`P: ${Math.round(recipe.proteinPer100g)}g`}
-                    sx={{
-                      backgroundColor: colors.blueAccent[700],
-                      color: colors.grey[100],
-                    }}
-                  />
-                  <Chip
-                    size="small"
-                    label={`G: ${Math.round(recipe.fatPer100g)}g`}
+                    label={`P: ${Math.round(recipe.proteinPer100g)}g 🥩`}
                     sx={{
                       backgroundColor: colors.redAccent[700],
                       color: colors.grey[100],
@@ -270,7 +262,15 @@ const RecipesList = ({ studentId }) => {
                   />
                   <Chip
                     size="small"
-                    label={`H: ${Math.round(recipe.carbsPer100g)}g`}
+                    label={`H: ${Math.round(recipe.carbsPer100g)}g 💧`}
+                    sx={{
+                      backgroundColor: colors.blueAccent[700],
+                      color: colors.grey[100],
+                    }}
+                  />
+                  <Chip
+                    size="small"
+                    label={`G: ${Math.round(recipe.fatPer100g)}g 🧈`}
                     sx={{
                       backgroundColor: colors.orangeAccent[700],
                       color: colors.grey[100],

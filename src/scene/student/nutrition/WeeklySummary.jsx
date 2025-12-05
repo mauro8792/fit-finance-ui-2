@@ -155,27 +155,27 @@ const WeeklySummary = ({ studentId, profile }) => {
               )}
             </Box>
             <Box textAlign="center">
-              <Typography variant="h4" color={colors.blueAccent[400]} fontWeight="bold">
+              <Typography variant="h4" color={colors.redAccent[400]} fontWeight="bold">
                 {Math.round(summary?.weeklyTotals?.protein || 0)}g
               </Typography>
               <Typography variant="caption" color={colors.grey[400]}>
-                Proteínas
+                Proteínas 🥩
+              </Typography>
+            </Box>
+            <Box textAlign="center">
+              <Typography variant="h4" color={colors.blueAccent[400]} fontWeight="bold">
+                {Math.round(summary?.weeklyTotals?.carbs || 0)}g
+              </Typography>
+              <Typography variant="caption" color={colors.grey[400]}>
+                Hidratos 💧
               </Typography>
             </Box>
             <Box textAlign="center">
               <Typography variant="h4" color={colors.orangeAccent[400]} fontWeight="bold">
-                {Math.round(summary?.weeklyTotals?.carbs || 0)}g
-              </Typography>
-              <Typography variant="caption" color={colors.grey[400]}>
-                Hidratos
-              </Typography>
-            </Box>
-            <Box textAlign="center">
-              <Typography variant="h4" color={colors.redAccent[400]} fontWeight="bold">
                 {Math.round(summary?.weeklyTotals?.fat || 0)}g
               </Typography>
               <Typography variant="caption" color={colors.grey[400]}>
-                Grasas
+                Grasas 🧈
               </Typography>
             </Box>
           </Box>
@@ -360,28 +360,28 @@ const WeeklySummary = ({ studentId, profile }) => {
                   type="monotone" 
                   dataKey="proteinas" 
                   stackId="1"
-                  stroke={colors.blueAccent[400]} 
-                  fill={colors.blueAccent[400]}
+                  stroke={colors.redAccent[400]} 
+                  fill={colors.redAccent[400]}
                   fillOpacity={0.6}
-                  name="Proteínas (g)"
+                  name="Proteínas 🥩 (g)"
                 />
                 <Area 
                   type="monotone" 
                   dataKey="carbos" 
                   stackId="1"
-                  stroke={colors.orangeAccent[400]} 
-                  fill={colors.orangeAccent[400]}
+                  stroke={colors.blueAccent[400]} 
+                  fill={colors.blueAccent[400]}
                   fillOpacity={0.6}
-                  name="Carbos (g)"
+                  name="Carbos 💧 (g)"
                 />
                 <Area 
                   type="monotone" 
                   dataKey="grasas" 
                   stackId="1"
-                  stroke={colors.redAccent[400]} 
-                  fill={colors.redAccent[400]}
+                  stroke={colors.orangeAccent[400]} 
+                  fill={colors.orangeAccent[400]}
                   fillOpacity={0.6}
-                  name="Grasas (g)"
+                  name="Grasas 🧈 (g)"
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -446,7 +446,7 @@ const WeeklySummary = ({ studentId, profile }) => {
                 <TableCell 
                   align="right" 
                   sx={{ 
-                    color: day.consumed.calories > 0 ? colors.blueAccent[400] : colors.grey[600],
+                    color: day.consumed.calories > 0 ? colors.redAccent[400] : colors.grey[600],
                     borderColor: colors.primary[500],
                   }}
                 >
@@ -455,7 +455,7 @@ const WeeklySummary = ({ studentId, profile }) => {
                 <TableCell 
                   align="right" 
                   sx={{ 
-                    color: day.consumed.calories > 0 ? colors.orangeAccent[400] : colors.grey[600],
+                    color: day.consumed.calories > 0 ? colors.blueAccent[400] : colors.grey[600],
                     borderColor: colors.primary[500],
                   }}
                 >
@@ -464,7 +464,7 @@ const WeeklySummary = ({ studentId, profile }) => {
                 <TableCell 
                   align="right" 
                   sx={{ 
-                    color: day.consumed.calories > 0 ? colors.redAccent[400] : colors.grey[600],
+                    color: day.consumed.calories > 0 ? colors.orangeAccent[400] : colors.grey[600],
                     borderColor: colors.primary[500],
                   }}
                 >

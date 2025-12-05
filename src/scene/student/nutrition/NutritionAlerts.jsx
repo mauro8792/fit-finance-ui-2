@@ -42,15 +42,15 @@ const NutritionAlerts = ({ consumed, targets, entriesCount }) => {
     });
   }
 
-  // Alerta: Proteína baja después de las 6pm
+  // Alerta: Proteína baja después de las 6pm (Proteína = ROJA 🥩)
   if (hour >= 18 && proteinPercent < 60) {
     alerts.push({
       id: 'low-protein',
       type: 'info',
       icon: <InfoIcon />,
-      title: 'Proteína baja',
+      title: 'Proteína baja 🥩',
       message: `Solo llevas ${Math.round(consumed.protein)}g de proteína (${Math.round(proteinPercent)}%). ¡No te olvides de incluir proteína en la cena!`,
-      color: '#3b82f6',
+      color: '#ef4444',
     });
   }
 

@@ -288,22 +288,22 @@ const FoodLibrary = ({ studentId }) => {
 
                 <Box mt={2} display="flex" justifyContent="space-between">
                   <Box textAlign="center">
-                    <Typography variant="body2" color={colors.blueAccent[400]} fontWeight="bold">
+                    <Typography variant="body2" color={colors.redAccent[400]} fontWeight="bold">
                       {food.proteinPer100g}g
                     </Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>P</Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>P 🥩</Typography>
+                  </Box>
+                  <Box textAlign="center">
+                    <Typography variant="body2" color={colors.blueAccent[400]} fontWeight="bold">
+                      {food.carbsPer100g}g
+                    </Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>H 💧</Typography>
                   </Box>
                   <Box textAlign="center">
                     <Typography variant="body2" color={colors.orangeAccent[400]} fontWeight="bold">
-                      {food.carbsPer100g}g
-                    </Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>H</Typography>
-                  </Box>
-                  <Box textAlign="center">
-                    <Typography variant="body2" color={colors.redAccent[400]} fontWeight="bold">
                       {food.fatPer100g}g
                     </Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>G</Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>G 🧈</Typography>
                   </Box>
                   <Box textAlign="center">
                     <Typography variant="body2" color={colors.greenAccent[400]} fontWeight="bold">

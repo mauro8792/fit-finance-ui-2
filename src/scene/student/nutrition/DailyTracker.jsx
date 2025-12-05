@@ -160,13 +160,13 @@ const MealCard = ({ mealName, entries, totals, onDelete, onAddFood, colors, isMo
                       <TableCell align="right" sx={{ color: colors.grey[300], borderColor: colors.primary[500] }}>
                         {entry.quantityGrams}g
                       </TableCell>
-                      <TableCell align="right" sx={{ color: colors.blueAccent[400], borderColor: colors.primary[500] }}>
+                      <TableCell align="right" sx={{ color: colors.redAccent[400], borderColor: colors.primary[500] }}>
                         {Number(entry.protein).toFixed(1)}
                       </TableCell>
-                      <TableCell align="right" sx={{ color: colors.orangeAccent[400], borderColor: colors.primary[500] }}>
+                      <TableCell align="right" sx={{ color: colors.blueAccent[400], borderColor: colors.primary[500] }}>
                         {Number(entry.carbs).toFixed(1)}
                       </TableCell>
-                      <TableCell align="right" sx={{ color: colors.redAccent[400], borderColor: colors.primary[500] }}>
+                      <TableCell align="right" sx={{ color: colors.orangeAccent[400], borderColor: colors.primary[500] }}>
                         {Number(entry.fat).toFixed(1)}
                       </TableCell>
                       <TableCell align="right" sx={{ color: colors.greenAccent[400], borderColor: colors.primary[500], fontWeight: 'bold' }}>
@@ -188,13 +188,13 @@ const MealCard = ({ mealName, entries, totals, onDelete, onAddFood, colors, isMo
                     <TableCell colSpan={2} sx={{ color: colors.grey[100], fontWeight: 'bold', borderColor: colors.primary[500] }}>
                       TOTALES
                     </TableCell>
-                    <TableCell align="right" sx={{ color: colors.blueAccent[400], fontWeight: 'bold', borderColor: colors.primary[500] }}>
+                    <TableCell align="right" sx={{ color: colors.redAccent[400], fontWeight: 'bold', borderColor: colors.primary[500] }}>
                       {Number(totals?.protein || 0).toFixed(1)}
                     </TableCell>
-                    <TableCell align="right" sx={{ color: colors.orangeAccent[400], fontWeight: 'bold', borderColor: colors.primary[500] }}>
+                    <TableCell align="right" sx={{ color: colors.blueAccent[400], fontWeight: 'bold', borderColor: colors.primary[500] }}>
                       {Number(totals?.carbs || 0).toFixed(1)}
                     </TableCell>
-                    <TableCell align="right" sx={{ color: colors.redAccent[400], fontWeight: 'bold', borderColor: colors.primary[500] }}>
+                    <TableCell align="right" sx={{ color: colors.orangeAccent[400], fontWeight: 'bold', borderColor: colors.primary[500] }}>
                       {Number(totals?.fat || 0).toFixed(1)}
                     </TableCell>
                     <TableCell align="right" sx={{ color: colors.greenAccent[400], fontWeight: 'bold', borderColor: colors.primary[500] }}>
@@ -396,24 +396,24 @@ const DailyTracker = ({ studentId, profile }) => {
             </Typography>
           </Box>
 
-          {/* Barras de progreso */}
+          {/* Barras de progreso - Proteína=Rojo, Carbos=Azul, Grasa=Amarillo */}
           <MacroProgress
-            label="Proteínas"
+            label="Proteínas 🥩"
             current={consumed.protein}
             target={targets.protein || targets.targetProteinGrams || 150}
+            color={colors.redAccent[400]}
+          />
+          <MacroProgress
+            label="Hidratos 💧"
+            current={consumed.carbs}
+            target={targets.carbs || targets.targetCarbsGrams || 200}
             color={colors.blueAccent[400]}
           />
           <MacroProgress
-            label="Hidratos"
-            current={consumed.carbs}
-            target={targets.carbs || targets.targetCarbsGrams || 200}
-            color={colors.orangeAccent[400]}
-          />
-          <MacroProgress
-            label="Grasas"
+            label="Grasas 🧈"
             current={consumed.fat}
             target={targets.fat || targets.targetFatGrams || 60}
-            color={colors.redAccent[400]}
+            color={colors.orangeAccent[400]}
           />
         </CardContent>
       </Card>
