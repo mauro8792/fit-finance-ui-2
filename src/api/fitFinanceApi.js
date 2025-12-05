@@ -89,4 +89,49 @@ export const getCoachStudents = async (coachUserId) => {
   }
 };
 
+/**
+ * 📋 Obtener historial de entrenamientos de un estudiante (por sesión)
+ * @param {number} studentId - ID del estudiante
+ * @param {number} limit - Límite de sesiones a traer (default 20)
+ */
+export const getTrainingHistory = async (studentId, limit = 20) => {
+  try {
+    const response = await financeApi.get(`/macrocycle/history/${studentId}?limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener historial de entrenamientos:", error);
+    throw error;
+  }
+};
+
+/**
+ * 📊 Obtener historial por EJERCICIO de un estudiante (progresión)
+ * @param {number} studentId - ID del estudiante
+ * @param {number} limit - Límite de sesiones por ejercicio (default 10)
+ */
+export const getExerciseHistory = async (studentId, limit = 10) => {
+  try {
+    const response = await financeApi.get(`/macrocycle/exercises/${studentId}?limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener historial de ejercicios:", error);
+    throw error;
+  }
+};
+
+/**
+ * ⚖️ Obtener historial de peso de un estudiante
+ * @param {number} studentId - ID del estudiante
+ * @param {number} limit - Límite de registros (default 30)
+ */
+export const getWeightHistory = async (studentId, limit = 30) => {
+  try {
+    const response = await financeApi.get(`/health/weight/${studentId}?limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener historial de peso:", error);
+    throw error;
+  }
+};
+
 export default financeApi;

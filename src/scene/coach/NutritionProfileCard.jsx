@@ -5,13 +5,20 @@ import {
   calculateSuggestedCalories,
 } from '../../api/nutritionApi';
 
-const NutritionProfileCard = ({ studentId, studentName }) => {
+const NutritionProfileCard = ({ studentId, studentName, isOpen, onClose, onSave }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(isOpen || false); // Puede abrirse directamente en modo edición
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  
+  // Si isOpen cambia externamente, actualizar editing
+  useEffect(() => {
+    if (isOpen !== undefined) {
+      setEditing(isOpen);
+    }
+  }, [isOpen]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -212,6 +219,13 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
       setEditing(false);
       loadProfile();
       
+      // Llamar callbacks externos si existen
+      if (onSave) {
+        const savedProfile = await getNutritionProfile(studentId);
+        onSave(savedProfile);
+      }
+      if (onClose) onClose();
+      
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
       setError('Error al guardar los objetivos');
@@ -360,7 +374,10 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
         padding: 16,
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) setEditing(false);
+        if (e.target === e.currentTarget) {
+          setEditing(false);
+          if (onClose) onClose();
+        }
       }}
     >
       <div
@@ -391,7 +408,10 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
             <div style={{ fontSize: 12, color: '#888' }}>{studentName}</div>
           </div>
           <button
-            onClick={() => setEditing(false)}
+            onClick={() => {
+              setEditing(false);
+              if (onClose) onClose();
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -688,7 +708,10 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
           gap: 12,
         }}>
           <button
-            onClick={() => setEditing(false)}
+            onClick={() => {
+              setEditing(false);
+              if (onClose) onClose();
+            }}
             style={{
               flex: 1,
               padding: '12px',
