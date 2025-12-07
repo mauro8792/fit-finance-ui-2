@@ -32,6 +32,7 @@ import { useRoutineStore } from '../../hooks/useRoutineStore';
 import NutritionProfileCard from './NutritionProfileCard';
 import { getTrainingHistory, getExerciseHistory, getWeightHistory } from '../../api/fitFinanceApi';
 import { getNutritionDashboard, getWeeklySummary, getNutritionProfile } from '../../api/nutritionApi';
+import { getCardioSummary, getActivityInfo, formatDuration, INTENSITY_LEVELS } from '../../api/cardioApi';
 import { 
   LineChart, 
   Line, 
@@ -73,7 +74,7 @@ const StudentDetail = () => {
   // Tab activo: 0=Información, 1=Entrenamiento, 2=Nutrición
   const [activeTab, setActiveTab] = useState(1); // Por defecto Entrenamiento
   
-  // Función para recargar datos de nutrición
+  // Función para recargar datos de nutrición y cardio
   const reloadNutritionData = () => {
     setLoadingNutrition(true);
     Promise.all([
@@ -81,13 +82,15 @@ const StudentDetail = () => {
       getWeeklySummary(id).catch(() => null),
       getNutritionProfile(id).catch(() => null),
       getWeightHistory(id, 15).catch(() => []),
+      getCardioSummary(id, 7).catch(() => null),
     ])
-      .then(([today, week, profile, weight]) => {
-        console.log('📊 Nutrition data loaded:', { today, week, profile, weight });
+      .then(([today, week, profile, weight, cardio]) => {
+        console.log('📊 Nutrition data loaded:', { today, week, profile, weight, cardio });
         setNutritionToday(today);
         setNutritionWeek(week);
         setNutritionProfile(profile);
         setWeightHistory(weight || []);
+        setCardioSummary(cardio);
       })
       .finally(() => setLoadingNutrition(false));
   };
@@ -120,6 +123,9 @@ const StudentDetail = () => {
   // ⚖️ Historial de peso
   const [weightHistory, setWeightHistory] = useState([]);
   
+  // 🏃 Cardio
+  const [cardioSummary, setCardioSummary] = useState(null);
+  
   // 🎯 Modal de perfil nutricional
   const [showNutritionProfileModal, setShowNutritionProfileModal] = useState(false);
 
@@ -149,18 +155,20 @@ const StudentDetail = () => {
       .catch((err) => console.error('Error cargando ejercicios:', err))
       .finally(() => setLoadingExercises(false));
 
-    // Cargar datos de nutrición y peso
+    // Cargar datos de nutrición, peso y cardio
     setLoadingNutrition(true);
     Promise.all([
       getNutritionDashboard(id).catch(() => null),
       getWeeklySummary(id).catch(() => null),
       getNutritionProfile(id).catch(() => null),
       getWeightHistory(id, 15).catch(() => []),
+      getCardioSummary(id, 7).catch(() => null),
     ])
-      .then(([today, week, profile, weight]) => {
+      .then(([today, week, profile, weight, cardio]) => {
         setNutritionToday(today);
         setNutritionWeek(week);
         setNutritionProfile(profile);
+        setCardioSummary(cardio);
         setWeightHistory(weight || []);
       })
       .finally(() => setLoadingNutrition(false));
@@ -862,6 +870,89 @@ const StudentDetail = () => {
                 </Card>
               </Grid>
             </Grid>
+
+            {/* Card de Cardio */}
+            <Card sx={{ 
+              background: 'linear-gradient(135deg, rgba(76,206,172,0.15) 0%, rgba(76,206,172,0.05) 100%)',
+              border: `1px solid rgba(76,206,172,0.3)`,
+              borderRadius: 3,
+              mb: 3,
+            }}>
+              <CardContent sx={{ p: 2.5 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography fontSize={24}>🏃</Typography>
+                    <Typography fontWeight={600} color={COLORS.text}>Cardio esta semana</Typography>
+                  </Box>
+                  {cardioSummary?.totalSessions > 0 && (
+                    <Chip 
+                      label={`${cardioSummary.totalSessions} sesión${cardioSummary.totalSessions > 1 ? 'es' : ''}`}
+                      size="small"
+                      sx={{ 
+                        backgroundColor: 'rgba(76,206,172,0.2)',
+                        color: COLORS.green,
+                        fontWeight: 600,
+                      }}
+                    />
+                  )}
+                </Box>
+                
+                {cardioSummary?.totalSessions > 0 ? (
+                  <Box>
+                    <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                      <Box sx={{ flex: 1, p: 1.5, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 2, textAlign: 'center' }}>
+                        <Typography variant="h5" fontWeight={700} color={COLORS.green}>
+                          {formatDuration(cardioSummary.totalMinutes)}
+                        </Typography>
+                        <Typography fontSize={10} color={COLORS.textMuted}>Tiempo total</Typography>
+                      </Box>
+                      <Box sx={{ flex: 1, p: 1.5, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 2, textAlign: 'center' }}>
+                        <Typography variant="h5" fontWeight={700} color={COLORS.blue}>
+                          {cardioSummary.averagePerDay} min
+                        </Typography>
+                        <Typography fontSize={10} color={COLORS.textMuted}>Promedio/día</Typography>
+                      </Box>
+                      {cardioSummary.totalCalories > 0 && (
+                        <Box sx={{ flex: 1, p: 1.5, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 2, textAlign: 'center' }}>
+                          <Typography variant="h5" fontWeight={700} color={COLORS.orange}>
+                            {cardioSummary.totalCalories}
+                          </Typography>
+                          <Typography fontSize={10} color={COLORS.textMuted}>kcal quemadas</Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    
+                    {/* Por tipo de actividad */}
+                    {cardioSummary.byActivity?.length > 0 && (
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                        {cardioSummary.byActivity.map((activity) => {
+                          const info = getActivityInfo(activity.type);
+                          return (
+                            <Chip
+                              key={activity.type}
+                              label={`${info.emoji} ${info.label}: ${formatDuration(activity.minutes)} (${activity.percent}%)`}
+                              size="small"
+                              sx={{
+                                backgroundColor: 'rgba(255,255,255,0.1)',
+                                color: COLORS.text,
+                                fontSize: 11,
+                              }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
+                  </Box>
+                ) : (
+                  <Box sx={{ textAlign: 'center', py: 2, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 2 }}>
+                    <Typography fontSize={32} mb={1}>🚶</Typography>
+                    <Typography fontSize={13} color={COLORS.textMuted}>
+                      Sin actividad aeróbica esta semana
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Lista de Macro-ciclos */}
             <Card sx={{ 

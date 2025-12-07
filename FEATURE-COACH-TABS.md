@@ -392,6 +392,7 @@ fit-finance-ui-2/src/scene/coach/
 - [ ] **Comparativas**: Ver progreso de varios alumnos lado a lado
 - [ ] **Templates**: Guardar macro-ciclos como plantillas reutilizables
 - [ ] **Chat**: Comunicación directa coach-alumno dentro de la app
+- [ ] **Notas de ejercicios visibles para coach**: El alumno ya puede dejar notas por set. Hacer que el coach pueda verlas y opcionalmente responder. Útil para detectar molestias, dudas técnicas, o ajustar el plan.
 
 ---
 

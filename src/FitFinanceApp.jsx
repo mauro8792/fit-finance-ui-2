@@ -19,6 +19,7 @@ import { StudentFees } from './scene/student/StudentFees';
 import TrainingHistory from './scene/student/TrainingHistory';
 import { HealthDashboard } from './scene/student/health';
 import { NutritionDashboard } from './scene/student/nutrition';
+import { CardioDashboard } from './scene/student/cardio';
 import { PaymentSuccess } from './scene/payments/PaymentSuccess';
 import { PaymentFailure } from './scene/payments/PaymentFailure';
 import { PaymentPending } from './scene/payments/PaymentPending';
@@ -91,6 +92,7 @@ export const FitFinanceApp = () => {
                   <Route path="/student/routine" element={<StudentRoutine />} />
                   <Route path="/student/progress" element={<HealthDashboard />} />
                   <Route path="/student/nutrition" element={<NutritionDashboard />} />
+                  <Route path="/student/cardio" element={<CardioDashboard />} />
                   <Route path="/student/history" element={<TrainingHistory />} />
                   <Route path="/student/payment-success" element={<PaymentSuccess />} />
                   <Route path="/student/payment-failure" element={<PaymentFailure />} />
