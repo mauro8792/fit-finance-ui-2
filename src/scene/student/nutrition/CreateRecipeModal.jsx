@@ -474,17 +474,17 @@ const CreateRecipeModal = ({ open, onClose, studentId, editingRecipe, onSuccess 
                       sx={{ backgroundColor: colors.greenAccent[700], color: '#fff' }}
                     />
                     <Chip
-                      label={`P: ${totals.totalProtein}g`}
-                      size="small"
-                      sx={{ backgroundColor: colors.blueAccent[700], color: '#fff' }}
-                    />
-                    <Chip
-                      label={`G: ${totals.totalFat}g`}
+                      label={`P: ${totals.totalProtein}g 🥩`}
                       size="small"
                       sx={{ backgroundColor: colors.redAccent[700], color: '#fff' }}
                     />
                     <Chip
-                      label={`H: ${totals.totalCarbs}g`}
+                      label={`H: ${totals.totalCarbs}g 💧`}
+                      size="small"
+                      sx={{ backgroundColor: colors.blueAccent[700], color: '#fff' }}
+                    />
+                    <Chip
+                      label={`G: ${totals.totalFat}g 🧈`}
                       size="small"
                       sx={{ backgroundColor: colors.orangeAccent[700], color: '#fff' }}
                     />

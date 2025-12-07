@@ -184,7 +184,7 @@ export const NutritionDashboard = () => {
               <Typography variant="caption" color={colors.grey[400]}>
                 Proteínas
               </Typography>
-              <Typography variant="h6" color={colors.blueAccent[400]}>
+              <Typography variant="h6" color={colors.redAccent[400]}>
                 {profile.targetProteinGrams}g
               </Typography>
             </Box>
@@ -192,7 +192,7 @@ export const NutritionDashboard = () => {
               <Typography variant="caption" color={colors.grey[400]}>
                 Grasas
               </Typography>
-              <Typography variant="h6" color={colors.redAccent[400]}>
+              <Typography variant="h6" color={colors.orangeAccent[400]}>
                 {profile.targetFatGrams}g
               </Typography>
             </Box>
@@ -200,7 +200,7 @@ export const NutritionDashboard = () => {
               <Typography variant="caption" color={colors.grey[400]}>
                 Hidratos
               </Typography>
-              <Typography variant="h6" color={colors.orangeAccent[400]}>
+              <Typography variant="h6" color={colors.blueAccent[400]}>
                 {profile.targetCarbsGrams}g
               </Typography>
             </Box>

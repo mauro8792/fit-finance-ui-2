@@ -227,12 +227,12 @@ const StudentNutritionView = () => {
               backgroundColor: 'rgba(255,255,255,0.05)',
               borderRadius: 2, px: 2, py: 1,
             }}>
-              <FitnessCenterIcon sx={{ color: COLORS.blue, fontSize: 24 }} />
+              <FitnessCenterIcon sx={{ color: COLORS.red, fontSize: 24 }} />
               <Box>
-                <Typography variant="subtitle1" fontWeight="bold" color={COLORS.blue}>
+                <Typography variant="subtitle1" fontWeight="bold" color={COLORS.red}>
                   {Math.round(consumed.protein)}g
                 </Typography>
-                <Typography variant="caption" color={COLORS.textMuted}>Proteína</Typography>
+                <Typography variant="caption" color={COLORS.textMuted}>Proteína 🥩</Typography>
               </Box>
             </Box>
 
@@ -377,9 +377,9 @@ const StudentNutritionView = () => {
 
                       <Grid container spacing={2}>
                         {[
-                          { label: 'Proteínas', key: 'protein', targetKey: 'targetProteinGrams', color: COLORS.blue, icon: '🥩' },
-                          { label: 'Carbos', key: 'carbs', targetKey: 'targetCarbsGrams', color: COLORS.orange, icon: '🍞' },
-                          { label: 'Grasas', key: 'fat', targetKey: 'targetFatGrams', color: COLORS.red, icon: '🥑' },
+                          { label: 'Proteínas', key: 'protein', targetKey: 'targetProteinGrams', color: COLORS.red, icon: '🥩' },
+                          { label: 'Carbos', key: 'carbs', targetKey: 'targetCarbsGrams', color: COLORS.blue, icon: '💧' },
+                          { label: 'Grasas', key: 'fat', targetKey: 'targetFatGrams', color: COLORS.orange, icon: '🧈' },
                         ].map((macro) => {
                           const value = consumed[macro.key] || 0;
                           const target = targets[macro.key] || targets[macro.targetKey] || 0;
@@ -431,9 +431,9 @@ const StudentNutritionView = () => {
                                   <TableRow>
                                     <TableCell sx={{ color: COLORS.textMuted, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>Alimento</TableCell>
                                     <TableCell align="right" sx={{ color: COLORS.textMuted, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>Cant.</TableCell>
-                                    <TableCell align="right" sx={{ color: COLORS.blue, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>P</TableCell>
-                                    <TableCell align="right" sx={{ color: COLORS.orange, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>C</TableCell>
-                                    <TableCell align="right" sx={{ color: COLORS.red, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>G</TableCell>
+                                    <TableCell align="right" sx={{ color: COLORS.red, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>P 🥩</TableCell>
+                                    <TableCell align="right" sx={{ color: COLORS.blue, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>H 💧</TableCell>
+                                    <TableCell align="right" sx={{ color: COLORS.orange, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>G 🧈</TableCell>
                                     <TableCell align="right" sx={{ color: COLORS.green, borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }}>Kcal</TableCell>
                                   </TableRow>
                                 </TableHead>
@@ -444,9 +444,9 @@ const StudentNutritionView = () => {
                                         {entry.recipe ? `🍳 ${entry.recipe.name}` : entry.foodItem?.name || 'Alimento'}
                                       </TableCell>
                                       <TableCell align="right" sx={{ color: COLORS.textMuted, borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{entry.quantityGrams}g</TableCell>
-                                      <TableCell align="right" sx={{ color: COLORS.blue, borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{Math.round(entry.protein)}</TableCell>
-                                      <TableCell align="right" sx={{ color: COLORS.orange, borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{Math.round(entry.carbs)}</TableCell>
-                                      <TableCell align="right" sx={{ color: COLORS.red, borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{Math.round(entry.fat)}</TableCell>
+                                      <TableCell align="right" sx={{ color: COLORS.red, borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{Math.round(entry.protein)}</TableCell>
+                                      <TableCell align="right" sx={{ color: COLORS.blue, borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{Math.round(entry.carbs)}</TableCell>
+                                      <TableCell align="right" sx={{ color: COLORS.orange, borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{Math.round(entry.fat)}</TableCell>
                                       <TableCell align="right" sx={{ color: COLORS.green, fontWeight: 'bold', borderColor: 'rgba(255,255,255,0.05)', fontSize: 12 }}>{Math.round(entry.calories)}</TableCell>
                                     </TableRow>
                                   ))}
@@ -563,9 +563,9 @@ const StudentNutritionView = () => {
                             <YAxis tick={{ fill: COLORS.textMuted, fontSize: 12 }} />
                             <Tooltip contentStyle={{ backgroundColor: '#1a1a2e', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8 }} />
                             <Legend wrapperStyle={{ fontSize: 12 }} />
-                            <Area type="monotone" dataKey="proteinas" stackId="1" stroke={COLORS.blue} fill={COLORS.blue} fillOpacity={0.6} name="🥩 Proteínas" />
-                            <Area type="monotone" dataKey="carbos" stackId="1" stroke={COLORS.orange} fill={COLORS.orange} fillOpacity={0.6} name="🍞 Carbos" />
-                            <Area type="monotone" dataKey="grasas" stackId="1" stroke={COLORS.red} fill={COLORS.red} fillOpacity={0.6} name="🥑 Grasas" />
+                            <Area type="monotone" dataKey="proteinas" stackId="1" stroke={COLORS.red} fill={COLORS.red} fillOpacity={0.6} name="🥩 Proteínas" />
+                            <Area type="monotone" dataKey="carbos" stackId="1" stroke={COLORS.blue} fill={COLORS.blue} fillOpacity={0.6} name="💧 Carbos" />
+                            <Area type="monotone" dataKey="grasas" stackId="1" stroke={COLORS.orange} fill={COLORS.orange} fillOpacity={0.6} name="🧈 Grasas" />
                           </AreaChart>
                         </ResponsiveContainer>
                       </Box>
@@ -603,27 +603,27 @@ const StudentNutritionView = () => {
                             </Box>
                           </Grid>
                           <Grid item xs={4}>
-                            <Box sx={{ p: 2, background: 'linear-gradient(135deg, rgba(104,112,250,0.2) 0%, rgba(104,112,250,0.05) 100%)', borderRadius: 2, textAlign: 'center' }}>
-                              <Typography variant="h5" fontWeight="bold" color={COLORS.blue}>
+                            <Box sx={{ p: 2, background: 'linear-gradient(135deg, rgba(244,67,54,0.2) 0%, rgba(244,67,54,0.05) 100%)', borderRadius: 2, textAlign: 'center' }}>
+                              <Typography variant="h5" fontWeight="bold" color={COLORS.red}>
                                 {Math.round(weeklyData.totals.protein || 0)}g
                               </Typography>
                               <Typography fontSize={11} color={COLORS.textMuted}>🥩 Proteína</Typography>
                             </Box>
                           </Grid>
                           <Grid item xs={4}>
-                            <Box sx={{ p: 2, background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(255,152,0,0.05) 100%)', borderRadius: 2, textAlign: 'center' }}>
-                              <Typography variant="h5" fontWeight="bold" color={COLORS.orange}>
+                            <Box sx={{ p: 2, background: 'linear-gradient(135deg, rgba(104,112,250,0.2) 0%, rgba(104,112,250,0.05) 100%)', borderRadius: 2, textAlign: 'center' }}>
+                              <Typography variant="h5" fontWeight="bold" color={COLORS.blue}>
                                 {Math.round(weeklyData.totals.carbs || 0)}g
                               </Typography>
-                              <Typography fontSize={11} color={COLORS.textMuted}>🍞 Carbos</Typography>
+                              <Typography fontSize={11} color={COLORS.textMuted}>💧 Carbos</Typography>
                             </Box>
                           </Grid>
                           <Grid item xs={4}>
-                            <Box sx={{ p: 2, background: 'linear-gradient(135deg, rgba(244,67,54,0.2) 0%, rgba(244,67,54,0.05) 100%)', borderRadius: 2, textAlign: 'center' }}>
-                              <Typography variant="h5" fontWeight="bold" color={COLORS.red}>
+                            <Box sx={{ p: 2, background: 'linear-gradient(135deg, rgba(255,152,0,0.2) 0%, rgba(255,152,0,0.05) 100%)', borderRadius: 2, textAlign: 'center' }}>
+                              <Typography variant="h5" fontWeight="bold" color={COLORS.orange}>
                                 {Math.round(weeklyData.totals.fat || 0)}g
                               </Typography>
-                              <Typography fontSize={11} color={COLORS.textMuted}>🥑 Grasas</Typography>
+                              <Typography fontSize={11} color={COLORS.textMuted}>🧈 Grasas</Typography>
                             </Box>
                           </Grid>
                         </Grid>

@@ -497,16 +497,16 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                 </Typography>
                 <Box display="flex" justifyContent="space-around" mb={1}>
                   <Box>
-                    <Typography variant="h6" color={colors.blueAccent[400]}>{macros.protein}g</Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>P</Typography>
+                    <Typography variant="h6" color={colors.redAccent[400]}>{macros.protein}g</Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>P 🥩</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="h6" color={colors.orangeAccent[400]}>{macros.carbs}g</Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>H</Typography>
+                    <Typography variant="h6" color={colors.blueAccent[400]}>{macros.carbs}g</Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>H 💧</Typography>
                   </Box>
                   <Box>
-                    <Typography variant="h6" color={colors.redAccent[400]}>{macros.fat}g</Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>G</Typography>
+                    <Typography variant="h6" color={colors.orangeAccent[400]}>{macros.fat}g</Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>G 🧈</Typography>
                   </Box>
                 </Box>
                 <Typography variant="h5" color={colors.greenAccent[400]} fontWeight="bold">

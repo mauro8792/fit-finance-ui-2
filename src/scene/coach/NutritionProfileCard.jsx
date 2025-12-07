@@ -5,13 +5,20 @@ import {
   calculateSuggestedCalories,
 } from '../../api/nutritionApi';
 
-const NutritionProfileCard = ({ studentId, studentName }) => {
+const NutritionProfileCard = ({ studentId, studentName, isOpen, onClose, onSave }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(isOpen || false); // Puede abrirse directamente en modo edición
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  
+  // Si isOpen cambia externamente, actualizar editing
+  useEffect(() => {
+    if (isOpen !== undefined) {
+      setEditing(isOpen);
+    }
+  }, [isOpen]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -164,6 +171,31 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
     }
   };
 
+  // Calcular calorías automáticamente: (P × 4) + (C × 4) + (G × 9)
+  const calculateCaloriesFromMacros = (protein, carbs, fat) => {
+    const p = parseInt(protein) || 0;
+    const c = parseInt(carbs) || 0;
+    const f = parseInt(fat) || 0;
+    return (p * 4) + (c * 4) + (f * 9);
+  };
+
+  // Cuando cambia un macro, recalcular calorías
+  const handleMacroChange = (field, value) => {
+    const newFormData = { ...formData, [field]: value };
+    
+    // Recalcular calorías con los nuevos valores
+    const newCalories = calculateCaloriesFromMacros(
+      field === 'targetProteinGrams' ? value : newFormData.targetProteinGrams,
+      field === 'targetCarbsGrams' ? value : newFormData.targetCarbsGrams,
+      field === 'targetFatGrams' ? value : newFormData.targetFatGrams
+    );
+    
+    setFormData({
+      ...newFormData,
+      targetDailyCalories: newCalories,
+    });
+  };
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -186,6 +218,13 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
       setSuccessMessage('✅ Objetivos guardados correctamente');
       setEditing(false);
       loadProfile();
+      
+      // Llamar callbacks externos si existen
+      if (onSave) {
+        const savedProfile = await getNutritionProfile(studentId);
+        onSave(savedProfile);
+      }
+      if (onClose) onClose();
       
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err) {
@@ -290,19 +329,19 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
 
         <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#ef4444' }}>
               {profile.targetProteinGrams}g
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>Proteína</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#f59e0b' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#3b82f6' }}>
               {profile.targetCarbsGrams}g
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>Carbos</div>
           </div>
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#ef4444' }}>
+            <div style={{ fontSize: 18, fontWeight: 700, color: '#f59e0b' }}>
               {profile.targetFatGrams}g
             </div>
             <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)' }}>Grasas</div>
@@ -335,7 +374,10 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
         padding: 16,
       }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) setEditing(false);
+        if (e.target === e.currentTarget) {
+          setEditing(false);
+          if (onClose) onClose();
+        }
       }}
     >
       <div
@@ -366,7 +408,10 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
             <div style={{ fontSize: 12, color: '#888' }}>{studentName}</div>
           </div>
           <button
-            onClick={() => setEditing(false)}
+            onClick={() => {
+              setEditing(false);
+              if (onClose) onClose();
+            }}
             style={{
               background: 'none',
               border: 'none',
@@ -564,7 +609,7 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
                 🎯 Objetivos diarios
               </div>
 
-              {/* Calorías destacadas */}
+              {/* Calorías destacadas - AUTOMÁTICAS */}
               <div style={{ 
                 background: 'linear-gradient(135deg, #22c55e22 0%, #16a34a11 100%)',
                 border: '2px solid #22c55e',
@@ -573,32 +618,44 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
                 textAlign: 'center',
                 marginBottom: 12,
               }}>
-                <label style={{ ...labelStyle, color: '#22c55e', fontSize: 11 }}>CALORÍAS DIARIAS</label>
-                <input
-                  type="number"
-                  value={formData.targetDailyCalories}
-                  onChange={(e) => setFormData({ ...formData, targetDailyCalories: e.target.value })}
-                  style={{
-                    ...inputStyle,
-                    fontSize: 28,
-                    fontWeight: 700,
-                    textAlign: 'center',
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#22c55e',
-                  }}
-                />
+                <label style={{ ...labelStyle, color: '#22c55e', fontSize: 11 }}>CALORÍAS DIARIAS (auto)</label>
+                <div style={{
+                  fontSize: 32,
+                  fontWeight: 700,
+                  color: '#22c55e',
+                  marginBottom: 4,
+                }}>
+                  {formData.targetDailyCalories}
+                </div>
                 <span style={{ color: '#22c55e', fontSize: 14, fontWeight: 600 }}>kcal</span>
+                <div style={{ fontSize: 9, color: '#888', marginTop: 6 }}>
+                  (P×4) + (C×4) + (G×9)
+                </div>
               </div>
 
               {/* Macros en fila */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-                <div style={macroBoxStyle('#3b82f6')}>
-                  <label style={{ ...labelStyle, color: '#3b82f6', fontSize: 10 }}>PROTEÍNA</label>
+                <div style={macroBoxStyle('#ef4444')}>
+                  <label style={{ ...labelStyle, color: '#ef4444', fontSize: 10 }}>PROTEÍNA 🥩</label>
                   <input
                     type="number"
                     value={formData.targetProteinGrams}
-                    onChange={(e) => setFormData({ ...formData, targetProteinGrams: e.target.value })}
+                    onChange={(e) => handleMacroChange('targetProteinGrams', e.target.value)}
+                    style={{
+                      ...inputStyle,
+                      textAlign: 'center',
+                      fontWeight: 700,
+                      fontSize: 18,
+                    }}
+                  />
+                  <span style={{ color: '#ef4444', fontSize: 11 }}>g</span>
+                </div>
+                <div style={macroBoxStyle('#3b82f6')}>
+                  <label style={{ ...labelStyle, color: '#3b82f6', fontSize: 10 }}>CARBOS 💧</label>
+                  <input
+                    type="number"
+                    value={formData.targetCarbsGrams}
+                    onChange={(e) => handleMacroChange('targetCarbsGrams', e.target.value)}
                     style={{
                       ...inputStyle,
                       textAlign: 'center',
@@ -609,11 +666,11 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
                   <span style={{ color: '#3b82f6', fontSize: 11 }}>g</span>
                 </div>
                 <div style={macroBoxStyle('#f59e0b')}>
-                  <label style={{ ...labelStyle, color: '#f59e0b', fontSize: 10 }}>CARBOS</label>
+                  <label style={{ ...labelStyle, color: '#f59e0b', fontSize: 10 }}>GRASAS 🧈</label>
                   <input
                     type="number"
-                    value={formData.targetCarbsGrams}
-                    onChange={(e) => setFormData({ ...formData, targetCarbsGrams: e.target.value })}
+                    value={formData.targetFatGrams}
+                    onChange={(e) => handleMacroChange('targetFatGrams', e.target.value)}
                     style={{
                       ...inputStyle,
                       textAlign: 'center',
@@ -622,21 +679,6 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
                     }}
                   />
                   <span style={{ color: '#f59e0b', fontSize: 11 }}>g</span>
-                </div>
-                <div style={macroBoxStyle('#ef4444')}>
-                  <label style={{ ...labelStyle, color: '#ef4444', fontSize: 10 }}>GRASAS</label>
-                  <input
-                    type="number"
-                    value={formData.targetFatGrams}
-                    onChange={(e) => setFormData({ ...formData, targetFatGrams: e.target.value })}
-                    style={{
-                      ...inputStyle,
-                      textAlign: 'center',
-                      fontWeight: 700,
-                      fontSize: 18,
-                    }}
-                  />
-                  <span style={{ color: '#ef4444', fontSize: 11 }}>g</span>
                 </div>
               </div>
 
@@ -666,7 +708,10 @@ const NutritionProfileCard = ({ studentId, studentName }) => {
           gap: 12,
         }}>
           <button
-            onClick={() => setEditing(false)}
+            onClick={() => {
+              setEditing(false);
+              if (onClose) onClose();
+            }}
             style={{
               flex: 1,
               padding: '12px',
