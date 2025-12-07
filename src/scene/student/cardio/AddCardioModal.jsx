@@ -63,12 +63,15 @@ const AddCardioModal = ({ studentId, onClose, onSave, initialDate = null }) => {
         ...(formData.notes && { notes: formData.notes }),
       };
 
+      console.log('Guardando cardio:', { studentId, dataToSend });
       const result = await createCardio(studentId, dataToSend);
+      console.log('Cardio guardado:', result);
       onSave(result);
       onClose();
     } catch (err) {
       console.error('Error guardando cardio:', err);
-      setError('Error al guardar. Intentá de nuevo.');
+      const errorMsg = err.response?.data?.message || err.message || 'Error al guardar';
+      setError(Array.isArray(errorMsg) ? errorMsg.join(', ') : errorMsg);
     } finally {
       setSaving(false);
     }

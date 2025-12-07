@@ -16,6 +16,7 @@ import {
   Tabs,
   Tab,
   Fade,
+  Button,
 } from '@mui/material';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
@@ -33,6 +34,7 @@ import NutritionProfileCard from './NutritionProfileCard';
 import { getTrainingHistory, getExerciseHistory, getWeightHistory } from '../../api/fitFinanceApi';
 import { getNutritionDashboard, getWeeklySummary, getNutritionProfile } from '../../api/nutritionApi';
 import { getCardioSummary, getActivityInfo, formatDuration, INTENSITY_LEVELS } from '../../api/cardioApi';
+import { getCoachSummary as getTrackedSummary, getActivityInfo as getTrackedActivityInfo } from '../../api/activityTrackerApi';
 import { 
   LineChart, 
   Line, 
@@ -83,16 +85,79 @@ const StudentDetail = () => {
       getNutritionProfile(id).catch(() => null),
       getWeightHistory(id, 15).catch(() => []),
       getCardioSummary(id, 7).catch(() => null),
+      getTrackedSummary(id, 7).catch(() => null),
     ])
-      .then(([today, week, profile, weight, cardio]) => {
-        console.log('📊 Nutrition data loaded:', { today, week, profile, weight, cardio });
+      .then(([today, week, profile, weight, cardioLog, trackedCardio]) => {
+        console.log('📊 Nutrition data loaded:', { today, week, profile, weight, cardioLog, trackedCardio });
         setNutritionToday(today);
         setNutritionWeek(week);
         setNutritionProfile(profile);
         setWeightHistory(weight || []);
-        setCardioSummary(cardio);
+        
+        // Combinar cardio-log y activity-tracker
+        const combinedCardio = combineCardioSummaries(cardioLog, trackedCardio);
+        setCardioSummary(combinedCardio);
       })
       .finally(() => setLoadingNutrition(false));
+  };
+  
+  // Función auxiliar para combinar resúmenes de cardio
+  const combineCardioSummaries = (cardioLog, tracked) => {
+    if (!cardioLog && !tracked) return null;
+    if (!cardioLog) return tracked;
+    if (!tracked) return cardioLog;
+    
+    // Combinar totales
+    const totalSessions = (cardioLog.totalSessions || 0) + (tracked.totalSessions || 0);
+    const totalMinutes = (cardioLog.totalMinutes || 0) + (tracked.totalMinutes || 0);
+    const totalCalories = (cardioLog.totalCalories || 0) + (tracked.totalCalories || 0);
+    
+    // Combinar actividades por tipo
+    const byActivityMap = {};
+    
+    // Agregar del cardio-log
+    if (cardioLog.byActivity) {
+      cardioLog.byActivity.forEach(a => {
+        byActivityMap[a.type] = { 
+          type: a.type, 
+          minutes: a.minutes || 0, 
+          sessions: a.sessions || 0,
+          percent: 0,
+        };
+      });
+    }
+    
+    // Agregar del tracked
+    if (tracked.byActivity) {
+      tracked.byActivity.forEach(a => {
+        if (byActivityMap[a.type]) {
+          byActivityMap[a.type].minutes += a.minutes || 0;
+          byActivityMap[a.type].sessions += a.sessions || 0;
+        } else {
+          byActivityMap[a.type] = { 
+            type: a.type, 
+            minutes: a.minutes || 0, 
+            sessions: a.sessions || 0,
+            percent: 0,
+          };
+        }
+      });
+    }
+    
+    // Calcular porcentajes y convertir a array
+    const byActivity = Object.values(byActivityMap).map(a => ({
+      ...a,
+      percent: totalMinutes > 0 ? Math.round((a.minutes / totalMinutes) * 100) : 0,
+    })).sort((a, b) => b.minutes - a.minutes);
+    
+    return {
+      totalSessions,
+      totalMinutes,
+      totalHours: Math.round(totalMinutes / 60 * 10) / 10,
+      totalCalories,
+      averagePerDay: Math.round(totalMinutes / 7),
+      byActivity,
+    };
   };
   
   // Handler para cambio de tab
@@ -128,6 +193,31 @@ const StudentDetail = () => {
   
   // 🎯 Modal de perfil nutricional
   const [showNutritionProfileModal, setShowNutritionProfileModal] = useState(false);
+  
+  // 🏃 Modal de detalle cardio
+  const [showCardioModal, setShowCardioModal] = useState(false);
+  const [cardioDetails, setCardioDetails] = useState({ cardioLog: [], tracked: [] });
+  const [loadingCardioDetails, setLoadingCardioDetails] = useState(false);
+  
+  // Función para abrir el modal de cardio con detalles
+  const handleOpenCardioModal = async () => {
+    setShowCardioModal(true);
+    setLoadingCardioDetails(true);
+    try {
+      const [cardioLog, tracked] = await Promise.all([
+        getCardioSummary(id, 7).catch(() => ({ recentLogs: [] })),
+        getTrackedSummary(id, 7).catch(() => ({ recentActivities: [] })),
+      ]);
+      setCardioDetails({
+        cardioLog: cardioLog?.recentLogs || [],
+        tracked: tracked?.recentActivities || [],
+      });
+    } catch (err) {
+      console.error('Error cargando detalles de cardio:', err);
+    } finally {
+      setLoadingCardioDetails(false);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -163,13 +253,17 @@ const StudentDetail = () => {
       getNutritionProfile(id).catch(() => null),
       getWeightHistory(id, 15).catch(() => []),
       getCardioSummary(id, 7).catch(() => null),
+      getTrackedSummary(id, 7).catch(() => null),
     ])
-      .then(([today, week, profile, weight, cardio]) => {
+      .then(([today, week, profile, weight, cardioLog, trackedCardio]) => {
         setNutritionToday(today);
         setNutritionWeek(week);
         setNutritionProfile(profile);
-        setCardioSummary(cardio);
         setWeightHistory(weight || []);
+        
+        // Combinar cardio-log y activity-tracker
+        const combinedCardio = combineCardioSummaries(cardioLog, trackedCardio);
+        setCardioSummary(combinedCardio);
       })
       .finally(() => setLoadingNutrition(false));
   }, [id, getStudentById, getAllMacroCycles]);
@@ -872,17 +966,31 @@ const StudentDetail = () => {
             </Grid>
 
             {/* Card de Cardio */}
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, rgba(76,206,172,0.15) 0%, rgba(76,206,172,0.05) 100%)',
-              border: `1px solid rgba(76,206,172,0.3)`,
-              borderRadius: 3,
-              mb: 3,
-            }}>
+            <Card 
+              onClick={cardioSummary?.totalSessions > 0 ? handleOpenCardioModal : undefined}
+              sx={{ 
+                background: 'linear-gradient(135deg, rgba(76,206,172,0.15) 0%, rgba(76,206,172,0.05) 100%)',
+                border: `1px solid rgba(76,206,172,0.3)`,
+                borderRadius: 3,
+                mb: 3,
+                cursor: cardioSummary?.totalSessions > 0 ? 'pointer' : 'default',
+                transition: 'all 0.2s',
+                '&:hover': cardioSummary?.totalSessions > 0 ? {
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 20px rgba(76,206,172,0.2)',
+                } : {},
+              }}
+            >
               <CardContent sx={{ p: 2.5 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Typography fontSize={24}>🏃</Typography>
                     <Typography fontWeight={600} color={COLORS.text}>Cardio esta semana</Typography>
+                    {cardioSummary?.totalSessions > 0 && (
+                      <Typography fontSize={12} color={COLORS.textMuted}>
+                        (click para ver detalle)
+                      </Typography>
+                    )}
                   </Box>
                   {cardioSummary?.totalSessions > 0 && (
                     <Chip 
@@ -2103,6 +2211,246 @@ const StudentDetail = () => {
             reloadNutritionData();
           }}
         />
+      )}
+
+      {/* Modal de Detalle Cardio */}
+      {showCardioModal && (
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1300,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            p: 2,
+          }}
+          onClick={() => setShowCardioModal(false)}
+        >
+          <Box
+            sx={{
+              backgroundColor: COLORS.card,
+              borderRadius: 3,
+              width: '100%',
+              maxWidth: 600,
+              maxHeight: '85vh',
+              overflow: 'auto',
+              border: `1px solid ${COLORS.border}`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <Box sx={{ 
+              p: 2.5, 
+              borderBottom: `1px solid ${COLORS.border}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'linear-gradient(135deg, rgba(76,206,172,0.15) 0%, transparent 100%)',
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography fontSize={28}>🏃</Typography>
+                <Box>
+                  <Typography variant="h6" fontWeight={700} color={COLORS.text}>
+                    Detalle de Cardio
+                  </Typography>
+                  <Typography fontSize={12} color={COLORS.textMuted}>
+                    Últimos 7 días
+                  </Typography>
+                </Box>
+              </Box>
+              <Button 
+                onClick={() => setShowCardioModal(false)}
+                sx={{ minWidth: 'auto', color: COLORS.textMuted, fontSize: 20 }}
+              >
+                ✕
+              </Button>
+            </Box>
+
+            {/* Contenido */}
+            <Box sx={{ p: 2.5 }}>
+              {loadingCardioDetails ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <CircularProgress size={30} sx={{ color: COLORS.green }} />
+                  <Typography color={COLORS.textMuted} mt={2}>Cargando...</Typography>
+                </Box>
+              ) : (
+                <>
+                  {/* Actividades trackeadas (GPS) */}
+                  {cardioDetails.tracked?.length > 0 && (
+                    <Box sx={{ mb: 3 }}>
+                      <Typography fontSize={12} color={COLORS.green} fontWeight={600} mb={1.5}>
+                        📍 ACTIVIDADES GPS ({cardioDetails.tracked.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {cardioDetails.tracked.map((activity) => {
+                          const info = getTrackedActivityInfo(activity.type);
+                          return (
+                            <Box
+                              key={activity.id}
+                              sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                backgroundColor: 'rgba(0,0,0,0.3)',
+                                border: `1px solid ${COLORS.green}33`,
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  <Typography fontSize={28}>{info.emoji}</Typography>
+                                  <Box>
+                                    <Typography fontWeight={600} color={COLORS.text}>
+                                      {info.label}
+                                    </Typography>
+                                    <Typography fontSize={12} color={COLORS.textMuted}>
+                                      {new Date(activity.date).toLocaleDateString('es-AR', { 
+                                        weekday: 'short', 
+                                        day: 'numeric', 
+                                        month: 'short',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Chip 
+                                  label={activity.trackingMode === 'gps' ? '📍 GPS' : '✋ Manual'}
+                                  size="small"
+                                  sx={{ 
+                                    backgroundColor: `${COLORS.green}22`,
+                                    color: COLORS.green,
+                                    fontSize: 10,
+                                  }}
+                                />
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 3, mt: 1.5, pt: 1.5, borderTop: `1px solid ${COLORS.border}` }}>
+                                <Box>
+                                  <Typography fontSize={18} fontWeight={700} color={COLORS.blue}>
+                                    {activity.durationMinutes} min
+                                  </Typography>
+                                  <Typography fontSize={10} color={COLORS.textMuted}>Duración</Typography>
+                                </Box>
+                                {activity.distanceKm > 0 && (
+                                  <Box>
+                                    <Typography fontSize={18} fontWeight={700} color={COLORS.green}>
+                                      {activity.distanceKm} km
+                                    </Typography>
+                                    <Typography fontSize={10} color={COLORS.textMuted}>Distancia</Typography>
+                                  </Box>
+                                )}
+                                {activity.calories > 0 && (
+                                  <Box>
+                                    <Typography fontSize={18} fontWeight={700} color={COLORS.orange}>
+                                      {activity.calories} kcal
+                                    </Typography>
+                                    <Typography fontSize={10} color={COLORS.textMuted}>Calorías</Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Actividades manuales (formulario) */}
+                  {cardioDetails.cardioLog?.length > 0 && (
+                    <Box>
+                      <Typography fontSize={12} color={COLORS.orange} fontWeight={600} mb={1.5}>
+                        ✍️ REGISTROS MANUALES ({cardioDetails.cardioLog.length})
+                      </Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                        {cardioDetails.cardioLog.map((log) => {
+                          const info = getActivityInfo(log.activityType);
+                          const intensity = INTENSITY_LEVELS[log.intensity];
+                          return (
+                            <Box
+                              key={log.id}
+                              sx={{
+                                p: 2,
+                                borderRadius: 2,
+                                backgroundColor: 'rgba(0,0,0,0.3)',
+                                border: `1px solid ${COLORS.orange}33`,
+                              }}
+                            >
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                  <Typography fontSize={28}>{info.emoji}</Typography>
+                                  <Box>
+                                    <Typography fontWeight={600} color={COLORS.text}>
+                                      {info.label}
+                                    </Typography>
+                                    <Typography fontSize={12} color={COLORS.textMuted}>
+                                      {new Date(log.date).toLocaleDateString('es-AR', { 
+                                        weekday: 'short', 
+                                        day: 'numeric', 
+                                        month: 'short',
+                                      })}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                                <Chip 
+                                  label={intensity?.label || 'Media'}
+                                  size="small"
+                                  sx={{ 
+                                    backgroundColor: `${intensity?.color || COLORS.orange}22`,
+                                    color: intensity?.color || COLORS.orange,
+                                    fontSize: 10,
+                                  }}
+                                />
+                              </Box>
+                              <Box sx={{ display: 'flex', gap: 3, mt: 1.5, pt: 1.5, borderTop: `1px solid ${COLORS.border}` }}>
+                                <Box>
+                                  <Typography fontSize={18} fontWeight={700} color={COLORS.blue}>
+                                    {formatDuration(log.durationMinutes)}
+                                  </Typography>
+                                  <Typography fontSize={10} color={COLORS.textMuted}>Duración</Typography>
+                                </Box>
+                                {log.distanceKm > 0 && (
+                                  <Box>
+                                    <Typography fontSize={18} fontWeight={700} color={COLORS.green}>
+                                      {log.distanceKm} km
+                                    </Typography>
+                                    <Typography fontSize={10} color={COLORS.textMuted}>Distancia</Typography>
+                                  </Box>
+                                )}
+                                {log.caloriesBurned > 0 && (
+                                  <Box>
+                                    <Typography fontSize={18} fontWeight={700} color={COLORS.orange}>
+                                      {log.caloriesBurned} kcal
+                                    </Typography>
+                                    <Typography fontSize={10} color={COLORS.textMuted}>Calorías</Typography>
+                                  </Box>
+                                )}
+                              </Box>
+                              {log.notes && (
+                                <Typography fontSize={12} color={COLORS.textMuted} mt={1.5} fontStyle="italic">
+                                  📝 {log.notes}
+                                </Typography>
+                              )}
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </Box>
+                  )}
+
+                  {/* Sin actividades */}
+                  {(!cardioDetails.tracked?.length && !cardioDetails.cardioLog?.length) && (
+                    <Box sx={{ textAlign: 'center', py: 4 }}>
+                      <Typography fontSize={48} mb={2}>🏃‍♂️</Typography>
+                      <Typography color={COLORS.textMuted}>
+                        No hay actividades registradas en los últimos 7 días
+                      </Typography>
+                    </Box>
+                  )}
+                </>
+              )}
+            </Box>
+          </Box>
+        </Box>
       )}
     </Box>
   );
