@@ -24,7 +24,11 @@ import {
   getActivities as getTrackedActivities,
   getActivityInfo as getTrackerActivityInfo,
   formatDuration as formatTrackerDuration,
+  getActivityDetail,
+  getWeeklySummary as getTrackedWeeklySummary,
 } from '../../../api/activityTrackerApi';
+import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 
 const COLORS = {
   background: '#1a1a2e',
@@ -48,23 +52,97 @@ const CardioSection = ({ studentId }) => {
   // Estados para el nuevo tracker
   const [view, setView] = useState('main'); // main, selector, gps, indoor
   const [selectedActivity, setSelectedActivity] = useState(null);
+  
+  // Estado para ver detalle de actividad con mapa
+  const [showActivityDetail, setShowActivityDetail] = useState(false);
+  const [activityDetail, setActivityDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  
+  // Función para ver detalle de actividad
+  const handleViewDetail = async (trackId) => {
+    setLoadingDetail(true);
+    setShowActivityDetail(true);
+    try {
+      const detail = await getActivityDetail(trackId);
+      setActivityDetail(detail);
+    } catch (err) {
+      console.error('Error cargando detalle:', err);
+    } finally {
+      setLoadingDetail(false);
+    }
+  };
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [today, week, tracked] = await Promise.all([
+      const [today, weekCardio, tracked, weekTracked] = await Promise.all([
         getTodayCardio(studentId).catch(() => []),
         getWeeklyCardio(studentId).catch(() => null),
-        getTrackedActivities(studentId, 5).catch(() => []),
+        getTrackedActivities(studentId, 10).catch(() => []),
+        getTrackedWeeklySummary(studentId).catch(() => null),
       ]);
       setTodayLogs(today || []);
-      setWeekSummary(week);
       setTrackedActivities(tracked || []);
+      
+      // Combinar resúmenes semanales de cardio-log y activity-tracker
+      const combinedWeek = combineWeeklySummaries(weekCardio, weekTracked);
+      setWeekSummary(combinedWeek);
     } catch (err) {
       console.error('Error cargando datos de cardio:', err);
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Función para combinar resúmenes semanales
+  const combineWeeklySummaries = (cardioLog, tracked) => {
+    if (!cardioLog && !tracked) return null;
+    
+    const totalSessions = (cardioLog?.totalSessions || 0) + (tracked?.totalActivities || 0);
+    const totalMinutes = (cardioLog?.totalMinutes || 0) + (tracked?.totalDurationMinutes || 0);
+    const totalDistance = (cardioLog?.totalDistance || 0) + (tracked?.totalDistanceKm || 0);
+    const totalCalories = (cardioLog?.totalCalories || 0) + (tracked?.totalCalories || 0);
+    
+    // Combinar por tipo de actividad
+    const byActivity = {};
+    
+    // Del cardio-log
+    if (cardioLog?.byActivity) {
+      Object.entries(cardioLog.byActivity).forEach(([type, data]) => {
+        byActivity[type] = { 
+          count: data.count || 0, 
+          minutes: data.minutes || 0,
+          distance: data.distance || 0,
+        };
+      });
+    }
+    
+    // Del activity-tracker
+    if (tracked?.byType) {
+      Object.entries(tracked.byType).forEach(([type, data]) => {
+        if (byActivity[type]) {
+          byActivity[type].count += data.count || 0;
+          byActivity[type].minutes += Math.round((data.duration || 0) / 60);
+          byActivity[type].distance += (data.distance || 0) / 1000;
+        } else {
+          byActivity[type] = {
+            count: data.count || 0,
+            minutes: Math.round((data.duration || 0) / 60),
+            distance: (data.distance || 0) / 1000,
+          };
+        }
+      });
+    }
+    
+    if (totalSessions === 0) return null;
+    
+    return {
+      totalSessions,
+      totalMinutes,
+      totalDistance: Math.round(totalDistance * 10) / 10,
+      totalCalories,
+      byActivity,
+    };
   };
 
   useEffect(() => {
@@ -277,10 +355,16 @@ const CardioSection = ({ studentId }) => {
           
           {/* Actividades trackeadas (GPS/Manual) */}
           {(() => {
-            const today = new Date().toDateString();
-            const todayTracked = trackedActivities.filter(a => 
-              new Date(a.startedAt).toDateString() === today
-            );
+            // Usar fecha local para comparación
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const todayEnd = new Date(todayStart);
+            todayEnd.setDate(todayEnd.getDate() + 1);
+            
+            const todayTracked = trackedActivities.filter(a => {
+              const activityDate = new Date(a.startedAt);
+              return activityDate >= todayStart && activityDate < todayEnd;
+            });
             
             const hasActivities = todayLogs.length > 0 || todayTracked.length > 0;
             
@@ -363,6 +447,21 @@ const CardioSection = ({ studentId }) => {
                           </Box>
                         </Box>
                       </Box>
+                      {/* Botón ver detalle si es GPS */}
+                      {track.trackingMode === 'gps' && (
+                        <Button
+                          size="small"
+                          onClick={() => handleViewDetail(track.id)}
+                          sx={{
+                            minWidth: 'auto',
+                            color: COLORS.green,
+                            fontSize: 11,
+                            '&:hover': { backgroundColor: `${COLORS.green}22` },
+                          }}
+                        >
+                          🗺️ Ver
+                        </Button>
+                      )}
                     </Box>
                   );
                 })}
@@ -515,6 +614,81 @@ const CardioSection = ({ studentId }) => {
             </Box>
           )}
         </Box>
+
+        {/* Historial de actividades GPS */}
+        {trackedActivities.length > 0 && (
+          <Box sx={{ p: 2 }}>
+            <Typography fontSize={12} color={COLORS.textMuted} mb={1.5} fontWeight={600}>
+              📜 HISTORIAL DE RECORRIDOS
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {trackedActivities.map((track) => {
+                const activityInfo = getTrackerActivityInfo(track.activityType);
+                const durationMin = Math.round((track.durationSeconds || 0) / 60);
+                const distanceKm = (Number(track.distanceMeters) || 0) / 1000;
+                // La fecha viene en UTC, toLocaleString la convierte a hora local
+                const date = new Date(track.startedAt);
+                
+                return (
+                  <Box
+                    key={`history-${track.id}`}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 2,
+                      backgroundColor: 'rgba(0,0,0,0.3)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                      <Typography fontSize={24}>{activityInfo.emoji}</Typography>
+                      <Box>
+                        <Typography fontWeight={600} color={COLORS.text} fontSize={13}>
+                          {activityInfo.label}
+                        </Typography>
+                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+                          <Typography fontSize={11} color={COLORS.textMuted}>
+                            {date.toLocaleString('es-AR', { 
+                              weekday: 'short', 
+                              day: 'numeric', 
+                              month: 'short',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false,
+                            })}
+                          </Typography>
+                          <Typography fontSize={11} color={COLORS.green}>
+                            {formatTrackerDuration(track.durationSeconds || 0)}
+                          </Typography>
+                          {distanceKm > 0 && (
+                            <Typography fontSize={11} color={COLORS.blue}>
+                              {distanceKm.toFixed(2)}km
+                            </Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </Box>
+                    {track.trackingMode === 'gps' && (
+                      <Button
+                        size="small"
+                        onClick={() => handleViewDetail(track.id)}
+                        sx={{
+                          minWidth: 'auto',
+                          color: COLORS.green,
+                          fontSize: 11,
+                          '&:hover': { backgroundColor: `${COLORS.green}22` },
+                        }}
+                      >
+                        🗺️ Ver
+                      </Button>
+                    )}
+                  </Box>
+                );
+              })}
+            </Box>
+          </Box>
+        )}
       </Box>
 
       {/* Modal */}
@@ -524,6 +698,263 @@ const CardioSection = ({ studentId }) => {
           onClose={() => setShowModal(false)}
           onSave={handleSave}
         />
+      )}
+
+      {/* Modal de Detalle con Mapa - Estilo App Real */}
+      {showActivityDetail && (
+        <Box
+          sx={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1400,
+            display: 'flex',
+            flexDirection: 'column',
+            backgroundColor: COLORS.card,
+          }}
+        >
+          {/* Header compacto */}
+          <Box sx={{ 
+            p: 1.5, 
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'rgba(0,0,0,0.5)',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography fontSize={24}>
+                {activityDetail ? getTrackerActivityInfo(activityDetail.activityType).emoji : '🏃'}
+              </Typography>
+              <Box>
+                <Typography fontWeight={700} color={COLORS.text} fontSize={14}>
+                  {activityDetail ? getTrackerActivityInfo(activityDetail.activityType).label : 'Cargando...'}
+                </Typography>
+                {activityDetail && (
+                  <Typography fontSize={11} color={COLORS.textMuted}>
+                    {new Date(activityDetail.startedAt).toLocaleDateString('es-AR', {
+                      weekday: 'short',
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Typography>
+                )}
+              </Box>
+            </Box>
+            <IconButton
+              onClick={() => {
+                setShowActivityDetail(false);
+                setActivityDetail(null);
+              }}
+              sx={{ color: COLORS.text }}
+            >
+              ✕
+            </IconButton>
+          </Box>
+
+          {/* Mapa (ocupa todo el fondo) */}
+          <Box sx={{ flex: 1, position: 'relative' }}>
+            {loadingDetail ? (
+              <Box sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                background: 'linear-gradient(180deg, rgba(22,33,62,0.9) 0%, rgba(10,15,30,0.95) 100%)',
+              }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <CircularProgress size={40} sx={{ color: COLORS.green, mb: 2 }} />
+                  <Typography color={COLORS.textMuted}>Cargando recorrido...</Typography>
+                </Box>
+              </Box>
+            ) : activityDetail?.points?.length > 0 ? (
+              <>
+                <MapContainer
+                  center={[
+                    parseFloat(activityDetail.points[Math.floor(activityDetail.points.length / 2)].latitude),
+                    parseFloat(activityDetail.points[Math.floor(activityDetail.points.length / 2)].longitude)
+                  ]}
+                  zoom={15}
+                  style={{ height: '100%', width: '100%' }}
+                  zoomControl={false}
+                >
+                  <TileLayer
+                    url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                    attribution='&copy; CartoDB'
+                  />
+                  {/* Recorrido con gradiente */}
+                  <Polyline
+                    positions={activityDetail.points.map(p => [
+                      parseFloat(p.latitude),
+                      parseFloat(p.longitude)
+                    ])}
+                    color={COLORS.green}
+                    weight={5}
+                    opacity={0.9}
+                  />
+                  {/* Marcador Inicio */}
+                  <Marker position={[
+                    parseFloat(activityDetail.points[0].latitude),
+                    parseFloat(activityDetail.points[0].longitude)
+                  ]} />
+                  {/* Marcador Fin */}
+                  <Marker position={[
+                    parseFloat(activityDetail.points[activityDetail.points.length - 1].latitude),
+                    parseFloat(activityDetail.points[activityDetail.points.length - 1].longitude)
+                  ]} />
+                </MapContainer>
+
+                {/* Panel de stats superpuesto */}
+                <Box sx={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 30%, rgba(0,0,0,0.95) 100%)',
+                  p: 2,
+                  pt: 4,
+                  zIndex: 1000,
+                }}>
+                  {/* Stats principales */}
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(2, 1fr)', 
+                    gap: 2,
+                    mb: 2,
+                  }}>
+                    {/* Distancia - Grande */}
+                    <Box sx={{ 
+                      textAlign: 'center',
+                      p: 2,
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${COLORS.green}22 0%, ${COLORS.green}11 100%)`,
+                      border: `1px solid ${COLORS.green}44`,
+                    }}>
+                      <Typography fontSize={36} fontWeight={800} color={COLORS.green}>
+                        {((Number(activityDetail.distanceMeters) || 0) / 1000).toFixed(2)}
+                      </Typography>
+                      <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600}>
+                        KILÓMETROS
+                      </Typography>
+                    </Box>
+                    {/* Tiempo - Grande */}
+                    <Box sx={{ 
+                      textAlign: 'center',
+                      p: 2,
+                      borderRadius: 3,
+                      background: `linear-gradient(135deg, ${COLORS.blue}22 0%, ${COLORS.blue}11 100%)`,
+                      border: `1px solid ${COLORS.blue}44`,
+                    }}>
+                      <Typography fontSize={36} fontWeight={800} color={COLORS.blue}>
+                        {formatTrackerDuration(activityDetail.durationSeconds || 0)}
+                      </Typography>
+                      <Typography fontSize={12} color={COLORS.textMuted} fontWeight={600}>
+                        TIEMPO
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Stats secundarios */}
+                  <Box sx={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(4, 1fr)', 
+                    gap: 1,
+                  }}>
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                      <Typography fontSize={18} fontWeight={700} color={COLORS.text}>
+                        {(() => {
+                          const dist = (Number(activityDetail.distanceMeters) || 0) / 1000;
+                          const dur = (activityDetail.durationSeconds || 0) / 60;
+                          if (dist === 0) return '--:--';
+                          const pace = dur / dist;
+                          const mins = Math.floor(pace);
+                          const secs = Math.round((pace - mins) * 60);
+                          return `${mins}:${secs.toString().padStart(2, '0')}`;
+                        })()}
+                      </Typography>
+                      <Typography fontSize={9} color={COLORS.textMuted}>RITMO /km</Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                      <Typography fontSize={18} fontWeight={700} color={COLORS.text}>
+                        {activityDetail.avgSpeedKmh || 0}
+                      </Typography>
+                      <Typography fontSize={9} color={COLORS.textMuted}>KM/H PROM</Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                      <Typography fontSize={18} fontWeight={700} color={COLORS.text}>
+                        {activityDetail.maxSpeedKmh || 0}
+                      </Typography>
+                      <Typography fontSize={9} color={COLORS.textMuted}>KM/H MÁX</Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'center', p: 1 }}>
+                      <Typography fontSize={18} fontWeight={700} color={COLORS.orange}>
+                        {activityDetail.caloriesBurned || 0}
+                      </Typography>
+                      <Typography fontSize={9} color={COLORS.textMuted}>KCAL</Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Indicadores de inicio/fin */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    gap: 3, 
+                    mt: 2,
+                    pt: 2,
+                    borderTop: `1px solid ${COLORS.border}`,
+                  }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ 
+                        width: 12, 
+                        height: 12, 
+                        borderRadius: '50%', 
+                        backgroundColor: COLORS.green,
+                        boxShadow: `0 0 8px ${COLORS.green}`,
+                      }} />
+                      <Typography fontSize={11} color={COLORS.textMuted}>Inicio</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{ 
+                        width: 12, 
+                        height: 12, 
+                        borderRadius: '50%', 
+                        backgroundColor: COLORS.red,
+                        boxShadow: `0 0 8px ${COLORS.red}`,
+                      }} />
+                      <Typography fontSize={11} color={COLORS.textMuted}>Fin</Typography>
+                    </Box>
+                    <Typography fontSize={11} color={COLORS.textMuted}>
+                      📍 {activityDetail.points.length} puntos GPS
+                    </Typography>
+                  </Box>
+                </Box>
+              </>
+            ) : (
+              <Box sx={{ 
+                height: '100%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                background: 'linear-gradient(180deg, rgba(22,33,62,0.9) 0%, rgba(10,15,30,0.95) 100%)',
+              }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography fontSize={48} mb={2}>🗺️</Typography>
+                  <Typography color={COLORS.textMuted} mb={1}>
+                    No hay datos de recorrido GPS
+                  </Typography>
+                  <Typography fontSize={12} color={COLORS.textMuted}>
+                    Esta actividad no tiene puntos registrados
+                  </Typography>
+                </Box>
+              </Box>
+            )}
+          </Box>
+        </Box>
       )}
     </>
   );

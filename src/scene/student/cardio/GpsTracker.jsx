@@ -360,14 +360,14 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
       {/* Timer grande - más prominente */}
       <Box sx={{ 
         textAlign: 'center', 
-        py: 3,
+        py: 1.5,
         background: status === 'tracking' 
           ? `linear-gradient(180deg, rgba(76,206,172,0.08) 0%, transparent 100%)`
           : 'rgba(0,0,0,0.2)',
       }}>
         <Typography 
           sx={{ 
-            fontSize: 56, 
+            fontSize: 48, 
             fontWeight: 800, 
             fontFamily: '"SF Mono", "Roboto Mono", monospace',
             color: status === 'tracking' ? COLORS.green : COLORS.text,
@@ -385,7 +385,7 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
       </Box>
 
       {/* Mapa */}
-      <Box sx={{ flex: 1, minHeight: 0, position: 'relative' }}>
+      <Box sx={{ flex: 1, minHeight: 150, position: 'relative' }}>
         {currentPosition ? (
           <MapContainer
             center={currentPosition}
@@ -516,52 +516,52 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
         display: 'grid', 
         gridTemplateColumns: 'repeat(4, 1fr)', 
         gap: 0.5, 
-        p: 1.5,
+        p: 1,
         background: 'linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.3) 100%)',
       }}>
         <Box sx={{ 
           textAlign: 'center',
-          p: 1,
+          p: 0.5,
           borderRadius: 2,
           backgroundColor: 'rgba(255,255,255,0.05)',
         }}>
-          <Typography fontSize={22} fontWeight={800} color={COLORS.blue}>
+          <Typography fontSize={18} fontWeight={800} color={COLORS.blue}>
             {(distanceMeters / 1000).toFixed(2)}
           </Typography>
-          <Typography fontSize={9} color={COLORS.textMuted} fontWeight={600}>KM</Typography>
+          <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>KM</Typography>
         </Box>
         <Box sx={{ 
           textAlign: 'center',
-          p: 1,
+          p: 0.5,
           borderRadius: 2,
           backgroundColor: 'rgba(255,255,255,0.05)',
         }}>
-          <Typography fontSize={22} fontWeight={800} color={COLORS.text}>
+          <Typography fontSize={18} fontWeight={800} color={COLORS.text}>
             {pace || '--:--'}
           </Typography>
-          <Typography fontSize={9} color={COLORS.textMuted} fontWeight={600}>RITMO</Typography>
+          <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>RITMO</Typography>
         </Box>
         <Box sx={{ 
           textAlign: 'center',
-          p: 1,
+          p: 0.5,
           borderRadius: 2,
           backgroundColor: 'rgba(255,255,255,0.05)',
         }}>
-          <Typography fontSize={22} fontWeight={800} color={COLORS.green}>
+          <Typography fontSize={18} fontWeight={800} color={COLORS.green}>
             {currentSpeed.toFixed(1)}
           </Typography>
-          <Typography fontSize={9} color={COLORS.textMuted} fontWeight={600}>KM/H</Typography>
+          <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>KM/H</Typography>
         </Box>
         <Box sx={{ 
           textAlign: 'center',
-          p: 1,
+          p: 0.5,
           borderRadius: 2,
           backgroundColor: 'rgba(255,255,255,0.05)',
         }}>
-          <Typography fontSize={22} fontWeight={800} color={COLORS.orange}>
+          <Typography fontSize={18} fontWeight={800} color={COLORS.orange}>
             {calories}
           </Typography>
-          <Typography fontSize={9} color={COLORS.textMuted} fontWeight={600}>KCAL</Typography>
+          <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>KCAL</Typography>
         </Box>
       </Box>
 
@@ -582,7 +582,7 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
       )}
 
       {/* Botones */}
-      <Box sx={{ p: 2, display: 'flex', gap: 2, background: 'rgba(0,0,0,0.2)' }}>
+      <Box sx={{ p: 1.5, display: 'flex', gap: 1.5, background: 'rgba(0,0,0,0.2)' }}>
         {(status === 'waiting' || status === 'starting') && (
           <>
             <Button
