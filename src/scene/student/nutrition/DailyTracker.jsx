@@ -250,9 +250,14 @@ const DailyTracker = ({ studentId, profile }) => {
   const colors = tokens(theme.palette.mode);
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Usar fecha LOCAL, no UTC (para evitar que a las 9pm se muestre el día siguiente)
+  const getLocalDateString = (date = new Date()) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getLocalDateString());
   const [addFoodOpen, setAddFoodOpen] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(null);
 
@@ -293,13 +298,13 @@ const DailyTracker = ({ studentId, profile }) => {
   };
 
   const changeDate = (days) => {
-    const date = new Date(selectedDate);
+    const date = new Date(selectedDate + 'T12:00:00'); // Usar mediodía para evitar problemas de zona horaria
     date.setDate(date.getDate() + days);
-    setSelectedDate(date.toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString(date));
   };
 
   const goToToday = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString());
   };
 
   const formatDate = (dateStr) => {
@@ -357,7 +362,7 @@ const DailyTracker = ({ studentId, profile }) => {
         <IconButton onClick={() => changeDate(1)} sx={{ color: colors.grey[300] }}>
           <NavigateNextIcon />
         </IconButton>
-        {selectedDate !== new Date().toISOString().split('T')[0] && (
+        {selectedDate !== getLocalDateString() && (
           <IconButton onClick={goToToday} sx={{ color: colors.orangeAccent[400] }}>
             <TodayIcon />
           </IconButton>
@@ -365,7 +370,7 @@ const DailyTracker = ({ studentId, profile }) => {
       </Box>
 
       {/* Alertas inteligentes (solo para el día actual) */}
-      {selectedDate === new Date().toISOString().split('T')[0] && (
+      {selectedDate === getLocalDateString() && (
         <NutritionAlerts
           consumed={consumed}
           targets={targets}

@@ -8,10 +8,10 @@ import {
   IconButton,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
-import AddCardioModal from './AddCardioModal';
 import ActivitySelector from './ActivitySelector';
 import GpsTracker from './GpsTracker';
 import IndoorActivityForm from './IndoorActivityForm';
+import IndoorActivityTracker from './IndoorActivityTracker';
 import {
   getTodayCardio,
   getWeeklyCardio,
@@ -47,10 +47,9 @@ const CardioSection = ({ studentId }) => {
   const [weekSummary, setWeekSummary] = useState(null);
   const [trackedActivities, setTrackedActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
   
   // Estados para el nuevo tracker
-  const [view, setView] = useState('main'); // main, selector, gps, indoor
+  const [view, setView] = useState('main'); // main, selector, gps, indoor, indoorChoice, indoorTracker
   const [selectedActivity, setSelectedActivity] = useState(null);
   
   // Estado para ver detalle de actividad con mapa
@@ -171,6 +170,15 @@ const CardioSection = ({ studentId }) => {
   
   const handleSelectIndoor = (activityType) => {
     setSelectedActivity(activityType);
+    setView('indoorChoice'); // Mostrar opciones: cronómetro vs manual
+  };
+  
+  // Handlers para la elección de cronómetro vs manual
+  const handleChooseTimer = () => {
+    setView('indoorTracker');
+  };
+  
+  const handleChooseManual = () => {
     setView('indoor');
   };
   
@@ -222,7 +230,162 @@ const CardioSection = ({ studentId }) => {
     );
   }
 
-  // Vista de formulario Indoor - Pantalla completa
+  // Vista de elección: Cronómetro vs Manual - Pantalla completa
+  if (view === 'indoorChoice') {
+    const activityInfo = getTrackerActivityInfo(selectedActivity);
+    return (
+      <Box sx={{ 
+        position: 'fixed',
+        top: 64,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        background: `linear-gradient(180deg, ${COLORS.background} 0%, #0f0f1a 100%)`,
+        zIndex: 1200,
+        display: 'flex',
+        flexDirection: 'column',
+        p: 3,
+      }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 4 }}>
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              mr: 2,
+            }}
+          >
+            <Typography fontSize={28}>{activityInfo?.emoji}</Typography>
+          </Box>
+          <Box>
+            <Typography variant="h5" fontWeight="bold" color={COLORS.text}>
+              {activityInfo?.name}
+            </Typography>
+            <Typography color={COLORS.textMuted}>
+              ¿Cómo querés registrar la actividad?
+            </Typography>
+          </Box>
+        </Box>
+
+        {/* Opciones */}
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Opción Cronómetro */}
+          <Button
+            onClick={handleChooseTimer}
+            sx={{
+              p: 3,
+              background: 'linear-gradient(135deg, rgba(255,152,0,0.15) 0%, rgba(255,152,0,0.05) 100%)',
+              border: '2px solid rgba(255,152,0,0.4)',
+              borderRadius: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              textAlign: 'left',
+              '&:hover': {
+                background: 'linear-gradient(135deg, rgba(255,152,0,0.25) 0%, rgba(255,152,0,0.1) 100%)',
+                borderColor: '#ff9800',
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+              <Typography fontSize={32} mr={1.5}>⏱️</Typography>
+              <Typography variant="h6" fontWeight="bold" color={COLORS.text}>
+                Usar Cronómetro
+              </Typography>
+            </Box>
+            <Typography color={COLORS.textMuted} fontSize={14}>
+              Iniciá el cronómetro y registrá el tiempo exacto de tu actividad en tiempo real.
+              Ideal para cuando estás por empezar.
+            </Typography>
+            <Chip 
+              label="⭐ Recomendado" 
+              size="small" 
+              sx={{ 
+                mt: 2, 
+                backgroundColor: 'rgba(255,152,0,0.3)', 
+                color: '#ff9800',
+                fontWeight: 'bold',
+              }} 
+            />
+          </Button>
+
+          {/* Opción Manual */}
+          <Button
+            onClick={handleChooseManual}
+            sx={{
+              p: 3,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 3,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'flex-start',
+              textAlign: 'left',
+              '&:hover': {
+                background: 'rgba(255,255,255,0.06)',
+                borderColor: 'rgba(255,255,255,0.3)',
+              },
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+              <Typography fontSize={32} mr={1.5}>✍️</Typography>
+              <Typography variant="h6" fontWeight="bold" color={COLORS.text}>
+                Registro Manual
+              </Typography>
+            </Box>
+            <Typography color={COLORS.textMuted} fontSize={14}>
+              Ingresá los datos manualmente: duración, distancia, calorías.
+              Útil para registrar actividades pasadas.
+            </Typography>
+          </Button>
+        </Box>
+
+        {/* Botón cancelar */}
+        <Button
+          onClick={() => setView('selector')}
+          sx={{
+            mt: 2,
+            color: COLORS.textMuted,
+            '&:hover': { color: COLORS.text },
+          }}
+        >
+          ← Volver a elegir actividad
+        </Button>
+      </Box>
+    );
+  }
+
+  // Vista del Tracker Indoor (cronómetro) - Pantalla completa
+  if (view === 'indoorTracker') {
+    return (
+      <Box sx={{ 
+        position: 'fixed',
+        top: 64,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: COLORS.background,
+        zIndex: 1200,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'auto',
+      }}>
+        <IndoorActivityTracker
+          studentId={studentId}
+          activityType={selectedActivity}
+          onComplete={handleTrackerFinish}
+          onCancel={handleTrackerCancel}
+        />
+      </Box>
+    );
+  }
+
+  // Vista de formulario Indoor (manual) - Pantalla completa
   if (view === 'indoor') {
     return (
       <Box sx={{ 
@@ -319,19 +482,6 @@ const CardioSection = ({ studentId }) => {
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
-              variant="outlined"
-              size="small"
-              onClick={() => setShowModal(true)}
-              sx={{
-                borderColor: COLORS.border,
-                color: COLORS.textMuted,
-                fontSize: 11,
-                '&:hover': { borderColor: COLORS.green, color: COLORS.green },
-              }}
-            >
-              + Rápido
-            </Button>
-            <Button
               variant="contained"
               size="small"
               onClick={() => setView('selector')}
@@ -382,7 +532,7 @@ const CardioSection = ({ studentId }) => {
                   </Typography>
                   <Button
                     size="small"
-                    onClick={() => setShowModal(true)}
+                    onClick={() => setView('selector')}
                     sx={{ mt: 1, color: COLORS.green }}
                   >
                     + Agregar actividad
@@ -690,15 +840,6 @@ const CardioSection = ({ studentId }) => {
           </Box>
         )}
       </Box>
-
-      {/* Modal */}
-      {showModal && (
-        <AddCardioModal
-          studentId={studentId}
-          onClose={() => setShowModal(false)}
-          onSave={handleSave}
-        />
-      )}
 
       {/* Modal de Detalle con Mapa - Estilo App Real */}
       {showActivityDetail && (

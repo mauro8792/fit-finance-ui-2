@@ -22,7 +22,12 @@ const COLORS = {
 };
 
 const AddCardioModal = ({ studentId, onClose, onSave, initialDate = null }) => {
-  const today = new Date().toISOString().split('T')[0];
+  // Fecha LOCAL, no UTC
+  const getLocalDateString = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+  const today = getLocalDateString();
   
   const [formData, setFormData] = useState({
     date: initialDate || today,

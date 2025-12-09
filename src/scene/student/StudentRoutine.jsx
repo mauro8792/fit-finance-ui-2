@@ -400,12 +400,17 @@ export const StudentRoutine = () => {
     );
   };
 
+  // Función para obtener fecha local en formato YYYY-MM-DD
+  const getLocalDateString = (date = new Date()) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   // Función para encontrar el día de hoy en los microciclos
   const findTodayDay = () => {
     if (!micros || micros.length === 0) return null;
 
-    const today = new Date();
-    const todayStr = today.toISOString().split("T")[0]; // Formato YYYY-MM-DD
+    // Usar fecha LOCAL, no UTC
+    const todayStr = getLocalDateString();
 
     for (let microIdx = 0; microIdx < micros.length; microIdx++) {
       const micro = micros[microIdx];
@@ -427,8 +432,8 @@ export const StudentRoutine = () => {
       for (let diaIdx = 0; diaIdx < diasConEjercicios.length; diaIdx++) {
         const day = diasConEjercicios[diaIdx];
         if (day.fecha) {
-          const dayDate = new Date(day.fecha + "T12:00:00");
-          const dayDateStr = dayDate.toISOString().split("T")[0];
+          // Las fechas del backend vienen en formato YYYY-MM-DD, compararlas directamente
+          const dayDateStr = day.fecha.split('T')[0];
 
           if (dayDateStr === todayStr) {
             return { microIdx, diaIdx };
