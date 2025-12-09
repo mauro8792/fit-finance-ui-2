@@ -134,4 +134,19 @@ export const getWeightHistory = async (studentId, limit = 30) => {
   }
 };
 
+/**
+ * 💬 Obtener notas de sets de un estudiante (para vista del coach)
+ * @param {number} studentId - ID del estudiante
+ * @param {number} limit - Límite de notas (default 10)
+ */
+export const getStudentSetNotes = async (studentId, limit = 10) => {
+  try {
+    const response = await financeApi.get(`/set/student/${studentId}/notes?limit=${limit}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener notas del estudiante:", error);
+    throw error;
+  }
+};
+
 export default financeApi;
