@@ -107,14 +107,31 @@ const FinalMobileDrawer = ({ open, onClose }) => {
   // Función para renderizar items según el tipo de usuario
   const renderMenuItems = () => {
     if (userType === 'student') {
+      // Obtener permisos del estudiante (por defecto todo habilitado)
+      const permissions = student?.permissions || {};
+      const canAccessRoutine = permissions.canAccessRoutine ?? true;
+      const canAccessWeight = permissions.canAccessWeight ?? true; // Controla "Mi Progreso" (peso + antropometría)
+      const canAccessNutrition = permissions.canAccessNutrition ?? true;
+      const canAccessCardio = permissions.canAccessCardio ?? true;
+
       return (
         <>
           <MobileMenuItem title='Dashboard' to='/student' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Mi Historial' to='/student/history' icon={<HistoryIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          {canAccessRoutine && (
+            <MobileMenuItem title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessWeight && (
+            <MobileMenuItem title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessNutrition && (
+            <MobileMenuItem title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessCardio && (
+            <MobileMenuItem title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessRoutine && (
+            <MobileMenuItem title='Mi Historial' to='/student/history' icon={<HistoryIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
           <MobileMenuItem title='Mis Cuotas' to='/student/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Mi Perfil' to='/student/profile' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
         </>

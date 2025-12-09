@@ -27,6 +27,8 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import AddIcon from '@mui/icons-material/Add';
+import SettingsIcon from '@mui/icons-material/Settings';
+import StudentPermissions from '../../components/StudentPermissions';
 import { useAuthStore } from '../../hooks';
 import RoutineWizard from './RoutineWizard';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
@@ -403,6 +405,7 @@ const StudentDetail = () => {
           <Tab icon={<PersonIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Información" />
           <Tab icon={<FitnessCenterIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Entrenamiento" />
           <Tab icon={<RestaurantIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Nutrición" />
+          <Tab icon={<SettingsIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Config" />
         </Tabs>
       </Box>
 
@@ -1742,6 +1745,26 @@ const StudentDetail = () => {
                 </Grid>
               </>
             )}
+          </Box>
+        </Fade>
+
+        {/* ===================== TAB 3: CONFIGURACIÓN ===================== */}
+        <Fade in={activeTab === 3} timeout={300} unmountOnExit>
+          <Box sx={{ display: activeTab === 3 ? 'block' : 'none' }}>
+            <Card sx={{
+              background: 'linear-gradient(135deg, #1a1a2e 0%, #0d0d15 100%)',
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 3,
+            }}>
+              <CardContent>
+                <StudentPermissions 
+                  studentId={student?.id} 
+                  onUpdate={() => {
+                    // Opcionalmente recargar datos si es necesario
+                  }}
+                />
+              </CardContent>
+            </Card>
           </Box>
         </Fade>
 

@@ -49,7 +49,7 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 const SidebarComponent = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { user, userType } = useAuthStore();
+  const { user, userType, student } = useAuthStore();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const [selected, setSelected] = useState('dashboard');
@@ -76,13 +76,28 @@ const SidebarComponent = () => {
     }
 
     if (userType === 'student') {
+      // Obtener permisos del estudiante (por defecto todo habilitado)
+      const permissions = student?.permissions || {};
+      const canAccessRoutine = permissions.canAccessRoutine ?? true;
+      const canAccessWeight = permissions.canAccessWeight ?? true; // Controla "Mi Progreso" (peso + antropometría)
+      const canAccessNutrition = permissions.canAccessNutrition ?? true;
+      const canAccessCardio = permissions.canAccessCardio ?? true;
+
       return (
         <>
           <Item title='Dashboard' to='/student' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} />
+          {canAccessRoutine && (
+            <Item title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+          )}
+          {canAccessWeight && (
+            <Item title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} />
+          )}
+          {canAccessNutrition && (
+            <Item title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} />
+          )}
+          {canAccessCardio && (
+            <Item title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} />
+          )}
           <Item title='Mis Cuotas' to='/student/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Mi Perfil' to='/student/profile' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
         </>
