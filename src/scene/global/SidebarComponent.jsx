@@ -9,6 +9,7 @@ import { ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import GroupIcon from '@mui/icons-material/Group';
 import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
+import SchoolIcon from '@mui/icons-material/School';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PaidIcon from '@mui/icons-material/Paid';
@@ -112,11 +113,9 @@ const SidebarComponent = () => {
       <>
         <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
         <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
-        <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
-        <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
         <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
-        <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
         <Item title='Coaches' to='/coaches' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Gestión Alumnos' to='/admin-students' icon={<SchoolIcon />} selected={selected} setSelected={setSelected} />
       </>
     );
   };
