@@ -42,6 +42,11 @@ const WeeklySummary = ({ studentId, profile }) => {
   const colors = tokens(theme.palette.mode);
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
+  // Usar fecha LOCAL, no UTC
+  const getLocalDateString = (date = new Date()) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState(null);
   const [weekStart, setWeekStart] = useState(() => {
@@ -50,7 +55,7 @@ const WeeklySummary = ({ studentId, profile }) => {
     const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(today);
     monday.setDate(today.getDate() + diff);
-    return monday.toISOString().split('T')[0];
+    return getLocalDateString(monday);
   });
 
   useEffect(() => {
@@ -70,9 +75,9 @@ const WeeklySummary = ({ studentId, profile }) => {
   };
 
   const changeWeek = (weeks) => {
-    const date = new Date(weekStart);
+    const date = new Date(weekStart + 'T12:00:00'); // Mediodía para evitar problemas de timezone
     date.setDate(date.getDate() + weeks * 7);
-    setWeekStart(date.toISOString().split('T')[0]);
+    setWeekStart(getLocalDateString(date));
   };
 
   const goToCurrentWeek = () => {
@@ -81,7 +86,7 @@ const WeeklySummary = ({ studentId, profile }) => {
     const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
     const monday = new Date(today);
     monday.setDate(today.getDate() + diff);
-    setWeekStart(monday.toISOString().split('T')[0]);
+    setWeekStart(getLocalDateString(monday));
   };
 
   const formatWeekRange = () => {

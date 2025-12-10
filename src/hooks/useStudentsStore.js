@@ -84,6 +84,14 @@ export const useStudentsStore = () => {
     [dispatch]
   );
 
+  const getStudentById = useCallback(
+    async (studentId) => {
+      const { data } = await financeApi.get(`/students/${studentId}`);
+      return data;
+    },
+    []
+  );
+
   const createStudent = useCallback(
     async (studentData) => {
       try {
@@ -235,6 +243,7 @@ export const useStudentsStore = () => {
     fetchStudents,
     fetchAvailableUsers,
     fetchStudent,
+    getStudentById,
     createStudent,
     createCompleteStudent,
     updateStudent,

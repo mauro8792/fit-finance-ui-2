@@ -2,13 +2,26 @@ import financeApi from './fitFinanceApi';
 
 // Tipos de actividad con emoji
 export const ACTIVITY_TYPES = {
+  // Outdoor / GPS
   bike: { label: 'Bicicleta', emoji: '🚴' },
   walk: { label: 'Caminata', emoji: '🚶' },
   run: { label: 'Running', emoji: '🏃' },
+  hike: { label: 'Senderismo', emoji: '🥾' },
+  // Indoor
+  treadmill: { label: 'Cinta', emoji: '🏃‍♂️' },
+  stationary_bike: { label: 'Bici Fija', emoji: '🚲' },
+  swimming: { label: 'Natación', emoji: '🏊' },
   swim: { label: 'Natación', emoji: '🏊' },
-  sport: { label: 'Deporte', emoji: '⚽' },
+  elliptical: { label: 'Elíptica', emoji: '🏃‍♀️' },
+  rowing: { label: 'Remo', emoji: '🚣' },
   hiit: { label: 'HIIT', emoji: '🏋️' },
   yoga: { label: 'Yoga', emoji: '🧘' },
+  stretching: { label: 'Stretching', emoji: '🤸' },
+  dance: { label: 'Baile', emoji: '💃' },
+  stairs: { label: 'Escaleras', emoji: '🪜' },
+  jump_rope: { label: 'Saltar Soga', emoji: '🪢' },
+  // Otros
+  sport: { label: 'Deporte', emoji: '⚽' },
   other: { label: 'Otro', emoji: '➕' },
 };
 

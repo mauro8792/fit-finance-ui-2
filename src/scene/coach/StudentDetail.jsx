@@ -27,11 +27,13 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import AddIcon from '@mui/icons-material/Add';
+import SettingsIcon from '@mui/icons-material/Settings';
+import StudentPermissions from '../../components/StudentPermissions';
 import { useAuthStore } from '../../hooks';
 import RoutineWizard from './RoutineWizard';
 import { useRoutineStore } from '../../hooks/useRoutineStore';
 import NutritionProfileCard from './NutritionProfileCard';
-import { getTrainingHistory, getExerciseHistory, getWeightHistory } from '../../api/fitFinanceApi';
+import { getTrainingHistory, getExerciseHistory, getWeightHistory, getStudentSetNotes } from '../../api/fitFinanceApi';
 import { getNutritionDashboard, getWeeklySummary, getNutritionProfile } from '../../api/nutritionApi';
 import { getCardioSummary, getActivityInfo, formatDuration, INTENSITY_LEVELS } from '../../api/cardioApi';
 import { getCoachSummary as getTrackedSummary, getActivityInfo as getTrackedActivityInfo } from '../../api/activityTrackerApi';
@@ -197,8 +199,42 @@ const StudentDetail = () => {
   // 🏃 Modal de detalle cardio
   const [showCardioModal, setShowCardioModal] = useState(false);
   const [cardioDetails, setCardioDetails] = useState({ cardioLog: [], tracked: [] });
+  
+  // Notas del alumno en sets
+  const [studentNotes, setStudentNotes] = useState([]);
   const [loadingCardioDetails, setLoadingCardioDetails] = useState(false);
   
+  // 📝 Modal de detalle de nota
+  const [showNoteDetailModal, setShowNoteDetailModal] = useState(false);
+  const [selectedNote, setSelectedNote] = useState(null);
+  const [noteExerciseDetail, setNoteExerciseDetail] = useState(null);
+  const [loadingNoteDetail, setLoadingNoteDetail] = useState(false);
+  
+  // Función para abrir el modal de detalle de nota
+  const handleOpenNoteDetail = async (note) => {
+    setSelectedNote(note);
+    setShowNoteDetailModal(true);
+    setLoadingNoteDetail(true);
+    
+    try {
+      // Cargar detalle del ejercicio con todos sus sets
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/exercise/${note.exerciseId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      
+      if (response.ok) {
+        const exerciseData = await response.json();
+        setNoteExerciseDetail(exerciseData);
+      }
+    } catch (err) {
+      console.error('Error cargando detalle del ejercicio:', err);
+    } finally {
+      setLoadingNoteDetail(false);
+    }
+  };
+
   // Función para abrir el modal de cardio con detalles
   const handleOpenCardioModal = async () => {
     setShowCardioModal(true);
@@ -266,6 +302,11 @@ const StudentDetail = () => {
         setCardioSummary(combinedCardio);
       })
       .finally(() => setLoadingNutrition(false));
+
+    // Cargar notas del alumno en sets
+    getStudentSetNotes(id, 10)
+      .then((notes) => setStudentNotes(notes || []))
+      .catch((err) => console.error('Error cargando notas:', err));
   }, [id, getStudentById, getAllMacroCycles]);
 
   if (loading) {
@@ -403,6 +444,7 @@ const StudentDetail = () => {
           <Tab icon={<PersonIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Información" />
           <Tab icon={<FitnessCenterIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Entrenamiento" />
           <Tab icon={<RestaurantIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Nutrición" />
+          <Tab icon={<SettingsIcon sx={{ fontSize: 20 }} />} iconPosition="start" label="Config" />
         </Tabs>
       </Box>
 
@@ -606,7 +648,7 @@ const StudentDetail = () => {
               </Box>
             </Grid>
 
-            {/* COLUMNA 3: Notas del Coach */}
+            {/* COLUMNA 3: Notas del Alumno */}
             <Grid item xs={12} md={4}>
               <Box sx={{ 
                 p: 2.5, 
@@ -617,76 +659,87 @@ const StudentDetail = () => {
               }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                   <Typography variant="subtitle2" color={COLORS.textMuted} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    📝 Notas del Coach
+                    💬 Notas del Alumno
                   </Typography>
                   <Chip 
-                    label="+ Agregar" 
+                    label={`${studentNotes.length} notas`}
                     size="small"
-                    onClick={() => {}}
                     sx={{ 
                       backgroundColor: 'rgba(255,152,0,0.2)', 
                       color: COLORS.orange,
                       fontSize: 11,
                       height: 24,
-                      cursor: 'pointer',
-                      '&:hover': { backgroundColor: 'rgba(255,152,0,0.3)' },
                     }} 
                   />
                 </Box>
                 
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                  <Box sx={{ 
-                    p: 1.5, 
-                    borderRadius: 2, 
-                    background: 'rgba(0,0,0,0.2)',
-                    borderLeft: `3px solid ${COLORS.orange}`,
-                  }}>
-                    <Typography fontSize={13} color={COLORS.text}>
-                      ⚠️ Lesión en rodilla izquierda (2023), evitar impacto
-                    </Typography>
-                    <Typography fontSize={10} color={COLORS.textMuted} mt={0.5}>
-                      Hace 2 meses
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    p: 1.5, 
-                    borderRadius: 2, 
-                    background: 'rgba(0,0,0,0.2)',
-                    borderLeft: `3px solid ${COLORS.blue}`,
-                  }}>
-                    <Typography fontSize={13} color={COLORS.text}>
-                      🌅 Prefiere entrenar por la mañana
-                    </Typography>
-                    <Typography fontSize={10} color={COLORS.textMuted} mt={0.5}>
-                      Hace 1 mes
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    p: 1.5, 
-                    borderRadius: 2, 
-                    background: 'rgba(0,0,0,0.2)',
-                    borderLeft: `3px solid ${COLORS.green}`,
-                  }}>
-                    <Typography fontSize={13} color={COLORS.text}>
-                      💪 Motivado, respondiendo bien al programa
-                    </Typography>
-                    <Typography fontSize={10} color={COLORS.textMuted} mt={0.5}>
-                      Hace 1 semana
-                    </Typography>
-                  </Box>
-                  <Box sx={{ 
-                    p: 1.5, 
-                    borderRadius: 2, 
-                    background: 'rgba(0,0,0,0.2)',
-                    borderLeft: `3px solid ${COLORS.purple}`,
-                  }}>
-                    <Typography fontSize={13} color={COLORS.text}>
-                      🎯 Objetivo: ganar masa muscular
-                    </Typography>
-                    <Typography fontSize={10} color={COLORS.textMuted} mt={0.5}>
-                      Hace 3 meses
-                    </Typography>
-                  </Box>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 350, overflowY: 'auto' }}>
+                  {studentNotes.length === 0 ? (
+                    <Box sx={{ textAlign: 'center', py: 3 }}>
+                      <Typography fontSize={32} mb={1}>📝</Typography>
+                      <Typography fontSize={13} color={COLORS.textMuted}>
+                        El alumno no ha dejado notas en sus entrenamientos
+                      </Typography>
+                    </Box>
+                  ) : (
+                    studentNotes.map((note, idx) => {
+                      // Colores alternados para las notas
+                      const colors = [COLORS.orange, COLORS.blue, COLORS.green, COLORS.purple, COLORS.red];
+                      const borderColor = colors[idx % colors.length];
+                      
+                      // Calcular tiempo relativo
+                      const noteDate = new Date(note.date);
+                      const now = new Date();
+                      const diffMs = now - noteDate;
+                      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+                      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                      let timeAgo = '';
+                      if (diffDays > 30) {
+                        timeAgo = `Hace ${Math.floor(diffDays / 30)} mes${Math.floor(diffDays / 30) > 1 ? 'es' : ''}`;
+                      } else if (diffDays > 0) {
+                        timeAgo = `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+                      } else if (diffHours > 0) {
+                        timeAgo = `Hace ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+                      } else {
+                        timeAgo = 'Hace un momento';
+                      }
+
+                      return (
+                        <Box 
+                          key={note.id}
+                          onClick={() => handleOpenNoteDetail(note)}
+                          sx={{ 
+                            p: 1.5, 
+                            borderRadius: 2, 
+                            background: 'rgba(0,0,0,0.2)',
+                            borderLeft: `3px solid ${borderColor}`,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            '&:hover': {
+                              background: 'rgba(0,0,0,0.3)',
+                              transform: 'translateX(4px)',
+                            },
+                          }}
+                        >
+                          <Typography fontSize={13} color={COLORS.text} sx={{ mb: 0.5 }}>
+                            "{note.note}"
+                          </Typography>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography fontSize={10} color={COLORS.textMuted}>
+                              🏋️ {note.exerciseName} - Set {note.setNumber}
+                              {note.load > 0 && ` • ${note.load}kg`}
+                            </Typography>
+                            <Typography fontSize={10} color={COLORS.textMuted}>
+                              {timeAgo}
+                            </Typography>
+                          </Box>
+                          <Typography fontSize={9} color={COLORS.orange} sx={{ mt: 0.5 }}>
+                            Ver detalle →
+                          </Typography>
+                        </Box>
+                      );
+                    })
+                  )}
                 </Box>
               </Box>
             </Grid>
@@ -1745,6 +1798,26 @@ const StudentDetail = () => {
           </Box>
         </Fade>
 
+        {/* ===================== TAB 3: CONFIGURACIÓN ===================== */}
+        <Fade in={activeTab === 3} timeout={300} unmountOnExit>
+          <Box sx={{ display: activeTab === 3 ? 'block' : 'none' }}>
+            <Card sx={{
+              background: 'linear-gradient(135deg, #1a1a2e 0%, #0d0d15 100%)',
+              border: `1px solid ${COLORS.border}`,
+              borderRadius: 3,
+            }}>
+              <CardContent>
+                <StudentPermissions 
+                  studentId={student?.id} 
+                  onUpdate={() => {
+                    // Opcionalmente recargar datos si es necesario
+                  }}
+                />
+              </CardContent>
+            </Card>
+          </Box>
+        </Fade>
+
       </Box>
 
       {/* Routine Wizard */}
@@ -2447,6 +2520,226 @@ const StudentDetail = () => {
                     </Box>
                   )}
                 </>
+              )}
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {/* ===================== MODAL DE DETALLE DE NOTA ===================== */}
+      {showNoteDetailModal && selectedNote && (
+        <Box
+          onClick={() => setShowNoteDetailModal(false)}
+          sx={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            p: 2,
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: COLORS.card,
+              borderRadius: 3,
+              width: '100%',
+              maxWidth: 550,
+              maxHeight: '85vh',
+              overflow: 'auto',
+              border: `1px solid ${COLORS.border}`,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <Box sx={{ 
+              p: 2.5, 
+              borderBottom: `1px solid ${COLORS.border}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'linear-gradient(135deg, rgba(255,152,0,0.15) 0%, transparent 100%)',
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography fontSize={28}>📝</Typography>
+                <Box>
+                  <Typography variant="h6" fontWeight={700} color={COLORS.text}>
+                    Nota del Alumno
+                  </Typography>
+                  <Typography fontSize={12} color={COLORS.textMuted}>
+                    {selectedNote.exerciseName}
+                  </Typography>
+                </Box>
+              </Box>
+              <Button 
+                onClick={() => setShowNoteDetailModal(false)}
+                sx={{ minWidth: 'auto', color: COLORS.textMuted, fontSize: 20 }}
+              >
+                ✕
+              </Button>
+            </Box>
+
+            {/* Contenido */}
+            <Box sx={{ p: 2.5 }}>
+              {/* La nota */}
+              <Box sx={{ 
+                p: 2, 
+                borderRadius: 2, 
+                background: 'rgba(255,152,0,0.1)',
+                borderLeft: `4px solid ${COLORS.orange}`,
+                mb: 3,
+              }}>
+                <Typography fontSize={16} color={COLORS.text} fontStyle="italic">
+                  "{selectedNote.note}"
+                </Typography>
+                <Typography fontSize={11} color={COLORS.textMuted} mt={1}>
+                  Set {selectedNote.setNumber} • {selectedNote.load > 0 ? `${selectedNote.load}kg` : 'Sin carga'}
+                </Typography>
+              </Box>
+
+              {loadingNoteDetail ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <CircularProgress size={30} sx={{ color: COLORS.orange }} />
+                  <Typography color={COLORS.textMuted} mt={2}>Cargando ejercicio...</Typography>
+                </Box>
+              ) : noteExerciseDetail ? (
+                <>
+                  {/* Información del ejercicio */}
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
+                    <Typography fontSize={11} color={COLORS.orange} fontWeight={600}>
+                      🏋️ {noteExerciseDetail.exerciseCatalog?.name || selectedNote.exerciseName}
+                    </Typography>
+                    <Chip 
+                      label={`${noteExerciseDetail.sets?.length || 0} sets`} 
+                      size="small"
+                      sx={{ 
+                        fontSize: 10, 
+                        height: 20, 
+                        backgroundColor: 'rgba(255,152,0,0.2)', 
+                        color: COLORS.orange 
+                      }} 
+                    />
+                  </Box>
+                  
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: 1,
+                    background: 'rgba(0,0,0,0.2)',
+                    borderRadius: 2,
+                    p: 1.5,
+                  }}>
+                    {/* Header de la tabla */}
+                    <Box sx={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '40px 1fr 1fr 1fr 1fr', 
+                      gap: 1,
+                      pb: 1,
+                      borderBottom: `1px solid ${COLORS.border}`,
+                    }}>
+                      <Typography fontSize={10} color={COLORS.textMuted} fontWeight={600}>Set</Typography>
+                      <Typography fontSize={10} color={COLORS.textMuted} fontWeight={600}>Reps</Typography>
+                      <Typography fontSize={10} color={COLORS.textMuted} fontWeight={600}>Carga</Typography>
+                      <Typography fontSize={10} color={COLORS.textMuted} fontWeight={600}>RIR</Typography>
+                      <Typography fontSize={10} color={COLORS.textMuted} fontWeight={600}>RPE</Typography>
+                    </Box>
+
+                    {/* Sets */}
+                    {noteExerciseDetail.sets?.map((set, idx) => {
+                      const isHighlighted = set.id === selectedNote.id;
+                      return (
+                        <Box 
+                          key={set.id || idx}
+                          sx={{ 
+                            display: 'grid', 
+                            gridTemplateColumns: '40px 1fr 1fr 1fr 1fr', 
+                            gap: 1,
+                            py: 0.75,
+                            px: 1,
+                            borderRadius: 1,
+                            background: isHighlighted ? 'rgba(255,152,0,0.2)' : 'transparent',
+                            border: isHighlighted ? `1px solid ${COLORS.orange}` : '1px solid transparent',
+                            position: 'relative',
+                          }}
+                        >
+                          <Typography fontSize={12} color={isHighlighted ? COLORS.orange : COLORS.text} fontWeight={isHighlighted ? 700 : 400}>
+                            {idx + 1}
+                          </Typography>
+                          <Typography fontSize={12} color={COLORS.text}>
+                            {set.reps || '-'}
+                          </Typography>
+                          <Typography fontSize={12} color={COLORS.text}>
+                            {set.load > 0 ? `${set.load}kg` : '-'}
+                          </Typography>
+                          <Typography fontSize={12} color={COLORS.text}>
+                            {set.realRir ?? set.rir ?? '-'}
+                          </Typography>
+                          <Typography fontSize={12} color={COLORS.text}>
+                            {set.rpe ?? '-'}
+                          </Typography>
+                          
+                          {/* Indicador de nota */}
+                          {set.notes && (
+                            <Box sx={{ 
+                              position: 'absolute', 
+                              right: -8, 
+                              top: '50%', 
+                              transform: 'translateY(-50%)',
+                              fontSize: 10,
+                            }}>
+                              💬
+                            </Box>
+                          )}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+
+                  {/* Botón para ir al microciclo */}
+                  <Button
+                    onClick={() => {
+                      window.open(`/coach/microcycle/${selectedNote.microcycleId}`, '_blank');
+                    }}
+                    variant="outlined"
+                    fullWidth
+                    sx={{
+                      mt: 2.5,
+                      borderColor: COLORS.border,
+                      color: COLORS.textMuted,
+                      '&:hover': {
+                        borderColor: COLORS.orange,
+                        color: COLORS.orange,
+                        background: 'rgba(255,152,0,0.1)',
+                      },
+                    }}
+                  >
+                    Ver microciclo completo →
+                  </Button>
+                </>
+              ) : (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography color={COLORS.textMuted} fontSize={13}>
+                    No se pudo cargar el detalle del ejercicio
+                  </Typography>
+                  <Button
+                    onClick={() => {
+                      window.open(`/coach/microcycle/${selectedNote.microcycleId}`, '_blank');
+                    }}
+                    variant="outlined"
+                    sx={{
+                      mt: 2,
+                      borderColor: COLORS.orange,
+                      color: COLORS.orange,
+                    }}
+                  >
+                    Ir al microciclo →
+                  </Button>
+                </Box>
               )}
             </Box>
           </Box>

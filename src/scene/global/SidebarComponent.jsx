@@ -9,6 +9,7 @@ import { ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import GroupIcon from '@mui/icons-material/Group';
 import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
+import SchoolIcon from '@mui/icons-material/School';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import PaidIcon from '@mui/icons-material/Paid';
@@ -21,6 +22,8 @@ import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import DirectionsRunIcon from '@mui/icons-material/DirectionsRun';
+import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
+import HistoryIcon from '@mui/icons-material/History';
 
 import 'react-pro-sidebar/dist/css/styles.css';
 import { tokens } from '../../theme';
@@ -49,7 +52,7 @@ const Item = ({ title, to, icon, selected, setSelected }) => {
 const SidebarComponent = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { user, userType } = useAuthStore();
+  const { user, userType, student } = useAuthStore();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isCollapsed, setIsCollapsed } = useSidebar();
   const [selected, setSelected] = useState('dashboard');
@@ -69,6 +72,7 @@ const SidebarComponent = () => {
           <Item title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Rutinas' to='/coach/routines' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Macrociclos' to='/coach/macrocycles' icon={<AssignmentIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Biblioteca' to='/coach/templates' icon={<CollectionsBookmarkIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Catálogo' to='/coach/exercise-catalog' icon={<LibraryBooksIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Horarios' to='/coach/schedule' icon={<ScheduleIcon />} selected={selected} setSelected={setSelected} />
         </>
@@ -76,13 +80,28 @@ const SidebarComponent = () => {
     }
 
     if (userType === 'student') {
+      // Obtener permisos del estudiante (por defecto todo habilitado)
+      const permissions = student?.permissions || {};
+      const canAccessRoutine = permissions.canAccessRoutine ?? true;
+      const canAccessWeight = permissions.canAccessWeight ?? true; // Controla "Mi Progreso" (peso + antropometría)
+      const canAccessNutrition = permissions.canAccessNutrition ?? true;
+      const canAccessCardio = permissions.canAccessCardio ?? true;
+
       return (
         <>
           <Item title='Dashboard' to='/student' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} />
+          {canAccessRoutine && (
+            <Item title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+          )}
+          {canAccessWeight && (
+            <Item title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} />
+          )}
+          {canAccessNutrition && (
+            <Item title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} />
+          )}
+          {canAccessCardio && (
+            <Item title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} />
+          )}
           <Item title='Mis Cuotas' to='/student/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Mi Perfil' to='/student/profile' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
         </>
@@ -94,11 +113,9 @@ const SidebarComponent = () => {
       <>
         <Item title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} />
         <Item title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} />
-        <Item title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
-        <Item title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
         <Item title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} />
-        <Item title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} />
         <Item title='Coaches' to='/coaches' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
+        <Item title='Gestión Alumnos' to='/admin-students' icon={<SchoolIcon />} selected={selected} setSelected={setSelected} />
       </>
     );
   };

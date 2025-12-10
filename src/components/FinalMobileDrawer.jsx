@@ -18,6 +18,7 @@ import FeedIcon from '@mui/icons-material/Feed';
 import GroupIcon from '@mui/icons-material/Group';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 import { tokens } from '../theme';
@@ -107,14 +108,31 @@ const FinalMobileDrawer = ({ open, onClose }) => {
   // Función para renderizar items según el tipo de usuario
   const renderMenuItems = () => {
     if (userType === 'student') {
+      // Obtener permisos del estudiante (por defecto todo habilitado)
+      const permissions = student?.permissions || {};
+      const canAccessRoutine = permissions.canAccessRoutine ?? true;
+      const canAccessWeight = permissions.canAccessWeight ?? true; // Controla "Mi Progreso" (peso + antropometría)
+      const canAccessNutrition = permissions.canAccessNutrition ?? true;
+      const canAccessCardio = permissions.canAccessCardio ?? true;
+
       return (
         <>
           <MobileMenuItem title='Dashboard' to='/student' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileMenuItem title='Mi Historial' to='/student/history' icon={<HistoryIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          {canAccessRoutine && (
+            <MobileMenuItem title='Mi Rutina' to='/student/routine' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessWeight && (
+            <MobileMenuItem title='Mi Progreso' to='/student/progress' icon={<MonitorHeartIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessNutrition && (
+            <MobileMenuItem title='Nutrición' to='/student/nutrition' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessCardio && (
+            <MobileMenuItem title='Cardio' to='/student/cardio' icon={<DirectionsRunIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
+          {canAccessRoutine && (
+            <MobileMenuItem title='Mi Historial' to='/student/history' icon={<HistoryIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          )}
           <MobileMenuItem title='Mis Cuotas' to='/student/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Mi Perfil' to='/student/profile' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
         </>
@@ -128,6 +146,7 @@ const FinalMobileDrawer = ({ open, onClose }) => {
           <MobileMenuItem title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Rutinas' to='/coach/routines' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Macrociclos' to='/coach/macrocycles' icon={<AssignmentIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileMenuItem title='Biblioteca' to='/coach/templates' icon={<CollectionsBookmarkIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Horarios' to='/coach/schedule' icon={<ScheduleIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
         </>
       );

@@ -80,8 +80,20 @@ const MicrocycleManager = () => {
             fontWeight: 700, 
             marginBottom: 8 
           }}>
-            {mesocycle?.name || `Mesociclo #${mesocycleId}`}
+            {mesocycle?.templateName || mesocycle?.name || `Mesociclo #${mesocycleId}`}
           </h1>
+          {mesocycle?.isTemplate && (
+            <span style={{
+              display: 'inline-block',
+              background: 'rgba(255,255,255,0.2)',
+              padding: '4px 12px',
+              borderRadius: 20,
+              fontSize: 12,
+              marginBottom: 8,
+            }}>
+              📚 PLANTILLA
+            </span>
+          )}
           {mesocycle?.objetivo && (
             <p style={{ 
               margin: 0, 

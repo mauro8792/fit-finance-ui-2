@@ -67,12 +67,17 @@ const StudentNutritionView = () => {
   const navigate = useNavigate();
   const { getStudentById } = useAuthStore();
   
+  // Usar fecha LOCAL, no UTC
+  const getLocalDateString = (date = new Date()) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   const [loading, setLoading] = useState(true);
   const [student, setStudent] = useState(null);
   const [profile, setProfile] = useState(null);
   const [todayData, setTodayData] = useState(null);
   const [weeklyData, setWeeklyData] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState(getLocalDateString());
   const [viewTab, setViewTab] = useState(0);
 
   useEffect(() => {
@@ -113,13 +118,13 @@ const StudentNutritionView = () => {
   };
 
   const changeDate = (days) => {
-    const date = new Date(selectedDate);
+    const date = new Date(selectedDate + 'T12:00:00'); // Mediodía para evitar problemas de timezone
     date.setDate(date.getDate() + days);
-    setSelectedDate(date.toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString(date));
   };
 
   const goToToday = () => {
-    setSelectedDate(new Date().toISOString().split('T')[0]);
+    setSelectedDate(getLocalDateString());
   };
 
   const formatDate = (dateStr) => {
@@ -320,7 +325,7 @@ const StudentNutritionView = () => {
                 >
                   <NavigateNextIcon />
                 </IconButton>
-                {selectedDate !== new Date().toISOString().split('T')[0] && (
+                {selectedDate !== getLocalDateString() && (
                   <Button 
                     startIcon={<TodayIcon />} onClick={goToToday}
                     variant="contained" size="small"

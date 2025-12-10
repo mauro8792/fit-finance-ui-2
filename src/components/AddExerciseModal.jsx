@@ -29,6 +29,7 @@ const AddExerciseModal = ({ open, microcycleId, days, onClose, onSaved }) => {
   const [rest, setRest] = useState('');
   const [replicate, setReplicate] = useState(false);
   const [numSets, setNumSets] = useState(0);
+  const [suggestedLoad, setSuggestedLoad] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -45,6 +46,7 @@ const AddExerciseModal = ({ open, microcycleId, days, onClose, onSaved }) => {
       setReplicate(false);
       setError(null);
       setNumSets(0);
+      setSuggestedLoad('');
 
       // Cargar grupos musculares disponibles (con auth)
       fitFinanceApi
@@ -82,11 +84,12 @@ const AddExerciseModal = ({ open, microcycleId, days, onClose, onSaved }) => {
     setError(null);
     try {
       // Construir sets iniciales (opcionales)
+      const loadValue = suggestedLoad ? parseFloat(suggestedLoad) : 0;
       const sets =
         numSets > 0
           ? Array.from({ length: numSets }).map((_, idx) => ({
               reps: reps || '0',
-              load: 0,
+              load: loadValue,
               expectedRir: rir || null,
               order: idx + 1,
               isAmrap: false,
@@ -220,18 +223,34 @@ const AddExerciseModal = ({ open, microcycleId, days, onClose, onSaved }) => {
             />
           </Box>
 
-          <TextField
-            label="Cantidad de sets (opcional)"
-            type="number"
-            inputProps={{ min: 0 }}
-            value={numSets}
-            onChange={(e) => setNumSets(Number(e.target.value) || 0)}
-            size="small"
-            InputProps={{ sx: { color: '#fff' } }}
-            InputLabelProps={{ sx: { color: '#aaa' } }}
-            sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#444' }, '&:hover fieldset': { borderColor: '#666' } } }}
-            helperText="Si indicás un número > 0, se crearán sets iniciales con estos valores"
-          />
+          <Box display="grid" gridTemplateColumns="1fr 1fr" gap={1}>
+            <TextField
+              label="Cantidad de sets"
+              type="number"
+              inputProps={{ min: 0 }}
+              value={numSets}
+              onChange={(e) => setNumSets(Number(e.target.value) || 0)}
+              size="small"
+              InputProps={{ sx: { color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#aaa' } }}
+              sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#444' }, '&:hover fieldset': { borderColor: '#666' } } }}
+            />
+            <TextField
+              label="Carga sugerida (kg)"
+              type="number"
+              inputProps={{ min: 0, step: 0.5 }}
+              value={suggestedLoad}
+              onChange={(e) => setSuggestedLoad(e.target.value)}
+              size="small"
+              disabled={numSets === 0}
+              InputProps={{ sx: { color: '#fff' } }}
+              InputLabelProps={{ sx: { color: '#aaa' } }}
+              sx={{ '& .MuiOutlinedInput-root': { '& fieldset': { borderColor: '#444' }, '&:hover fieldset': { borderColor: '#666' } } }}
+            />
+          </Box>
+          <Typography variant="caption" sx={{ color: '#888', mt: -1 }}>
+            💡 Si indicás sets y carga, se crearán con esos valores. Al asignar la plantilla podés elegir "Mantener cargas sugeridas".
+          </Typography>
 
           <FormControlLabel
             control={

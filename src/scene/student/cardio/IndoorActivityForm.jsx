@@ -20,7 +20,12 @@ const COLORS = {
 const IndoorActivityForm = ({ studentId, activityType, onSave, onCancel }) => {
   const activityInfo = getActivityInfo(activityType);
   const activityConfig = INDOOR_ACTIVITIES[activityType];
-  const today = new Date().toISOString().split('T')[0];
+  // Fecha LOCAL, no UTC
+  const getLocalDateString = () => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  };
+  const today = getLocalDateString();
 
   const [formData, setFormData] = useState({
     date: today,
