@@ -18,6 +18,7 @@ import FeedIcon from '@mui/icons-material/Feed';
 import GroupIcon from '@mui/icons-material/Group';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
+import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 import { tokens } from '../theme';
@@ -145,6 +146,7 @@ const FinalMobileDrawer = ({ open, onClose }) => {
           <MobileMenuItem title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Rutinas' to='/coach/routines' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Macrociclos' to='/coach/macrocycles' icon={<AssignmentIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileMenuItem title='Biblioteca' to='/coach/templates' icon={<CollectionsBookmarkIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Horarios' to='/coach/schedule' icon={<ScheduleIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
         </>
       );

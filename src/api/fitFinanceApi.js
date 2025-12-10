@@ -90,6 +90,20 @@ export const getCoachStudents = async (coachUserId) => {
 };
 
 /**
+ * 📦 Obtener macrociclos de un estudiante
+ * @param {number} studentId - ID del estudiante
+ */
+export const getMacrocyclesByStudent = async (studentId) => {
+  try {
+    const response = await financeApi.get(`/macrocycle/student/${studentId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al obtener macrociclos del estudiante:", error);
+    throw error;
+  }
+};
+
+/**
  * 📋 Obtener historial de entrenamientos de un estudiante (por sesión)
  * @param {number} studentId - ID del estudiante
  * @param {number} limit - Límite de sesiones a traer (default 20)

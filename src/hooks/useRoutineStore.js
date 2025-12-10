@@ -56,6 +56,12 @@ export const useRoutineStore = () => {
     return response.data;
   }, []);
 
+  // Obtener un mesociclo por id
+  const getMesocycleById = useCallback(async (mesocycleId) => {
+    const response = await fitFinanceApi.get(`/mesocycle/${mesocycleId}`);
+    return response.data;
+  }, []);
+
   // Actualizar un microciclo existente
   const updateMicrocycle = useCallback(async (microcycleId, microcycleData) => {
     const response = await fitFinanceApi.put(
@@ -70,6 +76,7 @@ export const useRoutineStore = () => {
     getAllMacroCycles,
     createMesocycle,
     getMesocyclesByMacro,
+    getMesocycleById,
     createMicrocycle,
     fetchMicrocyclesByMesocycle,
     getMicrocycleById,
