@@ -118,6 +118,30 @@ const NewStudentWizard = ({ open, onClose }) => {
     }
   };
 
+  // Traducir errores del backend a mensajes amigables
+  const parseErrorMessage = (error) => {
+    const message = error?.response?.data?.message || error?.message || '';
+    
+    // Errores de duplicados
+    if (message.includes('document') && message.includes('already exists')) {
+      return '⚠️ Ya existe un estudiante con este número de documento';
+    }
+    if (message.includes('email') && message.includes('already exists')) {
+      return '⚠️ Ya existe un usuario con este email';
+    }
+    if (message.includes('Ya existe un usuario con este email')) {
+      return '⚠️ Ya existe un usuario con este email';
+    }
+    
+    // Errores de validación
+    if (message.includes('must be a valid date')) {
+      return '⚠️ El formato de fecha es inválido (usar AAAA-MM-DD)';
+    }
+    
+    // Error genérico
+    return message || 'Error al crear el estudiante';
+  };
+
   const handleSubmit = async () => {
     if (!validateStep(2)) return;
 
@@ -127,7 +151,7 @@ const NewStudentWizard = ({ open, onClose }) => {
       handleReset();
       onClose();
     } catch (error) {
-      setSubmitError(error.message || 'Error al crear el estudiante');
+      setSubmitError(parseErrorMessage(error));
     }
   };
 
