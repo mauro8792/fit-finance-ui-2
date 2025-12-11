@@ -899,15 +899,20 @@ const MicrocycleDetail = () => {
                                     </tr>
                                   </thead>
                                   <tbody>
-                                    {ex.sets.map((set, index) => {
+                                    {[...ex.sets].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)).map((set, index) => {
                                       // Determinar el color de fondo según el estado
                                       let rowBackground = index % 2 === 0 ? '#444' : '#555';
                                       let rowColor = '#fff';
                                       let statusIcon = '';
                                       let statusText = '';
                                       
+                                      // Si es AMRAP, siempre tiene un fondo especial
+                                      if (set.isAmrap) {
+                                        rowBackground = 'rgba(255, 152, 0, 0.15)'; // Naranja claro para AMRAP
+                                      }
+                                      
                                       if (set.status === 'pending') {
-                                        rowBackground = index % 2 === 0 ? '#444' : '#555'; // Color normal
+                                        if (!set.isAmrap) rowBackground = index % 2 === 0 ? '#444' : '#555'; // Color normal
                                         statusIcon = '⏳';
                                         statusText = 'Pendiente';
                                       } else if (set.status === 'failed') {
@@ -921,6 +926,8 @@ const MicrocycleDetail = () => {
                                       } else if (set.status === 'completed') {
                                         if (set.isExtra) {
                                           rowBackground = 'rgba(76, 175, 80, 0.15)'; // Verde claro para extras
+                                        } else if (set.isAmrap) {
+                                          rowBackground = 'rgba(255, 152, 0, 0.25)'; // Naranja más intenso para AMRAP completado
                                         } else {
                                           rowBackground = 'rgba(76, 175, 80, 0.08)'; // Verde muy claro para completados normales
                                         }
@@ -962,6 +969,19 @@ const MicrocycleDetail = () => {
                                                 fontWeight: 700
                                               }}>
                                                 EXTRA
+                                              </span>
+                                            )}
+                                            {set.isAmrap && (
+                                              <span style={{
+                                                marginLeft: 4,
+                                                background: '#ff9800',
+                                                color: '#000',
+                                                padding: '1px 4px',
+                                                borderRadius: 3,
+                                                fontSize: 7,
+                                                fontWeight: 700
+                                              }}>
+                                                🔥 AMRAP
                                               </span>
                                             )}
                                           </td>

@@ -34,6 +34,8 @@ import MicrocycleDetail from './components/MicrocycleDetail';
 import ExerciseCatalogManager from './scene/coach/ExerciseCatalogManager';
 import { TemplateLibrary } from './scene/coach/templates';
 import CoachFoodCatalog from './scene/coach/CoachFoodCatalog';
+import CoachStudents from './scene/coach/CoachStudents';
+import CreateRoutinePage from './scene/coach/CreateRoutinePage';
 import DashboardMock from './components/DashboardMock';
 import Layout from './components/Layout';
 import { InstallPWABanner } from './components/InstallPWABanner';
@@ -108,6 +110,8 @@ export const FitFinanceApp = () => {
                 <>
                   <Route path="/" element={<CoachDashboard coachUserId={user?.id} />} />
                   <Route path="/coach/dashboard" element={<CoachDashboard coachUserId={user?.id} />} />
+                  <Route path="/coach/students" element={<CoachStudents />} />
+                  <Route path="/coach/create-routine/:studentId" element={<CreateRoutinePage />} />
                   <Route path="/coach/alumno/:id" element={<StudentDetail />} />
                   <Route path="/coach/alumno/:studentId/nutricion" element={<StudentNutritionView />} />
                   <Route path="/coach/macrocycle/:id" element={<MacrocycleDetail />} />

@@ -35,6 +35,29 @@ export const createCompleteRoutine = async (wizardData) => {
     throw error;
   }
 };
+
+// 🏁 Finalizar macrociclo (establecer fecha de fin como hoy)
+export const finalizeMacrocycle = async (macrocycleId) => {
+  try {
+    const response = await financeApi.post(`/routine/macrocycle/${macrocycleId}/finalize`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al finalizar macrociclo:", error);
+    throw error;
+  }
+};
+
+// 🏁 Finalizar mesociclo (establecer fecha de fin como hoy)
+export const finalizeMesocycle = async (mesocycleId) => {
+  try {
+    const response = await financeApi.post(`/routine/mesocycle/${mesocycleId}/finalize`);
+    return response.data;
+  } catch (error) {
+    console.error("Error al finalizar mesociclo:", error);
+    throw error;
+  }
+};
+
 import axios from "axios";
 import { getEnvVariables } from "../helpers";
 

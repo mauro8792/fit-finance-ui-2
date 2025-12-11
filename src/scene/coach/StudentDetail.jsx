@@ -30,7 +30,7 @@ import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import StudentPermissions from '../../components/StudentPermissions';
 import { useAuthStore } from '../../hooks';
-import RoutineWizard from './RoutineWizard';
+// RoutineWizard se movió a página completa: /coach/create-routine/:studentId
 import { useRoutineStore } from '../../hooks/useRoutineStore';
 import NutritionProfileCard from './NutritionProfileCard';
 import { getTrainingHistory, getExerciseHistory, getWeightHistory, getStudentSetNotes } from '../../api/fitFinanceApi';
@@ -72,7 +72,7 @@ const StudentDetail = () => {
   const [error, setError] = useState(null);
   const [macros, setMacros] = useState([]);
   const [loadingMacros, setLoadingMacros] = useState(true);
-  const [showRoutineWizard, setShowRoutineWizard] = useState(false);
+  // showRoutineWizard se reemplazó por navegación a /coach/create-routine/:studentId
   const { getAllMacroCycles } = useRoutineStore();
   
   // Tab activo: 0=Información, 1=Entrenamiento, 2=Nutrición
@@ -754,14 +754,15 @@ const StudentDetail = () => {
             {macros.length > 0 && (() => {
               const macro = macros[0];
               const startDate = macro.startDate ? new Date(macro.startDate) : new Date();
-              const endDate = macro.endDate ? new Date(macro.endDate) : new Date();
+              const hasEndDate = !!macro.endDate;
+              const endDate = macro.endDate ? new Date(macro.endDate) : null;
               const today = new Date();
-              const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+              const totalDays = hasEndDate ? Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24)) : Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
               const elapsedDays = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
-              const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
-              const progress = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
+              const remainingDays = hasEndDate ? Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24))) : '∞';
+              const progress = hasEndDate ? Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100)) : 0;
               const currentWeek = Math.ceil(elapsedDays / 7);
-              const totalWeeks = Math.ceil(totalDays / 7);
+              const totalWeeks = hasEndDate ? Math.ceil(totalDays / 7) : '∞';
               
               return (
                 <Card sx={{ 
@@ -779,10 +780,10 @@ const StudentDetail = () => {
                         </Typography>
                       </Box>
                       <Chip 
-                        label={`Semana ${currentWeek} de ${totalWeeks}`}
+                        label={hasEndDate ? `Semana ${currentWeek} de ${totalWeeks}` : `Semana ${currentWeek}`}
                         sx={{ 
-                          backgroundColor: 'rgba(255,215,0,0.2)', 
-                          color: COLORS.gold,
+                          backgroundColor: hasEndDate ? 'rgba(255,215,0,0.2)' : 'rgba(76,175,80,0.2)', 
+                          color: hasEndDate ? COLORS.gold : '#4caf50',
                           fontWeight: 600,
                         }}
                       />
@@ -799,10 +800,12 @@ const StudentDetail = () => {
                             {macro.name}
                           </Typography>
                           <Typography fontSize={13} color={COLORS.textMuted} mt={0.5}>
-                            📅 {startDate.toLocaleDateString()} → {endDate.toLocaleDateString()}
+                            📅 {startDate.toLocaleDateString()} → {hasEndDate ? endDate.toLocaleDateString() : (
+                              <Chip label="En progreso" size="small" sx={{ ml: 0.5, bgcolor: '#4caf50', color: '#fff', fontSize: 10, height: 20 }} />
+                            )}
                           </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                           <Box
                             onClick={() => navigate(`/coach/macrocycle/${macro.id}`)}
                             sx={{
@@ -833,6 +836,34 @@ const StudentDetail = () => {
                               ✏️ Editar
                             </Typography>
                           </Box>
+                          {!hasEndDate && (
+                            <Box
+                              onClick={async () => {
+                                if (window.confirm('¿Estás seguro de finalizar este macrociclo? Se establecerá la fecha de hoy como fecha de fin.')) {
+                                  try {
+                                    const { finalizeMacrocycle } = await import('../../api/fitFinanceApi');
+                                    await finalizeMacrocycle(macro.id);
+                                    // Refrescar datos
+                                    window.location.reload();
+                                  } catch (err) {
+                                    alert('Error al finalizar: ' + err.message);
+                                  }
+                                }
+                              }}
+                              sx={{
+                                px: 2, py: 1,
+                                borderRadius: 2,
+                                background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                '&:hover': { transform: 'translateY(-2px)' },
+                              }}
+                            >
+                              <Typography fontSize={13} fontWeight={600} color="#fff">
+                                🏁 Finalizar
+                              </Typography>
+                            </Box>
+                          )}
                         </Box>
                       </Box>
 
@@ -867,14 +898,22 @@ const StudentDetail = () => {
                         </Grid>
                         <Grid item xs={4}>
                           <Box sx={{ textAlign: 'center', p: 1, background: 'rgba(0,0,0,0.2)', borderRadius: 1 }}>
-                            <Typography variant="h5" fontWeight="bold" color={COLORS.orange}>{remainingDays}</Typography>
-                            <Typography fontSize={10} color={COLORS.textMuted}>Días restantes</Typography>
+                            <Typography variant="h5" fontWeight="bold" color={hasEndDate ? COLORS.orange : '#4caf50'}>
+                              {hasEndDate ? remainingDays : '—'}
+                            </Typography>
+                            <Typography fontSize={10} color={COLORS.textMuted}>
+                              {hasEndDate ? 'Días restantes' : 'Sin fecha fin'}
+                            </Typography>
                           </Box>
                         </Grid>
                         <Grid item xs={4}>
                           <Box sx={{ textAlign: 'center', p: 1, background: 'rgba(0,0,0,0.2)', borderRadius: 1 }}>
-                            <Typography variant="h5" fontWeight="bold" color={COLORS.green}>{totalWeeks}</Typography>
-                            <Typography fontSize={10} color={COLORS.textMuted}>Semanas totales</Typography>
+                            <Typography variant="h5" fontWeight="bold" color={COLORS.green}>
+                              {hasEndDate ? totalWeeks : currentWeek}
+                            </Typography>
+                            <Typography fontSize={10} color={COLORS.textMuted}>
+                              {hasEndDate ? 'Semanas totales' : 'Semanas hasta hoy'}
+                            </Typography>
                           </Box>
                         </Grid>
                       </Grid>
@@ -1146,7 +1185,7 @@ const StudentDetail = () => {
                   <Box sx={{ textAlign: 'center', py: 4 }}>
                     <CircularProgress sx={{ color: COLORS.gold }} size={32} />
                   </Box>
-                ) : macros.length === 0 && !showRoutineWizard ? (
+                ) : macros.length === 0 ? (
                   <Box sx={{ 
                     textAlign: 'center', 
                     py: 6, 
@@ -1158,7 +1197,7 @@ const StudentDetail = () => {
                       No hay rutinas para este alumno
                     </Typography>
                     <Box
-                      onClick={() => setShowRoutineWizard(true)}
+                      onClick={() => navigate(`/coach/create-routine/${student.id}`)}
                       sx={{
                         display: 'inline-flex',
                         alignItems: 'center',
@@ -1167,7 +1206,7 @@ const StudentDetail = () => {
                         py: 1.5,
                         borderRadius: 2,
                         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    cursor: 'pointer',
+                        cursor: 'pointer',
                         transition: 'all 0.2s',
                         '&:hover': {
                           transform: 'translateY(-2px)',
@@ -1304,33 +1343,31 @@ const StudentDetail = () => {
                     })}
 
                     {/* Card Nueva Rutina */}
-              {!showRoutineWizard && (
-                      <Box
-                        onClick={() => setShowRoutineWizard(true)}
-                        sx={{
-                          minWidth: 220,
-                          maxWidth: 280,
-                          minHeight: 120,
-                          p: 2,
-                          borderRadius: 3,
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          border: '2px dashed rgba(255,255,255,0.3)',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s',
-                          '&:hover': {
-                            transform: 'translateY(-3px)',
-                            boxShadow: '0 8px 24px rgba(102,126,234,0.4)',
-                          },
-                        }}
-                      >
-                        <AddIcon sx={{ fontSize: 36, color: '#fff', mb: 1 }} />
-                        <Typography fontWeight={600} color="#fff">Nueva Rutina</Typography>
-                      </Box>
-                    )}
+                    <Box
+                      onClick={() => navigate(`/coach/create-routine/${student.id}`)}
+                      sx={{
+                        minWidth: 220,
+                        maxWidth: 280,
+                        minHeight: 120,
+                        p: 2,
+                        borderRadius: 3,
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        border: '2px dashed rgba(255,255,255,0.3)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.2s',
+                        '&:hover': {
+                          transform: 'translateY(-3px)',
+                          boxShadow: '0 8px 24px rgba(102,126,234,0.4)',
+                        },
+                      }}
+                    >
+                      <AddIcon sx={{ fontSize: 36, color: '#fff', mb: 1 }} />
+                      <Typography fontWeight={600} color="#fff">Nueva Rutina</Typography>
+                    </Box>
                   </Box>
                 )}
               </CardContent>
@@ -1820,18 +1857,7 @@ const StudentDetail = () => {
 
       </Box>
 
-      {/* Routine Wizard */}
-      {showRoutineWizard && (
-        <RoutineWizard
-          studentId={student.id}
-          studentName={studentName}
-          onCancel={() => setShowRoutineWizard(false)}
-          onComplete={() => {
-            setShowRoutineWizard(false);
-            reloadData();
-          }}
-        />
-      )}
+      {/* Routine Wizard se movió a /coach/create-routine/:studentId */}
 
       {/* Modal Historial de Entrenamientos */}
       {showHistoryModal && (
