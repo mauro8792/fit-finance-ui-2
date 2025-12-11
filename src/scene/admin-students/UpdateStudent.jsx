@@ -72,6 +72,23 @@ const UpdateStudent = ({ open, onClose, studentId, onSuccess }) => {
     setError('');
   };
 
+  // Traducir errores del backend a mensajes amigables
+  const parseErrorMessage = (error) => {
+    const message = error?.response?.data?.message || error?.message || '';
+    
+    if (message.includes('document') && message.includes('already exists')) {
+      return '⚠️ Ya existe un estudiante con este número de documento';
+    }
+    if (message.includes('email') && message.includes('already exists')) {
+      return '⚠️ Ya existe un usuario con este email';
+    }
+    if (message.includes('must be a valid date')) {
+      return '⚠️ El formato de fecha es inválido (usar AAAA-MM-DD)';
+    }
+    
+    return message || 'Error actualizando estudiante';
+  };
+
   const handleSubmit = async () => {
     try {
       setError('');
@@ -79,7 +96,7 @@ const UpdateStudent = ({ open, onClose, studentId, onSuccess }) => {
       onSuccess?.();
       onClose();
     } catch (err) {
-      setError(err.message || 'Error actualizando estudiante');
+      setError(parseErrorMessage(err));
     }
   };
 

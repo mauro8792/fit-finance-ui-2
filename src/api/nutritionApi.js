@@ -43,6 +43,37 @@ export const initializeFoodLibrary = async (studentId) => {
   return response.data;
 };
 
+// ========== CATÁLOGO GLOBAL DEL COACH ==========
+
+export const getCoachFoodItems = async (filters = {}) => {
+  const params = new URLSearchParams();
+  if (filters.category) params.append('category', filters.category);
+  if (filters.search) params.append('search', filters.search);
+  
+  const response = await financeApi.get(`/nutrition/coach/foods?${params.toString()}`);
+  return response.data;
+};
+
+export const createCoachFoodItem = async (foodData) => {
+  const response = await financeApi.post('/nutrition/coach/foods', foodData);
+  return response.data;
+};
+
+export const updateCoachFoodItem = async (foodId, foodData) => {
+  const response = await financeApi.put(`/nutrition/coach/foods/${foodId}`, foodData);
+  return response.data;
+};
+
+export const deleteCoachFoodItem = async (foodId) => {
+  const response = await financeApi.delete(`/nutrition/coach/foods/${foodId}`);
+  return response.data;
+};
+
+export const initializeCoachCatalog = async () => {
+  const response = await financeApi.post('/nutrition/coach/foods/initialize');
+  return response.data;
+};
+
 // ========== MEAL TYPES ==========
 
 export const getMealTypes = async (studentId) => {

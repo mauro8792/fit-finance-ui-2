@@ -2024,43 +2024,24 @@ export const StudentRoutine = () => {
                                                     parseInt(correctSeries) ||
                                                     3;
 
-                                                  // Crear un array con todos los órdenes que deberían existir
-                                                  const expectedOrders =
-                                                    Array.from(
-                                                      { length: numSeries },
-                                                      (_, i) => i + 1
-                                                    );
-
-                                                  // Identificar qué órdenes faltan
-                                                  const existingOrders =
-                                                    sets.map(
-                                                      (s) => s.order || 0
-                                                    );
-                                                  const missingOrders =
-                                                    expectedOrders.filter(
-                                                      (order) =>
-                                                        !existingOrders.includes(
-                                                          order
-                                                        )
-                                                    );
-
-                                                  // Crear sets temporales para los órdenes que faltan
-                                                  missingOrders.forEach(
-                                                    (order) => {
+                                                  // Los sets ya vienen creados desde el backend
+                                                  // Solo crear placeholders si NO hay sets
+                                                  if (sets.length === 0) {
+                                                    // Si no hay sets, crear placeholders
+                                                    for (let i = 0; i < numSeries; i++) {
                                                       sets.push({
-                                                        id: `temp-${
-                                                          ej.id
-                                                        }-${order}-${Date.now()}`,
+                                                        id: `temp-${ej.id}-${i}-${Date.now()}`,
                                                         reps: 0,
                                                         load: 0,
                                                         actualRir: 0,
                                                         actualRpe: 0,
                                                         notes: "",
-                                                        order: order,
-                                                        exerciseId: ej.id, // Agregar referencia al ejercicio
+                                                        order: i,
+                                                        exerciseId: ej.id,
                                                       });
                                                     }
-                                                  );
+                                                  }
+                                                  // NO crear sets adicionales si ya existen
 
                                                   // Ordenar sets por order
                                                   sets.sort(
@@ -2252,8 +2233,8 @@ export const StudentRoutine = () => {
                                                               {!isExtraSet &&
                                                                 !isAmrapSet && (
                                                                   <span>
-                                                                    {serie.reps ||
-                                                                      ej.repeticiones ||
+                                                                    {/* Siempre mostrar reps esperadas del coach (del ejercicio) */}
+                                                                    {ej.repeticiones ||
                                                                       ej.repRange ||
                                                                       ""}
                                                                   </span>

@@ -1,8 +1,8 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../hooks';
 import useMediaQuery from '@mui/material/useMediaQuery';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Box, Typography, useTheme } from '@mui/material';
 import { ProSidebar, Menu, MenuItem } from 'react-pro-sidebar';
 
@@ -55,7 +55,49 @@ const SidebarComponent = () => {
   const { user, userType, student } = useAuthStore();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { isCollapsed, setIsCollapsed } = useSidebar();
-  const [selected, setSelected] = useState('dashboard');
+  const [selected, setSelected] = useState('Dashboard');
+  const location = useLocation();
+
+  // Mapeo de rutas a títulos del menú
+  const routeToTitle = {
+    // Coach
+    '/coach/dashboard': 'Dashboard',
+    '/coach/templates': 'Biblioteca',
+    '/coach/exercise-catalog': 'Ejercicios',
+    '/coach/food-catalog': 'Alimentos',
+    '/coach/schedule': 'Horarios',
+    // Admin
+    '/': 'HOME',
+    '/sports': 'Disciplinas',
+    '/cuotas': 'Cuotas',
+    '/coaches': 'Coaches',
+    '/admin-students': 'Gestión Alumnos',
+    // Student
+    '/student/routine': 'Mi Rutina',
+    '/student/progress': 'Mi Progreso',
+    '/student/nutrition': 'Mi Nutrición',
+    '/student/cardio': 'Mi Cardio',
+    '/student/history': 'Mi Historial',
+    '/student/fees': 'Mis Cuotas',
+    '/student/profile': 'Mi Perfil',
+  };
+
+  // Actualizar selected basándose en la ruta actual
+  useEffect(() => {
+    const currentPath = location.pathname;
+    // Buscar coincidencia exacta primero
+    if (routeToTitle[currentPath]) {
+      setSelected(routeToTitle[currentPath]);
+    } else {
+      // Buscar coincidencia parcial (para rutas con parámetros)
+      const matchingRoute = Object.keys(routeToTitle).find(route => 
+        currentPath.startsWith(route) && route !== '/'
+      );
+      if (matchingRoute) {
+        setSelected(routeToTitle[matchingRoute]);
+      }
+    }
+  }, [location.pathname]);
 
   if (isMobile) {
     // En móvil, el sidebar no se renderiza aquí
@@ -70,10 +112,9 @@ const SidebarComponent = () => {
         <>
           <Item title='Dashboard' to='/coach/dashboard' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Rutinas' to='/coach/routines' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Macrociclos' to='/coach/macrocycles' icon={<AssignmentIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Biblioteca' to='/coach/templates' icon={<CollectionsBookmarkIcon />} selected={selected} setSelected={setSelected} />
-          <Item title='Catálogo' to='/coach/exercise-catalog' icon={<LibraryBooksIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Ejercicios' to='/coach/exercise-catalog' icon={<LibraryBooksIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Alimentos' to='/coach/food-catalog' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Horarios' to='/coach/schedule' icon={<ScheduleIcon />} selected={selected} setSelected={setSelected} />
         </>
       );
