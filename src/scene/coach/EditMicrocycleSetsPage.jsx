@@ -28,6 +28,7 @@ const EditMicrocycleSetsPage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [expandedDays, setExpandedDays] = useState({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   useEffect(() => {
     fetchMicrocycleData();
@@ -52,8 +53,13 @@ const EditMicrocycleSetsPage = () => {
             if (!exercisesByDay[day.dia]) {
               exercisesByDay[day.dia] = [];
             }
+            // Ordenar sets por order antes de guardar
+            const sortedSets = [...(exercise.sets || [])].sort(
+              (a, b) => (a.order ?? 0) - (b.order ?? 0)
+            );
             exercisesByDay[day.dia].push({
               ...exercise,
+              sets: sortedSets,
               dayName: day.nombre || `Día ${day.dia}`,
               dayId: day.id,
             });
@@ -123,7 +129,14 @@ const EditMicrocycleSetsPage = () => {
     }));
   };
 
-  const handleSave = async () => {
+  // Mostrar dialog de confirmación antes de guardar
+  const handleSaveClick = () => {
+    setShowConfirmDialog(true);
+  };
+
+  // Guardar con o sin replicación
+  const handleSave = async (replicateToNext = false) => {
+    setShowConfirmDialog(false);
     setSaving(true);
     setError(null);
     
@@ -166,7 +179,10 @@ const EditMicrocycleSetsPage = () => {
         const updateResponse = await fetch(`${VITE_API_URL}/microcycle/${microcycleId}/sets`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sets: setsToUpdate }),
+          body: JSON.stringify({ 
+            sets: setsToUpdate,
+            replicateToNext: replicateToNext 
+          }),
         });
         if (!updateResponse.ok) throw new Error('Error al actualizar los sets');
       }
@@ -482,9 +498,9 @@ const EditMicrocycleSetsPage = () => {
         bgcolor: '#1a1a1a',
         borderTop: '1px solid #333',
         p: 2,
+        zIndex: 10,
         display: 'flex',
         gap: 2,
-        zIndex: 10,
       }}>
         <Button
           onClick={() => navigate(-1)}
@@ -495,7 +511,7 @@ const EditMicrocycleSetsPage = () => {
           Cancelar
         </Button>
         <Button
-          onClick={handleSave}
+          onClick={handleSaveClick}
           variant="contained"
           fullWidth
           sx={{ bgcolor: '#4caf50', '&:hover': { bgcolor: '#66bb6a' } }}
@@ -504,6 +520,74 @@ const EditMicrocycleSetsPage = () => {
           {saving ? 'Guardando...' : '💾 Guardar'}
         </Button>
       </Box>
+
+      {/* Dialog de confirmación */}
+      {showConfirmDialog && (
+        <Box sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          bgcolor: 'rgba(0,0,0,0.8)',
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          p: 2,
+        }}>
+          <Box sx={{
+            bgcolor: '#1e1e1e',
+            borderRadius: 3,
+            p: 3,
+            maxWidth: 340,
+            width: '100%',
+            border: '1px solid #333',
+          }}>
+            <Typography variant="h6" color="#fff" mb={2} textAlign="center">
+              💾 Guardar Cambios
+            </Typography>
+            <Typography color="#aaa" fontSize={14} mb={3} textAlign="center">
+              ¿Querés aplicar estos cambios también a los microciclos posteriores?
+            </Typography>
+            
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => handleSave(true)}
+                sx={{ 
+                  bgcolor: '#ffd700', 
+                  color: '#000',
+                  '&:hover': { bgcolor: '#ffed4a' },
+                  fontWeight: 600,
+                }}
+              >
+                🔄 Sí, aplicar a todos
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={() => handleSave(false)}
+                sx={{ 
+                  bgcolor: '#4caf50',
+                  '&:hover': { bgcolor: '#66bb6a' },
+                  fontWeight: 600,
+                }}
+              >
+                📝 Solo este microciclo
+              </Button>
+              <Button
+                fullWidth
+                onClick={() => setShowConfirmDialog(false)}
+                sx={{ color: '#888' }}
+              >
+                Cancelar
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 };

@@ -24,7 +24,7 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt", // Cambiado para mostrar prompt de actualización
       injectRegister: "auto",
       devOptions: {
         enabled: true,
