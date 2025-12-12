@@ -23,8 +23,8 @@ const MesocycleWizard = ({
     mesocycle: {
       name: "",
       startDate: "",
-      endDate: "",
       objetivo: "",
+      numero: null, // Número opcional para continuar numeración
     },
     // Step 2: Cantidad de microciclos
     microcycleCount: 4,
@@ -116,10 +116,13 @@ const MesocycleWizard = ({
       }
 
       // Preparar payload para el nuevo endpoint
+      // El nombre se genera automáticamente: "Mesociclo X"
+      const mesoNumero = wizardData.mesocycle.numero || mesocycleNumber;
+      const finalName = `Mesociclo ${mesoNumero}`;
+
       const payload = {
-        name: wizardData.mesocycle.name,
+        name: finalName,
         startDate: wizardData.mesocycle.startDate,
-        endDate: wizardData.mesocycle.endDate,
         objetivo: wizardData.mesocycle.objetivo,
         status: status, // 'draft' o 'published'
         microcycles: microcycles,
@@ -279,7 +282,7 @@ const MesocycleWizard = ({
         <div style={headerStyle}>
           <div style={{ position: "relative" }}>
             <h2 style={{ margin: 0, fontSize: isMobile ? "20px" : "24px" }}>
-              📝 Crear Mesociclo {mesocycleNumber}
+              📝 Crear Mesociclo
             </h2>
             <button
               onClick={onCancel}
@@ -505,36 +508,26 @@ const StepMesocycle = ({ data, onChange, mesocycleNumber = 1 }) => {
         📋 Configuración del Mesociclo
       </h3>
 
-      <div style={{ marginBottom: "20px" }}>
-        <label
-          style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}
-        >
-          Nombre del Mesociclo *
-          <span
-            style={{
-              color: "#aaa",
-              fontWeight: 400,
-              fontSize: "13px",
-              marginLeft: "8px",
-            }}
-          >
-            (Sugerencia: Mesociclo {mesocycleNumber})
-          </span>
-        </label>
-        <input
-          type="text"
-          value={data.name}
-          onChange={(e) => onChange({ ...data, name: e.target.value })}
-          placeholder={`Mesociclo ${mesocycleNumber}`}
-          style={inputStyle}
-          required
-        />
+      {/* Info del próximo número */}
+      <div
+        style={{
+          background: "rgba(102, 126, 234, 0.1)",
+          border: "1px solid #667eea",
+          borderRadius: "10px",
+          padding: "15px",
+          marginBottom: "20px",
+          textAlign: "center",
+        }}
+      >
+        <span style={{ color: "#667eea", fontSize: "14px" }}>
+          💡 El próximo mesociclo sugerido es el <strong>N° {mesocycleNumber}</strong>
+        </span>
       </div>
 
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "1fr 120px",
           gap: "15px",
           marginBottom: "20px",
         }}
@@ -558,13 +551,14 @@ const StepMesocycle = ({ data, onChange, mesocycleNumber = 1 }) => {
           <label
             style={{ display: "block", marginBottom: "8px", fontWeight: "600" }}
           >
-            Fecha de Fin *
+            N° Mesociclo *
           </label>
           <input
-            type="date"
-            value={data.endDate}
-            onChange={(e) => onChange({ ...data, endDate: e.target.value })}
-            style={inputStyle}
+            type="number"
+            min="1"
+            value={data.numero || mesocycleNumber}
+            onChange={(e) => onChange({ ...data, numero: parseInt(e.target.value) || mesocycleNumber })}
+            style={{ ...inputStyle, textAlign: 'center', fontSize: '20px', fontWeight: '600' }}
             required
           />
         </div>
@@ -619,8 +613,15 @@ const StepMicrocycleCount = ({
   onDeloadChange,
 }) => {
   const handleCountChange = (newCount) => {
-    const validCount = parseInt(newCount) || 1;
-    onChange(validCount);
+    // Permitir campo vacío temporalmente para poder escribir
+    if (newCount === '') {
+      onChange(1);
+      return;
+    }
+    const num = parseInt(newCount);
+    if (!isNaN(num) && num >= 1 && num <= 12) {
+      onChange(num);
+    }
   };
 
   const toggleDeload = (microIndex) => {
@@ -647,24 +648,78 @@ const StepMicrocycleCount = ({
         >
           Cantidad de microciclos a crear:
         </label>
-        <input
-          type="number"
-          min="1"
-          max="12"
-          value={count}
-          onChange={(e) => handleCountChange(e.target.value)}
-          style={{
-            width: "120px",
-            padding: "12px",
-            borderRadius: "8px",
-            border: "2px solid rgba(255, 215, 0, 0.3)",
-            background: "rgba(255, 255, 255, 0.05)",
-            color: "#fff",
-            fontSize: "18px",
-            fontWeight: "bold",
-            textAlign: "center",
-          }}
-        />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={() => count > 1 && handleCountChange(count - 1)}
+            style={{
+              width: "44px",
+              height: "44px",
+              borderRadius: "8px",
+              border: "2px solid rgba(255, 215, 0, 0.3)",
+              background: count > 1 ? "rgba(255, 215, 0, 0.2)" : "rgba(255, 255, 255, 0.05)",
+              color: count > 1 ? "#ffd700" : "#666",
+              fontSize: "24px",
+              fontWeight: "bold",
+              cursor: count > 1 ? "pointer" : "not-allowed",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            −
+          </button>
+          <input
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={count}
+            onChange={(e) => {
+              const val = e.target.value.replace(/[^0-9]/g, '');
+              if (val === '') {
+                handleCountChange('');
+              } else {
+                const num = parseInt(val);
+                if (num >= 1 && num <= 12) {
+                  handleCountChange(val);
+                }
+              }
+            }}
+            style={{
+              width: "80px",
+              padding: "10px",
+              borderRadius: "8px",
+              border: "2px solid rgba(255, 215, 0, 0.3)",
+              background: "rgba(255, 255, 255, 0.05)",
+              color: "#fff",
+              fontSize: "24px",
+              fontWeight: "bold",
+              textAlign: "center",
+              WebkitAppearance: "none",
+              MozAppearance: "textfield",
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => count < 12 && handleCountChange(count + 1)}
+            style={{
+              width: "44px",
+              height: "44px",
+              borderRadius: "8px",
+              border: "2px solid rgba(255, 215, 0, 0.3)",
+              background: count < 12 ? "rgba(255, 215, 0, 0.2)" : "rgba(255, 255, 255, 0.05)",
+              color: count < 12 ? "#ffd700" : "#666",
+              fontSize: "24px",
+              fontWeight: "bold",
+              cursor: count < 12 ? "pointer" : "not-allowed",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            +
+          </button>
+        </div>
         <p style={{ fontSize: "13px", color: "#aaa", marginTop: "8px" }}>
           Se crearán {count} microciclos idénticos con la plantilla que
           configures
@@ -790,24 +845,78 @@ const StepDaysTemplate = ({ days, onChange }) => (
       >
         ¿Cuántos días durará cada microciclo?
       </label>
-      <input
-        type="number"
-        min="1"
-        max="14"
-        value={days}
-        onChange={(e) => onChange(parseInt(e.target.value) || 7)}
-        style={{
-          width: "120px",
-          padding: "12px",
-          borderRadius: "8px",
-          border: "2px solid rgba(255, 215, 0, 0.3)",
-          background: "rgba(255, 255, 255, 0.05)",
-          color: "#fff",
-          fontSize: "18px",
-          fontWeight: "bold",
-          textAlign: "center",
-        }}
-      />
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <button
+          type="button"
+          onClick={() => days > 1 && onChange(days - 1)}
+          style={{
+            width: "44px",
+            height: "44px",
+            borderRadius: "8px",
+            border: "2px solid rgba(255, 215, 0, 0.3)",
+            background: days > 1 ? "rgba(255, 215, 0, 0.2)" : "rgba(255, 255, 255, 0.05)",
+            color: days > 1 ? "#ffd700" : "#666",
+            fontSize: "24px",
+            fontWeight: "bold",
+            cursor: days > 1 ? "pointer" : "not-allowed",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          −
+        </button>
+        <input
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={days}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9]/g, '');
+            if (val === '') {
+              onChange(7);
+            } else {
+              const num = parseInt(val);
+              if (num >= 1 && num <= 14) {
+                onChange(num);
+              }
+            }
+          }}
+          style={{
+            width: "80px",
+            padding: "10px",
+            borderRadius: "8px",
+            border: "2px solid rgba(255, 215, 0, 0.3)",
+            background: "rgba(255, 255, 255, 0.05)",
+            color: "#fff",
+            fontSize: "24px",
+            fontWeight: "bold",
+            textAlign: "center",
+            WebkitAppearance: "none",
+            MozAppearance: "textfield",
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => days < 14 && onChange(days + 1)}
+          style={{
+            width: "44px",
+            height: "44px",
+            borderRadius: "8px",
+            border: "2px solid rgba(255, 215, 0, 0.3)",
+            background: days < 14 ? "rgba(255, 215, 0, 0.2)" : "rgba(255, 255, 255, 0.05)",
+            color: days < 14 ? "#ffd700" : "#666",
+            fontSize: "24px",
+            fontWeight: "bold",
+            cursor: days < 14 ? "pointer" : "not-allowed",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          +
+        </button>
+      </div>
       <p style={{ fontSize: "13px", color: "#aaa", marginTop: "8px" }}>
         Cada microciclo tendrá {days} días
       </p>
@@ -1140,108 +1249,99 @@ const StepExercises = ({ days, microcycleCount, onChange }) => {
                             )}
                           </div>
 
-                          {/* Campos del grupo */}
-                          <div
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "2fr 1fr 2fr 80px",
-                              gap: "6px",
-                              alignItems: "center",
-                            }}
-                          >
-                            <input
-                              type="text"
-                              placeholder="Reps (ej: 8-10)"
-                              value={group.reps}
-                              onChange={(e) =>
-                                updateSetGroup(
-                                  dayIndex,
-                                  exerciseIndex,
-                                  groupIndex,
-                                  "reps",
-                                  e.target.value
-                                )
-                              }
-                              style={{
-                                ...inputStyle,
-                                fontSize: "11px",
-                                padding: "5px",
-                              }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="RIR"
-                              value={group.rirEsperado}
-                              onChange={(e) =>
-                                updateSetGroup(
-                                  dayIndex,
-                                  exerciseIndex,
-                                  groupIndex,
-                                  "rirEsperado",
-                                  e.target.value
-                                )
-                              }
-                              style={{
-                                ...inputStyle,
-                                fontSize: "11px",
-                                padding: "5px",
-                              }}
-                            />
-                            <input
-                              type="text"
-                              placeholder="Descanso (seg)"
-                              value={group.descanso}
-                              onChange={(e) =>
-                                updateSetGroup(
-                                  dayIndex,
-                                  exerciseIndex,
-                                  groupIndex,
-                                  "descanso",
-                                  e.target.value
-                                )
-                              }
-                              style={{
-                                ...inputStyle,
-                                fontSize: "11px",
-                                padding: "5px",
-                              }}
-                            />
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                              }}
-                            >
-                              <span style={{ fontSize: "11px", color: "#aaa" }}>
-                                ×
-                              </span>
-                              <input
-                                type="number"
-                                min="1"
-                                max="10"
-                                placeholder="Cant"
-                                value={group.quantity}
-                                onChange={(e) =>
-                                  updateSetGroup(
-                                    dayIndex,
-                                    exerciseIndex,
-                                    groupIndex,
-                                    "quantity",
-                                    parseInt(e.target.value) || 1
-                                  )
-                                }
-                                style={{
-                                  ...inputStyle,
-                                  fontSize: "11px",
-                                  padding: "5px",
-                                  width: "50px",
-                                  textAlign: "center",
-                                }}
-                              />
-                              <span style={{ fontSize: "10px", color: "#aaa" }}>
-                                sets
-                              </span>
+                          {/* Campos del grupo - Layout mejorado */}
+                          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {/* Fila 1: Reps y RIR */}
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                              <div>
+                                <label style={{ fontSize: "11px", color: "#888", display: "block", marginBottom: "4px" }}>
+                                  Reps
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="8-10"
+                                  value={group.reps}
+                                  onChange={(e) =>
+                                    updateSetGroup(dayIndex, exerciseIndex, groupIndex, "reps", e.target.value)
+                                  }
+                                  style={{
+                                    ...inputStyle,
+                                    fontSize: "14px",
+                                    padding: "10px",
+                                    textAlign: "center",
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: "11px", color: "#888", display: "block", marginBottom: "4px" }}>
+                                  RIR
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="2-3"
+                                  value={group.rirEsperado}
+                                  onChange={(e) =>
+                                    updateSetGroup(dayIndex, exerciseIndex, groupIndex, "rirEsperado", e.target.value)
+                                  }
+                                  style={{
+                                    ...inputStyle,
+                                    fontSize: "14px",
+                                    padding: "10px",
+                                    textAlign: "center",
+                                  }}
+                                />
+                              </div>
+                            </div>
+                            
+                            {/* Fila 2: Descanso y Sets */}
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                              <div>
+                                <label style={{ fontSize: "11px", color: "#888", display: "block", marginBottom: "4px" }}>
+                                  Descanso (min)
+                                </label>
+                                <input
+                                  type="text"
+                                  placeholder="2"
+                                  value={group.descanso}
+                                  onChange={(e) =>
+                                    updateSetGroup(dayIndex, exerciseIndex, groupIndex, "descanso", e.target.value)
+                                  }
+                                  style={{
+                                    ...inputStyle,
+                                    fontSize: "14px",
+                                    padding: "10px",
+                                    textAlign: "center",
+                                  }}
+                                />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: "11px", color: "#888", display: "block", marginBottom: "4px" }}>
+                                  Cant. Sets
+                                </label>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max="10"
+                                  value={group.quantity || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val === '') {
+                                      updateSetGroup(dayIndex, exerciseIndex, groupIndex, "quantity", 1);
+                                    } else {
+                                      const num = parseInt(val);
+                                      if (!isNaN(num) && num >= 1 && num <= 10) {
+                                        updateSetGroup(dayIndex, exerciseIndex, groupIndex, "quantity", num);
+                                      }
+                                    }
+                                  }}
+                                  style={{
+                                    ...inputStyle,
+                                    fontSize: "14px",
+                                    padding: "10px",
+                                    textAlign: "center",
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1363,7 +1463,7 @@ const StepSummary = ({ mesocycle, microcycleCount, microcycleDays, days }) => {
             <strong>Inicio:</strong> {mesocycle.startDate}
           </div>
           <div>
-            <strong>Fin:</strong> {mesocycle.endDate}
+            <strong>Fin:</strong> Se definirá al finalizar
           </div>
           <div>
             <strong>Objetivo:</strong> {mesocycle.objetivo}

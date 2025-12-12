@@ -26,6 +26,9 @@ import {
   formatDuration as formatTrackerDuration,
   getActivityDetail,
   getWeeklySummary as getTrackedWeeklySummary,
+  getInProgress,
+  cancelActivity,
+  finishActivity,
 } from '../../../api/activityTrackerApi';
 import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -57,6 +60,9 @@ const CardioSection = ({ studentId }) => {
   const [activityDetail, setActivityDetail] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   
+  // Estado para actividad en progreso pendiente
+  const [pendingActivity, setPendingActivity] = useState(null);
+  
   // Función para ver detalle de actividad
   const handleViewDetail = async (trackId) => {
     setLoadingDetail(true);
@@ -74,6 +80,11 @@ const CardioSection = ({ studentId }) => {
   const loadData = async () => {
     try {
       setLoading(true);
+      
+      // Verificar si hay actividad en progreso
+      const inProgress = await getInProgress(studentId).catch(() => null);
+      setPendingActivity(inProgress);
+      
       const [today, weekCardio, tracked, weekTracked] = await Promise.all([
         getTodayCardio(studentId).catch(() => []),
         getWeeklyCardio(studentId).catch(() => null),
@@ -182,6 +193,38 @@ const CardioSection = ({ studentId }) => {
     setView('indoor');
   };
   
+  // Handlers para actividad pendiente
+  const handleSavePending = async () => {
+    if (!pendingActivity) return;
+    try {
+      const startTime = new Date(pendingActivity.startedAt);
+      const now = new Date();
+      const durationSeconds = Math.round((now.getTime() - startTime.getTime()) / 1000);
+      
+      await finishActivity(pendingActivity.id, {
+        durationSeconds: Math.min(durationSeconds, 7200),
+        distanceMeters: pendingActivity.distanceMeters || 0,
+        avgSpeedKmh: pendingActivity.avgSpeedKmh || 0,
+        maxSpeedKmh: pendingActivity.maxSpeedKmh || 0,
+        caloriesBurned: pendingActivity.caloriesBurned || 0,
+      });
+      setPendingActivity(null);
+      loadData();
+    } catch (err) {
+      console.error('Error guardando:', err);
+    }
+  };
+
+  const handleCancelPending = async () => {
+    if (!pendingActivity) return;
+    try {
+      await cancelActivity(pendingActivity.id);
+      setPendingActivity(null);
+    } catch (err) {
+      console.error('Error cancelando:', err);
+    }
+  };
+
   const handleTrackerFinish = () => {
     setView('main');
     setSelectedActivity(null);
@@ -496,6 +539,56 @@ const CardioSection = ({ studentId }) => {
             </Button>
           </Box>
         </Box>
+
+        {/* Alerta de actividad pendiente */}
+        {pendingActivity && (
+          <Box sx={{ 
+            p: 2, 
+            background: `linear-gradient(135deg, ${COLORS.orange}22 0%, transparent 100%)`,
+            borderBottom: `2px solid ${COLORS.orange}`,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
+              <Typography fontSize={24}>⚠️</Typography>
+              <Box>
+                <Typography fontWeight={700} color={COLORS.orange}>
+                  Actividad en Progreso
+                </Typography>
+                <Typography fontSize={12} color={COLORS.textMuted}>
+                  {getTrackerActivityInfo(pendingActivity.activityType)?.label || pendingActivity.activityType} - 
+                  Iniciada: {new Date(pendingActivity.startedAt).toLocaleString('es-AR', {
+                    day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                  })}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleSavePending}
+                sx={{ 
+                  bgcolor: COLORS.green, 
+                  flex: 1,
+                  '&:hover': { bgcolor: '#3db897' }
+                }}
+              >
+                💾 Guardar
+              </Button>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={handleCancelPending}
+                sx={{ 
+                  bgcolor: COLORS.red, 
+                  flex: 1,
+                  '&:hover': { bgcolor: '#dc2626' }
+                }}
+              >
+                🗑️ Descartar
+              </Button>
+            </Box>
+          </Box>
+        )}
 
         {/* Hoy */}
         <Box sx={{ p: 2, borderBottom: `1px solid ${COLORS.border}` }}>

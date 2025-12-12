@@ -56,6 +56,7 @@ const CreateRoutinePage = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [studentName, setStudentName] = useState('');
+  const [existingMacrocycles, setExistingMacrocycles] = useState([]);
   
   // Catálogo de ejercicios
   const [exerciseCatalog, setExerciseCatalog] = useState([]);
@@ -66,7 +67,8 @@ const CreateRoutinePage = () => {
     macrocycle: {
       nombre: '',
       fechaInicio: '',
-      objetivo: ''
+      objetivo: '',
+      numero: null, // Número opcional para continuar numeración
     },
     cantidadMesociclos: 1,
     mesociclos: [],
@@ -117,9 +119,26 @@ const CreateRoutinePage = () => {
       }
     };
 
+    const loadExistingMacrocycles = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`${VITE_API_URL}/macrocycle/student/${studentId}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setExistingMacrocycles(data || []);
+          console.log('📋 Macrociclos existentes:', data?.length || 0);
+        }
+      } catch (err) {
+        console.error('Error loading macrocycles:', err);
+      }
+    };
+
     if (studentId) {
       loadExerciseCatalog();
       loadStudentInfo();
+      loadExistingMacrocycles();
     }
   }, [studentId]);
 
@@ -263,6 +282,7 @@ const CreateRoutinePage = () => {
         return (
           <StepMacrocycle 
             data={wizardData.macrocycle}
+            existingMacrocycles={existingMacrocycles}
             onChange={(data) => setWizardData(prev => ({ 
               ...prev, 
               macrocycle: { ...prev.macrocycle, ...data } 
@@ -518,21 +538,58 @@ const CreateRoutinePage = () => {
 // ============================================
 // STEP 1: MACROCICLO
 // ============================================
-const StepMacrocycle = ({ data, onChange }) => {
+const StepMacrocycle = ({ data, existingMacrocycles = [], onChange }) => {
+  const nextNumber = existingMacrocycles.length + 1;
+  
   return (
     <Box>
       <Typography variant="h5" sx={{ color: '#ffd700', mb: 3, fontWeight: 600 }}>
         📝 Configuración del Macrociclo
       </Typography>
 
+      {/* Info de macrociclos existentes */}
+      {existingMacrocycles.length > 0 && (
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mb: 3, 
+            bgcolor: 'rgba(102, 126, 234, 0.1)', 
+            border: '1px solid #667eea',
+            '& .MuiAlert-icon': { color: '#667eea' }
+          }}
+        >
+          <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+            📊 Este alumno ya tiene {existingMacrocycles.length} macrociclo(s)
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#aaa' }}>
+            Último: {existingMacrocycles[0]?.name || 'Sin nombre'} 
+            {existingMacrocycles[0]?.status === 'in_progress' ? ' (en progreso)' : ''}
+          </Typography>
+        </Alert>
+      )}
+
       <Grid container spacing={3}>
-        <Grid item xs={12}>
+        <Grid item xs={12} sm={8}>
           <TextField
             fullWidth
             label="Nombre del Macrociclo *"
             placeholder="ej: Hipertrofia General, Fuerza Máxima..."
             value={data.nombre}
             onChange={(e) => onChange({ nombre: e.target.value })}
+            sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#2a2a2a' } }}
+          />
+        </Grid>
+
+        <Grid item xs={12} sm={4}>
+          <TextField
+            fullWidth
+            type="number"
+            label="N° Macrociclo"
+            placeholder={`${nextNumber}`}
+            value={data.numero || ''}
+            onChange={(e) => onChange({ numero: e.target.value ? parseInt(e.target.value) : null })}
+            helperText={`Sugerido: ${nextNumber}`}
+            inputProps={{ min: 1 }}
             sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#2a2a2a' } }}
           />
         </Grid>
@@ -564,8 +621,7 @@ const StepMacrocycle = ({ data, onChange }) => {
       </Grid>
 
       <Alert severity="info" sx={{ mt: 3 }}>
-        💡 <strong>Consejo:</strong> Define un nombre descriptivo, la fecha de inicio y un objetivo claro.
-        La fecha de fin se completará cuando finalices el macrociclo.
+        💡 <strong>Consejo:</strong> El número de macrociclo es opcional. Si lo dejás vacío, se asignará automáticamente el siguiente ({nextNumber}).
       </Alert>
     </Box>
   );
@@ -589,7 +645,18 @@ const StepMesociclos = ({ cantidadMesociclos, mesociclos, onCantidadChange, onMe
           type="number"
           inputProps={{ min: 1, max: 6 }}
           value={cantidadMesociclos}
-          onChange={(e) => onCantidadChange(parseInt(e.target.value) || 1)}
+          onChange={(e) => {
+            const val = e.target.value;
+            // Permitir campo vacío temporalmente, validar en blur
+            if (val === '') {
+              onCantidadChange(1);
+            } else {
+              const num = parseInt(val);
+              if (!isNaN(num) && num >= 1 && num <= 6) {
+                onCantidadChange(num);
+              }
+            }
+          }}
           sx={{ 
             width: 120,
             '& .MuiOutlinedInput-root': { bgcolor: '#333' } 
@@ -605,9 +672,25 @@ const StepMesociclos = ({ cantidadMesociclos, mesociclos, onCantidadChange, onMe
           <Grid item xs={12} key={index}>
             <Card sx={{ bgcolor: '#2a2a2a', border: '2px solid #667eea' }}>
               <CardContent>
-                <Typography variant="h6" sx={{ color: '#667eea', mb: 2 }}>
-                  📋 {meso.nombre}
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ color: '#667eea' }}>
+                    📋 {meso.nombre}
+                  </Typography>
+                  <TextField
+                    type="number"
+                    label="N°"
+                    placeholder={`${index + 1}`}
+                    value={meso.numero || ''}
+                    onChange={(e) => onMesocicloChange(index, 'numero', e.target.value ? parseInt(e.target.value) : null)}
+                    inputProps={{ min: 1, style: { textAlign: 'center' } }}
+                    sx={{ 
+                      width: 80,
+                      '& .MuiOutlinedInput-root': { bgcolor: '#333' },
+                      '& .MuiInputLabel-root': { fontSize: '0.8rem' }
+                    }}
+                    size="small"
+                  />
+                </Box>
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>

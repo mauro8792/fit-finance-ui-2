@@ -613,7 +613,15 @@ const MacrocycleDetail = () => {
           macrocycleId={id}
           studentId={macrocycle?.studentId}
           studentName={macrocycle?.studentName || "Alumno"}
-          mesocycleNumber={mesocycles.length + 1}
+          mesocycleNumber={(() => {
+            // Calcular el próximo número basándose en los nombres existentes
+            const numeros = mesocycles.map(m => {
+              const match = m.name?.match(/Mesociclo (\d+)/i);
+              return match ? parseInt(match[1]) : 0;
+            });
+            const maxNumero = Math.max(0, ...numeros);
+            return maxNumero + 1;
+          })()}
           onCancel={() => setShowForm(false)}
           onComplete={async () => {
             setShowForm(false);
