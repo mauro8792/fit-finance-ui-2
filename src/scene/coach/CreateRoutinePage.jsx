@@ -20,7 +20,10 @@ import {
   Divider,
   Tooltip,
   Collapse,
+  useMediaQuery,
+  MobileStepper,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
@@ -44,6 +47,8 @@ const steps = ['Macrociclo', 'Mesociclos', 'Microciclos', 'Preview', 'Crear'];
 const CreateRoutinePage = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -352,29 +357,76 @@ const CreateRoutinePage = () => {
           </Button>
         </Box>
 
-        {/* Stepper */}
-        <Stepper activeStep={activeStep} alternativeLabel>
-          {steps.map((label, index) => (
-            <Step key={label}>
-              <StepLabel 
+        {/* Stepper - Adaptado para móvil */}
+        {isMobile ? (
+          // Stepper compacto para móvil
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+            {steps.map((label, index) => (
+              <Box
+                key={label}
                 sx={{
-                  '& .MuiStepLabel-label': { 
-                    color: 'rgba(255,255,255,0.7)',
-                    '&.Mui-active': { color: '#ffd700', fontWeight: 600 },
-                    '&.Mui-completed': { color: '#4caf50' },
-                  },
-                  '& .MuiStepIcon-root': {
-                    color: 'rgba(255,255,255,0.3)',
-                    '&.Mui-active': { color: '#ffd700' },
-                    '&.Mui-completed': { color: '#4caf50' },
-                  }
+                  width: 36,
+                  height: 36,
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  bgcolor: index === activeStep 
+                    ? '#ffd700' 
+                    : index < activeStep 
+                      ? '#4caf50' 
+                      : 'rgba(255,255,255,0.15)',
+                  color: index <= activeStep ? '#000' : 'rgba(255,255,255,0.5)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  transition: 'all 0.3s ease',
                 }}
               >
-                {label}
-              </StepLabel>
-            </Step>
-          ))}
-        </Stepper>
+                {index < activeStep ? '✓' : index + 1}
+              </Box>
+            ))}
+          </Box>
+        ) : (
+          // Stepper completo para desktop
+          <Stepper activeStep={activeStep} alternativeLabel>
+            {steps.map((label, index) => (
+              <Step key={label}>
+                <StepLabel 
+                  sx={{
+                    '& .MuiStepLabel-label': { 
+                      color: 'rgba(255,255,255,0.7)',
+                      '&.Mui-active': { color: '#ffd700', fontWeight: 600 },
+                      '&.Mui-completed': { color: '#4caf50' },
+                    },
+                    '& .MuiStepIcon-root': {
+                      color: 'rgba(255,255,255,0.3)',
+                      '&.Mui-active': { color: '#ffd700' },
+                      '&.Mui-completed': { color: '#4caf50' },
+                    }
+                  }}
+                >
+                  {label}
+                </StepLabel>
+              </Step>
+            ))}
+          </Stepper>
+        )}
+        
+        {/* Indicador de paso actual en móvil */}
+        {isMobile && (
+          <Typography 
+            variant="caption" 
+            sx={{ 
+              display: 'block', 
+              textAlign: 'center', 
+              mt: 1, 
+              color: '#ffd700',
+              fontWeight: 600,
+            }}
+          >
+            {steps[activeStep]}
+          </Typography>
+        )}
       </Paper>
 
       {/* Error Alert */}
@@ -385,39 +437,76 @@ const CreateRoutinePage = () => {
       )}
 
       {/* Content */}
-      <Paper sx={{ p: { xs: 2, md: 4 }, bgcolor: '#1e1e1e', borderRadius: 3, mb: 3 }}>
+      <Paper sx={{ p: { xs: 2, md: 4 }, bgcolor: '#1e1e1e', borderRadius: 3, mb: isMobile ? 12 : 3 }}>
         {renderStepContent()}
       </Paper>
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons - Adaptados para móvil */}
       {activeStep < 4 && (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            flexDirection: isMobile ? 'column-reverse' : 'row',
+            justifyContent: 'space-between', 
+            gap: 2,
+            position: isMobile ? 'sticky' : 'static',
+            bottom: isMobile ? 0 : 'auto',
+            left: 0,
+            right: 0,
+            p: isMobile ? 2 : 0,
+            bgcolor: isMobile ? '#121212' : 'transparent',
+            borderTop: isMobile ? '1px solid rgba(255,255,255,0.1)' : 'none',
+            zIndex: 10,
+          }}
+        >
           <Button
             variant="outlined"
-            startIcon={<ArrowBackIcon />}
+            startIcon={!isMobile && <ArrowBackIcon />}
             onClick={activeStep === 0 ? handleCancel : handleBack}
-            sx={{ color: '#aaa', borderColor: '#444' }}
+            fullWidth={isMobile}
+            sx={{ 
+              color: '#aaa', 
+              borderColor: '#444',
+              py: isMobile ? 1.5 : 1,
+              fontSize: isMobile ? '0.95rem' : '0.875rem',
+            }}
           >
-            {activeStep === 0 ? 'Cancelar' : 'Anterior'}
+            {activeStep === 0 ? 'Cancelar' : '← Anterior'}
           </Button>
 
           {activeStep < 3 ? (
             <Button
               variant="contained"
-              endIcon={<ArrowForwardIcon />}
+              endIcon={!isMobile && <ArrowForwardIcon />}
               onClick={handleNext}
-              sx={{ bgcolor: '#ffd700', color: '#000', '&:hover': { bgcolor: '#ffb300' } }}
+              fullWidth={isMobile}
+              sx={{ 
+                bgcolor: '#ffd700', 
+                color: '#000', 
+                '&:hover': { bgcolor: '#ffb300' },
+                py: isMobile ? 1.5 : 1,
+                fontSize: isMobile ? '0.95rem' : '0.875rem',
+                fontWeight: 600,
+              }}
             >
-              Siguiente
+              Siguiente →
             </Button>
           ) : activeStep === 3 ? (
             <Button
               variant="contained"
-              endIcon={<PlayArrowIcon />}
+              endIcon={!isMobile && <PlayArrowIcon />}
               onClick={() => setActiveStep(4)}
-              sx={{ bgcolor: '#4caf50', color: '#fff', '&:hover': { bgcolor: '#388e3c' } }}
+              fullWidth={isMobile}
+              sx={{ 
+                bgcolor: '#4caf50', 
+                color: '#fff', 
+                '&:hover': { bgcolor: '#388e3c' },
+                py: isMobile ? 1.5 : 1,
+                fontSize: isMobile ? '0.95rem' : '0.875rem',
+                fontWeight: 600,
+              }}
             >
-              🚀 Crear Rutina Completa
+              🚀 Crear Rutina
             </Button>
           ) : null}
         </Box>
@@ -770,37 +859,68 @@ const StepMicrociclos = ({
                       overflow: 'hidden',
                     }}
                   >
-                    {/* Header del día */}
+                    {/* Header del día - ADAPTADO PARA MÓVIL */}
                     <Box 
                       sx={{ 
-                        p: 2, 
+                        p: { xs: 1.5, md: 2 }, 
                         display: 'flex', 
                         justifyContent: 'space-between', 
                         alignItems: 'center',
                         bgcolor: dia.esDescanso ? 'rgba(255,152,0,0.1)' : 'rgba(76,175,80,0.1)',
                         cursor: 'pointer',
+                        gap: 1,
                       }}
                       onClick={() => !dia.esDescanso && toggleDayExpand(mesoIndex, diaIndex)}
                     >
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {/* Izquierda: Icono + Nombre */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minWidth: 0, flex: 1 }}>
                         {dia.esDescanso ? (
-                          <HotelIcon sx={{ color: '#ff9800' }} />
+                          <HotelIcon sx={{ color: '#ff9800', fontSize: { xs: 20, md: 24 } }} />
                         ) : (
-                          <FitnessCenterIcon sx={{ color: '#4caf50' }} />
+                          <FitnessCenterIcon sx={{ color: '#4caf50', fontSize: { xs: 20, md: 24 } }} />
                         )}
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: dia.esDescanso ? '#ff9800' : '#4caf50' }}>
-                          {dia.nombre} {dia.esDescanso && '(Descanso)'}
-                        </Typography>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography 
+                            variant="subtitle2" 
+                            sx={{ 
+                              fontWeight: 600, 
+                              color: dia.esDescanso ? '#ff9800' : '#4caf50',
+                              fontSize: { xs: '0.85rem', md: '1rem' },
+                              lineHeight: 1.2,
+                            }}
+                          >
+                            {dia.nombre}
+                          </Typography>
+                          {/* Info secundaria en móvil */}
+                          {!dia.esDescanso && (
+                            <Typography 
+                              variant="caption" 
+                              sx={{ color: '#888', display: { xs: 'block', md: 'none' } }}
+                            >
+                              {ejerciciosCount} ejercicio{ejerciciosCount !== 1 ? 's' : ''}
+                            </Typography>
+                          )}
+                          {dia.esDescanso && (
+                            <Typography 
+                              variant="caption" 
+                              sx={{ color: '#ff9800', display: { xs: 'block', md: 'none' } }}
+                            >
+                              Descanso
+                            </Typography>
+                          )}
+                        </Box>
+                        {/* Chip solo en desktop */}
                         {!dia.esDescanso && (
                           <Chip 
                             label={`${ejerciciosCount} ejercicio${ejerciciosCount !== 1 ? 's' : ''}`}
                             size="small"
-                            sx={{ bgcolor: '#333', color: '#aaa' }}
+                            sx={{ bgcolor: '#333', color: '#aaa', display: { xs: 'none', md: 'flex' } }}
                           />
                         )}
                       </Box>
 
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      {/* Derecha: Acciones */}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, md: 1 }, flexShrink: 0 }}>
                         <Button
                           size="small"
                           onClick={(e) => {
@@ -809,10 +929,12 @@ const StepMicrociclos = ({
                           }}
                           sx={{ 
                             color: dia.esDescanso ? '#4caf50' : '#ff9800',
-                            fontSize: '0.75rem',
+                            fontSize: { xs: '0.65rem', md: '0.75rem' },
+                            minWidth: { xs: 'auto', md: 64 },
+                            px: { xs: 1, md: 1.5 },
                           }}
                         >
-                          {dia.esDescanso ? 'Activar' : 'Descanso'}
+                          {dia.esDescanso ? 'Activar' : 'Desc'}
                         </Button>
                         
                         {!dia.esDescanso && (
@@ -824,9 +946,9 @@ const StepMicrociclos = ({
                                 handleAddExercise(mesoIndex, diaIndex);
                                 if (!isExpanded) toggleDayExpand(mesoIndex, diaIndex);
                               }}
-                              sx={{ color: '#4caf50' }}
+                              sx={{ color: '#4caf50', p: { xs: 0.5, md: 1 } }}
                             >
-                              <AddIcon />
+                              <AddIcon fontSize="small" />
                             </IconButton>
                             <IconButton 
                               size="small"
@@ -927,8 +1049,8 @@ const StepMicrociclos = ({
                               </Grid>
                             </Grid>
 
-                            {/* Sets individuales */}
-                            <Box sx={{ pl: 2, borderLeft: '3px solid #4caf50' }}>
+                            {/* Sets individuales - ADAPTADO PARA MÓVIL */}
+                            <Box sx={{ pl: { xs: 1, md: 2 }, borderLeft: '3px solid #4caf50' }}>
                               <Typography variant="caption" sx={{ color: '#888', display: 'block', mb: 1 }}>
                                 Sets ({ejercicio.sets?.length || 0})
                               </Typography>
@@ -937,97 +1059,123 @@ const StepMicrociclos = ({
                                 <Box 
                                   key={setIndex} 
                                   sx={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: 1, 
-                                    mb: 1,
-                                    p: 1,
+                                    mb: 1.5,
+                                    p: { xs: 1.5, md: 1 },
                                     bgcolor: set.isAmrap ? 'rgba(255,152,0,0.1)' : '#1a1a1a',
                                     borderRadius: 1,
                                     border: set.isAmrap ? '1px solid #ff9800' : '1px solid #333',
                                   }}
                                 >
-                                  <Typography variant="body2" sx={{ color: '#666', width: 50 }}>
-                                    Set {setIndex + 1}
-                                  </Typography>
+                                  {/* Header del set */}
+                                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                    <Typography variant="body2" sx={{ color: '#aaa', fontWeight: 600 }}>
+                                      Set {setIndex + 1}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                                      <Chip
+                                        label={set.isAmrap ? "🔥 AMRAP" : "AMRAP"}
+                                        size="small"
+                                        onClick={() => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'isAmrap', !set.isAmrap)}
+                                        sx={{ 
+                                          cursor: 'pointer',
+                                          bgcolor: set.isAmrap ? '#ff9800' : '#333',
+                                          color: set.isAmrap ? '#000' : '#888',
+                                          fontWeight: set.isAmrap ? 600 : 400,
+                                          fontSize: { xs: 11, md: 12 },
+                                          height: { xs: 26, md: 24 },
+                                          '&:hover': { bgcolor: set.isAmrap ? '#ffa726' : '#444' }
+                                        }}
+                                      />
+                                      {(ejercicio.sets?.length || 0) > 1 && (
+                                        <IconButton 
+                                          size="small" 
+                                          onClick={() => handleRemoveSet(mesoIndex, diaIndex, ejercicioIndex, setIndex)}
+                                          sx={{ color: '#d32f2f', p: 0.5 }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      )}
+                                    </Box>
+                                  </Box>
                                   
-                                  <TextField
-                                    size="small"
-                                    label="Reps"
-                                    placeholder="6-10"
-                                    value={set.reps}
-                                    onChange={(e) => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'reps', e.target.value)}
-                                    sx={{ width: 80, '& .MuiOutlinedInput-root': { bgcolor: '#333' } }}
-                                    disabled={set.isAmrap}
-                                  />
-                                  
-                                  <TextField
-                                    size="small"
-                                    label="RIR"
-                                    placeholder="1-2"
-                                    value={set.rir}
-                                    onChange={(e) => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'rir', e.target.value)}
-                                    sx={{ width: 70, '& .MuiOutlinedInput-root': { bgcolor: '#333' } }}
-                                    disabled={set.isAmrap}
-                                  />
-
-                                  <Tooltip title={set.isAmrap ? "Quitar AMRAP" : "Marcar como AMRAP (al fallo)"}>
-                                    <Chip
-                                      label={set.isAmrap ? "AMRAP ✓" : "AMRAP"}
-                                      size="small"
-                                      onClick={() => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'isAmrap', !set.isAmrap)}
-                                      sx={{ 
-                                        cursor: 'pointer',
-                                        bgcolor: set.isAmrap ? '#ff9800' : '#333',
-                                        color: set.isAmrap ? '#000' : '#888',
-                                        fontWeight: set.isAmrap ? 600 : 400,
-                                        '&:hover': { bgcolor: set.isAmrap ? '#ffa726' : '#444' }
-                                      }}
-                                    />
-                                  </Tooltip>
-
-                                  {set.isAmrap && (
-                                    <TextField
-                                      size="small"
-                                      label="Instrucción"
-                                      placeholder="ej: máximo reps posibles"
-                                      value={set.amrapInstruction || ''}
-                                      onChange={(e) => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'amrapInstruction', e.target.value)}
-                                      sx={{ flex: 1, '& .MuiOutlinedInput-root': { bgcolor: '#333' } }}
-                                    />
-                                  )}
-
-                                  {(ejercicio.sets?.length || 0) > 1 && (
-                                    <IconButton 
-                                      size="small" 
-                                      onClick={() => handleRemoveSet(mesoIndex, diaIndex, ejercicioIndex, setIndex)}
-                                      sx={{ color: '#d32f2f' }}
-                                    >
-                                      <DeleteIcon fontSize="small" />
-                                    </IconButton>
-                                  )}
+                                  {/* Campos del set - Grid responsive */}
+                                  <Grid container spacing={1}>
+                                    <Grid item xs={6} sm={3}>
+                                      <TextField
+                                        fullWidth
+                                        size="small"
+                                        label="Reps"
+                                        placeholder="6-10"
+                                        value={set.reps}
+                                        onChange={(e) => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'reps', e.target.value)}
+                                        sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#333' } }}
+                                        disabled={set.isAmrap}
+                                      />
+                                    </Grid>
+                                    <Grid item xs={6} sm={3}>
+                                      <TextField
+                                        fullWidth
+                                        size="small"
+                                        label="RIR"
+                                        placeholder="1-2"
+                                        value={set.rir}
+                                        onChange={(e) => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'rir', e.target.value)}
+                                        sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#333' } }}
+                                        disabled={set.isAmrap}
+                                      />
+                                    </Grid>
+                                    {set.isAmrap && (
+                                      <Grid item xs={12} sm={6}>
+                                        <TextField
+                                          fullWidth
+                                          size="small"
+                                          label="Instrucción AMRAP"
+                                          placeholder="ej: máximo reps"
+                                          value={set.amrapInstruction || ''}
+                                          onChange={(e) => handleSetChange(mesoIndex, diaIndex, ejercicioIndex, setIndex, 'amrapInstruction', e.target.value)}
+                                          sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#333' } }}
+                                        />
+                                      </Grid>
+                                    )}
+                                  </Grid>
                                 </Box>
                               ))}
 
                               <Button
+                                variant="outlined"
                                 size="small"
                                 startIcon={<AddIcon />}
                                 onClick={() => handleAddSet(mesoIndex, diaIndex, ejercicioIndex)}
-                                sx={{ color: '#4caf50', mt: 1 }}
+                                fullWidth
+                                sx={{ 
+                                  color: '#4caf50', 
+                                  borderColor: '#4caf50',
+                                  mt: 1,
+                                  py: { xs: 1, md: 0.5 },
+                                  '&:hover': { borderColor: '#66bb6a', bgcolor: 'rgba(76,175,80,0.1)' }
+                                }}
                               >
-                                Agregar Set
+                                + Agregar Set
                               </Button>
                             </Box>
                           </Box>
                         ))}
 
-                        {/* Botón agregar ejercicio */}
+                        {/* Botón agregar ejercicio - más visible en móvil */}
                         <Button
+                          variant="contained"
                           startIcon={<AddIcon />}
                           onClick={() => handleAddExercise(mesoIndex, diaIndex)}
-                          sx={{ color: '#4caf50', mt: 1 }}
+                          fullWidth
+                          sx={{ 
+                            bgcolor: '#4caf50', 
+                            color: '#fff',
+                            mt: 2,
+                            py: { xs: 1.2, md: 1 },
+                            '&:hover': { bgcolor: '#388e3c' }
+                          }}
                         >
-                          Agregar Ejercicio
+                          + Agregar Ejercicio
                         </Button>
                       </Box>
                     </Collapse>

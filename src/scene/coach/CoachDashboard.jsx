@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
+import financeApi from '../../api/fitFinanceApi';
+import { formatRelativeDate } from '../../helpers/dateHelpers';
 import { 
   Box, 
   Typography, 
@@ -51,6 +53,8 @@ const CoachDashboard = () => {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [loadingActivity, setLoadingActivity] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -66,17 +70,25 @@ const CoachDashboard = () => {
       .finally(() => setLoading(false));
   }, [coachUserId, getCoachStudentsData, status]);
 
+  // Fetch actividad reciente REAL desde el backend
+  useEffect(() => {
+    if (status !== 'authenticated' || !coachUserId) return;
+    setLoadingActivity(true);
+    financeApi.get(`/students/coach/${coachUserId}/recent-activity?limit=10`)
+      .then(({ data }) => {
+        setRecentActivity(data);
+      })
+      .catch((err) => {
+        console.error('Error fetching recent activity:', err);
+        setRecentActivity([]);
+      })
+      .finally(() => setLoadingActivity(false));
+  }, [coachUserId, status]);
+
   // Estadísticas calculadas
   const totalStudents = students.length;
   const studentsWithRoutines = students.filter(s => s.macrocycles?.length > 0).length;
   const studentsWithoutRoutines = totalStudents - studentsWithRoutines;
-  
-  // Simular datos de actividad (en el futuro vendrán del backend)
-  const recentActivity = students.slice(0, 5).map(s => ({
-    student: s,
-    type: ['training', 'nutrition', 'cardio', 'weight'][Math.floor(Math.random() * 4)],
-    date: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000),
-  })).sort((a, b) => b.date - a.date);
 
   // Alertas
   const alerts = [];
@@ -459,10 +471,17 @@ const CoachDashboard = () => {
                 <AccessTimeIcon sx={{ color: '#FFB300' }} /> Actividad Reciente
               </Typography>
               
-              {recentActivity.length === 0 ? (
+              {loadingActivity ? (
+                <Box sx={{ textAlign: 'center', py: 3 }}>
+                  <CircularProgress size={24} sx={{ color: '#FFB300' }} />
+                  <Typography variant="body2" sx={{ color: '#666', mt: 1 }}>
+                    Cargando actividad...
+                  </Typography>
+                </Box>
+              ) : recentActivity.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 3 }}>
                   <Typography variant="body2" sx={{ color: '#666' }}>
-                    Sin actividad reciente
+                    Sin actividad reciente de tus alumnos
                   </Typography>
                 </Box>
               ) : (
@@ -483,18 +502,14 @@ const CoachDashboard = () => {
                         primary={
                           <Typography variant="body2" sx={{ color: '#fff' }}>
                             <strong>
-                              {(activity.student.user?.fullName || activity.student.firstName).split(' ')[0]}
+                              {activity.studentName?.split(' ')[0] || 'Alumno'}
                             </strong>{' '}
-                            {getActivityText(activity.type)}
+                            {activity.description || getActivityText(activity.type)}
                           </Typography>
                         }
                         secondary={
                           <Typography variant="caption" sx={{ color: '#666' }}>
-                            {activity.date.toLocaleDateString('es-AR', { 
-                              weekday: 'short',
-                              day: 'numeric',
-                              month: 'short',
-                            })}
+                            {formatRelativeDate(activity.date)}
                           </Typography>
                         }
                       />
