@@ -80,8 +80,13 @@ const EditMicrocycleSets = ({
             if (!exercisesByDay[day.dia]) {
               exercisesByDay[day.dia] = [];
             }
+            // Ordenar sets por order antes de guardar
+            const sortedSets = [...(exercise.sets || [])].sort(
+              (a, b) => (a.order ?? 0) - (b.order ?? 0)
+            );
             exercisesByDay[day.dia].push({
               ...exercise,
+              sets: sortedSets,
               dayName: day.nombre || `Día ${day.dia}`,
               dayId: day.id,
             });

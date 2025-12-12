@@ -223,16 +223,33 @@ const MicrocycleDetail = () => {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
           border: '1px solid #e0e0e0'
         }}>
+          {/* Fila 1: Volver + Título */}
           <div style={{ 
             display: 'flex', 
-            justifyContent: 'space-between', 
             alignItems: 'center',
-            flexWrap: 'wrap',
+            marginBottom: isMobile ? 12 : 0,
             gap: 10
           }}>
+            {isMobile && (
+              <button
+                onClick={() => navigate(-1)}
+                style={{
+                  background: '#f0f0f0',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: '#555',
+                }}
+              >
+                ←
+              </button>
+            )}
             <h1 style={{ 
               margin: 0, 
-              fontSize: isMobile ? 20 : 28, 
+              fontSize: isMobile ? 18 : 28, 
               fontWeight: 600, 
               color: '#2c3e50',
               flex: 1,
@@ -240,59 +257,83 @@ const MicrocycleDetail = () => {
             }}>
               {microcycle.name}
             </h1>
-            <button
-              onClick={() => {
-                // En mobile, navegar a página separada para mejor scroll
-                if (isMobile) {
-                  navigate(`/coach/microcycle/${id}/edit-sets`);
-                } else {
-                  setEditSetsModalOpen(true);
-                }
-              }}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 8,
-                border: 'none',
-                background: '#4caf50',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.2s',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#66bb6a'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#4caf50'}
-            >
-              ✏️ Editar Sets
-            </button>
-
-            <button
-              onClick={() => setAddExerciseModalOpen(true)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 8,
-                border: 'none',
-                background: '#1976d2',
-                color: '#fff',
-                cursor: 'pointer',
-                fontSize: 14,
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.2s',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#1e88e5'}
-              onMouseLeave={(e) => e.currentTarget.style.background = '#1976d2'}
-            >
-              ➕ Agregar ejercicio
-            </button>
+            {!isMobile && (
+              <>
+                <button
+                  onClick={() => setEditSetsModalOpen(true)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#4caf50',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  ✏️ Editar Sets
+                </button>
+                <button
+                  onClick={() => setAddExerciseModalOpen(true)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#1976d2',
+                    color: '#fff',
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: 600,
+                  }}
+                >
+                  ➕ Agregar ejercicio
+                </button>
+              </>
+            )}
           </div>
+
+          {/* Fila 2: Botones de acción (solo mobile) */}
+          {isMobile && (
+            <div style={{ 
+              display: 'flex', 
+              gap: 8,
+              marginBottom: 8,
+            }}>
+              <button
+                onClick={() => navigate(`/coach/microcycle/${id}/edit-sets`)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#4caf50',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                ✏️ Editar Sets
+              </button>
+              <button
+                onClick={() => setAddExerciseModalOpen(true)}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  borderRadius: 8,
+                  border: 'none',
+                  background: '#1976d2',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                ➕ Agregar
+              </button>
+            </div>
+          )}
           <div style={{ 
             fontSize: isMobile ? 14 : 16, 
             color: '#7f8c8d',
