@@ -40,6 +40,7 @@ import CreateRoutinePage from './scene/coach/CreateRoutinePage';
 import DashboardMock from './components/DashboardMock';
 import Layout from './components/Layout';
 import { InstallPWABanner } from './components/InstallPWABanner';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
@@ -82,6 +83,7 @@ export const FitFinanceApp = () => {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <InstallPWABanner />
+        <PWAUpdatePrompt />
         <Routes>
           {status === 'not-authenticated' ? (
             <>
