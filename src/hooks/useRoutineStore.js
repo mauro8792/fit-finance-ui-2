@@ -71,9 +71,16 @@ export const useRoutineStore = () => {
     return response.data;
   }, []);
 
+  // Obtener un macrociclo por id
+  const getMacrocycleById = useCallback(async (macrocycleId) => {
+    const response = await fitFinanceApi.get(`/macrocycle/${macrocycleId}`);
+    return response.data;
+  }, []);
+
   return {
     createMacroCycle,
     getAllMacroCycles,
+    getMacrocycleById,
     createMesocycle,
     getMesocyclesByMacro,
     getMesocycleById,

@@ -31,6 +31,7 @@ import StudentNutritionView from './scene/coach/StudentNutritionView';
 
 import MicrocycleEdit from './scene/coach/MicrocycleEdit';
 import MicrocycleDetail from './components/MicrocycleDetail';
+import EditMicrocycleSetsPage from './scene/coach/EditMicrocycleSetsPage';
 import ExerciseCatalogManager from './scene/coach/ExerciseCatalogManager';
 import { TemplateLibrary } from './scene/coach/templates';
 import CoachFoodCatalog from './scene/coach/CoachFoodCatalog';
@@ -116,6 +117,7 @@ export const FitFinanceApp = () => {
                   <Route path="/coach/alumno/:studentId/nutricion" element={<StudentNutritionView />} />
                   <Route path="/coach/macrocycle/:id" element={<MacrocycleDetail />} />
                   <Route path="/coach/microcycle/:id" element={<MicrocycleDetail />} />
+                  <Route path="/coach/microcycle/:microcycleId/edit-sets" element={<EditMicrocycleSetsPage />} />
                   <Route path="/coach/mesocycle/:mesocycleId/microcycles" element={<MicrocycleManager />} />
                   <Route path="/coach/mesocycle/:mesocycleId/microcycle/new" element={<MicrocycleEdit />} />
                   <Route path="/coach/mesocycle/:mesocycleId/microcycle/:microcycleId/edit" element={<MicrocycleEdit />} />

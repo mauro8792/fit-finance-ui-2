@@ -8,6 +8,7 @@ import {
   addPointsBatch,
   finishActivity,
   cancelActivity,
+  getInProgress,
   getDistanceMeters,
   formatDuration,
   calculatePace,
@@ -58,6 +59,10 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
   const [points, setPoints] = useState([]);
   const [pendingPoints, setPendingPoints] = useState([]);
   
+  // Estado para actividad en progreso existente
+  const [existingActivity, setExistingActivity] = useState(null);
+  const [checkingExisting, setCheckingExisting] = useState(true);
+  
   // Stats
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [distanceMeters, setDistanceMeters] = useState(0);
@@ -68,6 +73,69 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
   const watchIdRef = useRef(null);
   const timerRef = useRef(null);
   const syncIntervalRef = useRef(null);
+
+  // Verificar si hay actividad en progreso al cargar
+  useEffect(() => {
+    const checkExistingActivity = async () => {
+      try {
+        setCheckingExisting(true);
+        const activity = await getInProgress(studentId);
+        if (activity) {
+          setExistingActivity(activity);
+        }
+      } catch (err) {
+        // No hay actividad en progreso (404) - esto es normal
+        console.log('No hay actividad en progreso');
+      } finally {
+        setCheckingExisting(false);
+      }
+    };
+    
+    checkExistingActivity();
+  }, [studentId]);
+
+  // Cancelar actividad existente
+  const handleCancelExisting = async () => {
+    if (!existingActivity) return;
+    
+    try {
+      await cancelActivity(existingActivity.id);
+      setExistingActivity(null);
+    } catch (err) {
+      console.error('Error cancelando actividad:', err);
+      setError('Error al cancelar la actividad existente');
+    }
+  };
+
+  // Guardar y finalizar actividad existente
+  const handleSaveExisting = async () => {
+    if (!existingActivity) return;
+    
+    try {
+      // Calcular duración aproximada
+      const startTime = new Date(existingActivity.startedAt);
+      const now = new Date();
+      const durationSeconds = Math.round((now.getTime() - startTime.getTime()) / 1000);
+      
+      // Usar datos que tenga la actividad
+      await finishActivity(existingActivity.id, {
+        durationSeconds: Math.min(durationSeconds, 7200), // Máximo 2 horas
+        distanceMeters: existingActivity.distanceMeters || 0,
+        avgSpeedKmh: existingActivity.avgSpeedKmh || 0,
+        maxSpeedKmh: existingActivity.maxSpeedKmh || 0,
+        caloriesBurned: existingActivity.caloriesBurned || 0,
+      });
+      
+      setExistingActivity(null);
+      // Notificar que se guardó
+      if (onFinish) {
+        onFinish({ saved: true, fromExisting: true });
+      }
+    } catch (err) {
+      console.error('Error guardando actividad:', err);
+      setError('Error al guardar la actividad');
+    }
+  };
 
   // Obtener posición inicial
   useEffect(() => {
@@ -267,6 +335,134 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
   const gpsColor = gpsStatus === 'ready' 
     ? (accuracy <= 30 ? COLORS.green : accuracy <= 100 ? COLORS.orange : COLORS.red)
     : (gpsStatus === 'error' ? COLORS.red : COLORS.orange);
+
+  // Mostrar pantalla de verificación
+  if (checkingExisting) {
+    return (
+      <Box sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 3,
+      }}>
+        <CircularProgress sx={{ color: COLORS.orange, mb: 2 }} />
+        <Typography color={COLORS.text}>Verificando actividades...</Typography>
+      </Box>
+    );
+  }
+
+  // Mostrar pantalla de actividad existente
+  if (existingActivity) {
+    const existingInfo = getActivityInfo(existingActivity.activityType);
+    return (
+      <Box sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        p: 3,
+      }}>
+        <Box sx={{
+          background: `linear-gradient(135deg, ${COLORS.orange}22 0%, transparent 100%)`,
+          border: `2px solid ${COLORS.orange}`,
+          borderRadius: 3,
+          p: 3,
+          mb: 3,
+        }}>
+          <Typography fontSize={40} textAlign="center" mb={2}>⚠️</Typography>
+          <Typography 
+            variant="h6" 
+            color={COLORS.orange} 
+            textAlign="center" 
+            fontWeight={700}
+            mb={2}
+          >
+            Actividad en Progreso
+          </Typography>
+          <Typography color={COLORS.textMuted} textAlign="center" mb={3}>
+            Ya tenés una actividad sin finalizar. ¿Qué querés hacer?
+          </Typography>
+          
+          {/* Info de la actividad existente */}
+          <Box sx={{
+            background: COLORS.card,
+            borderRadius: 2,
+            p: 2,
+            mb: 3,
+          }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <Typography fontSize={32}>{existingInfo.emoji}</Typography>
+              <Box>
+                <Typography color={COLORS.text} fontWeight={600}>
+                  {existingInfo.label}
+                </Typography>
+                <Typography color={COLORS.textMuted} fontSize={12}>
+                  Iniciada: {new Date(existingActivity.startedAt).toLocaleString('es-AR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </Typography>
+              </Box>
+            </Box>
+            {existingActivity.distanceMeters > 0 && (
+              <Typography color={COLORS.textMuted} fontSize={13}>
+                Distancia: {(existingActivity.distanceMeters / 1000).toFixed(2)} km
+              </Typography>
+            )}
+          </Box>
+        </Box>
+
+        {/* Botones de acción */}
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* Guardar lo que hay */}
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleSaveExisting}
+            sx={{
+              py: 1.5,
+              background: COLORS.green,
+              '&:hover': { background: '#3db897' },
+              fontWeight: 700,
+            }}
+          >
+            💾 Guardar y Finalizar
+          </Button>
+          
+          {/* Cancelar y empezar nueva */}
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleCancelExisting}
+            sx={{
+              py: 1.5,
+              background: COLORS.red,
+              '&:hover': { background: '#dc2626' },
+              fontWeight: 700,
+            }}
+          >
+            🗑️ Descartar y Empezar Nueva
+          </Button>
+          
+          <Button
+            variant="outlined"
+            fullWidth
+            onClick={onCancel}
+            sx={{
+              py: 1.5,
+              borderColor: COLORS.textMuted,
+              color: COLORS.text,
+            }}
+          >
+            ← Volver
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box sx={{ 

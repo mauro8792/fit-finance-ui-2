@@ -241,7 +241,14 @@ const MicrocycleDetail = () => {
               {microcycle.name}
             </h1>
             <button
-              onClick={() => setEditSetsModalOpen(true)}
+              onClick={() => {
+                // En mobile, navegar a página separada para mejor scroll
+                if (isMobile) {
+                  navigate(`/coach/microcycle/${id}/edit-sets`);
+                } else {
+                  setEditSetsModalOpen(true);
+                }
+              }}
               style={{
                 padding: '8px 16px',
                 borderRadius: 8,
