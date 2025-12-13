@@ -73,6 +73,10 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
   const watchIdRef = useRef(null);
   const timerRef = useRef(null);
   const syncIntervalRef = useRef(null);
+  
+  // Timestamp de inicio para calcular tiempo real (funciona en segundo plano)
+  const startTimeRef = useRef(null);
+  const pausedTimeRef = useRef(0); // Tiempo acumulado antes de pausar
 
   // Verificar si hay actividad en progreso al cargar
   useEffect(() => {
@@ -211,12 +215,34 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
     }
   }, [currentPosition, status]);
 
-  // Timer
+  // Timer basado en timestamps (funciona aunque la app esté en segundo plano)
   useEffect(() => {
     if (status === 'tracking') {
-      timerRef.current = setInterval(() => {
-        setElapsedSeconds(prev => prev + 1);
-      }, 1000);
+      // Calcular tiempo real basado en timestamps
+      const updateTimer = () => {
+        if (startTimeRef.current) {
+          const now = Date.now();
+          const elapsed = Math.floor((now - startTimeRef.current) / 1000) + pausedTimeRef.current;
+          setElapsedSeconds(elapsed);
+        }
+      };
+      
+      // Actualizar inmediatamente y luego cada segundo
+      updateTimer();
+      timerRef.current = setInterval(updateTimer, 1000);
+      
+      // También actualizar cuando la app vuelve a primer plano
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          updateTimer();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        clearInterval(timerRef.current);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     } else {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -266,6 +292,11 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
       
       console.log('Actividad iniciada:', result);
       setTrackId(result.id);
+      
+      // Guardar timestamp de inicio para calcular tiempo real
+      startTimeRef.current = Date.now();
+      pausedTimeRef.current = 0;
+      
       setStatus('tracking');
     } catch (err) {
       console.error('Error starting activity:', err);

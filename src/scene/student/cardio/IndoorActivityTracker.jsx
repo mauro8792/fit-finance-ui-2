@@ -37,6 +37,10 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
   const [startTime, setStartTime] = useState(null);
   const timerRef = useRef(null);
   
+  // Para calcular tiempo real (funciona en segundo plano)
+  const startTimestampRef = useRef(null);
+  const pausedTimeRef = useRef(0);
+  
   // Estados para datos finales
   const [showFinishForm, setShowFinishForm] = useState(false);
   const [distance, setDistance] = useState('');
@@ -56,12 +60,32 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   };
 
-  // Timer effect
+  // Timer basado en timestamps (funciona aunque la app esté en segundo plano)
   useEffect(() => {
     if (status === 'running') {
-      timerRef.current = setInterval(() => {
-        setElapsedSeconds(prev => prev + 1);
-      }, 1000);
+      const updateTimer = () => {
+        if (startTimestampRef.current) {
+          const now = Date.now();
+          const elapsed = Math.floor((now - startTimestampRef.current) / 1000) + pausedTimeRef.current;
+          setElapsedSeconds(elapsed);
+        }
+      };
+      
+      updateTimer();
+      timerRef.current = setInterval(updateTimer, 1000);
+      
+      // Actualizar cuando la app vuelve a primer plano
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          updateTimer();
+        }
+      };
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      return () => {
+        clearInterval(timerRef.current);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
     
     return () => {
@@ -71,16 +95,24 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
 
   // Handlers
   const handleStart = () => {
+    startTimestampRef.current = Date.now();
+    pausedTimeRef.current = 0;
     setStatus('running');
     setStartTime(new Date());
   };
 
   const handlePause = () => {
+    // Guardar tiempo acumulado antes de pausar
+    if (startTimestampRef.current) {
+      pausedTimeRef.current = elapsedSeconds;
+    }
     setStatus('paused');
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
   const handleResume = () => {
+    // Reiniciar timestamp desde ahora
+    startTimestampRef.current = Date.now();
     setStatus('running');
   };
 
