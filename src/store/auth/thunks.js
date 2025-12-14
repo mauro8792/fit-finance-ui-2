@@ -38,32 +38,34 @@ export const startLoginWithEmailPassword = ({ email, password }) => {
       localStorage.setItem("token", data.token);
       localStorage.setItem("userType", data.userType);
 
-      // Si es estudiante, obtener datos completos del estudiante
-      if (data.userType === "student") {
+      // Log para debug de perfil dual
+      console.log("🔄 Perfil dual:", {
+        hasMultipleProfiles: data.hasMultipleProfiles,
+        profiles: data.profiles,
+      });
+
+      // Despachar login con TODOS los datos incluyendo perfil dual
+      if (data.student) {
         localStorage.setItem("studentId", data.student.id);
-        dispatch(
-          onLogin({
-            user: { ...data.user, id: data.id }, // Asegura que el id esté siempre presente
-            student: data.student,
-            userType: "student",
-            token: data.token,
-          })
-        );
-      } else {
-        // Para coach y admin, aseguramos que user tenga id, email, fullName, roles
-        dispatch(
-          onLogin({
-            user: {
-              id: data.id,
-              email: data.email,
-              fullName: data.fullName,
-              roles: data.roles,
-            },
-            userType: data.userType,
-            token: data.token,
-          })
-        );
       }
+      
+      dispatch(
+        onLogin({
+          id: data.id,
+          user: {
+            id: data.id,
+            email: data.email,
+            fullName: data.fullName,
+            roles: data.roles,
+          },
+          student: data.student || null,
+          userType: data.userType,
+          token: data.token,
+          // ¡Datos de perfil dual!
+          profiles: data.profiles,
+          hasMultipleProfiles: data.hasMultipleProfiles,
+        })
+      );
     } catch (error) {
       console.error("Error en login:", error);
       dispatch(onLogout("Error de conexión"));
@@ -102,25 +104,29 @@ export const checkingAuthentication = () => {
       // Actualizar localStorage con los datos del backend
       localStorage.setItem("userType", data.userType);
 
-      if (data.userType === "student") {
+      // Log para debug de perfil dual
+      console.log("🔄 checkingAuthentication - Perfil dual:", {
+        hasMultipleProfiles: data.hasMultipleProfiles,
+        profiles: data.profiles,
+      });
+
+      if (data.student) {
         localStorage.setItem("studentId", data.student.id);
-        dispatch(
-          onLogin({
-            user: data.user,
-            student: data.student,
-            userType: data.userType,
-            token,
-          })
-        );
-      } else {
-        dispatch(
-          onLogin({
-            user: data.user,
-            userType: data.userType,
-            token,
-          })
-        );
       }
+
+      // Despachar login con TODOS los datos incluyendo perfil dual
+      dispatch(
+        onLogin({
+          id: data.user?.id,
+          user: data.user,
+          student: data.student || null,
+          userType: data.userType,
+          token,
+          // ¡Datos de perfil dual!
+          profiles: data.profiles,
+          hasMultipleProfiles: data.hasMultipleProfiles,
+        })
+      );
     } catch (error) {
       console.error("Error verificando autenticación:", error);
       localStorage.removeItem("token");

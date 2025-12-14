@@ -344,29 +344,34 @@ const StudentWizard = ({ open, onClose }) => {
             </Grid>
 
             {/* Summary Card */}
-            <Card sx={{ mt: 3, bgcolor: theme.palette.grey[50] }}>
+            <Card sx={{ 
+              mt: 3, 
+              bgcolor: 'rgba(255, 152, 0, 0.1)', 
+              border: '1px solid rgba(255, 152, 0, 0.3)',
+              borderRadius: 2
+            }}>
               <CardContent>
-                <Typography variant="h6" sx={{ mb: 2 }}>
-                  Resumen
+                <Typography variant="h6" sx={{ mb: 2, color: '#ff9800' }}>
+                  📋 Resumen
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Usuario:</strong> {availableUsers.find(u => u.id === formData.userId)?.fullName}
+                    <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
+                      <span style={{ color: '#ff9800', fontWeight: 'bold' }}>Usuario:</span> {availableUsers.find(u => u.id === formData.userId)?.fullName}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Nombre:</strong> {formData.firstName} {formData.lastName}
+                    <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
+                      <span style={{ color: '#ff9800', fontWeight: 'bold' }}>Nombre:</span> {formData.firstName} {formData.lastName}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Documento:</strong> {formData.document}
+                    <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
+                      <span style={{ color: '#ff9800', fontWeight: 'bold' }}>Documento:</span> {formData.document}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Deporte:</strong> {selectedSport?.name || 'No seleccionado'}
+                    <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
+                      <span style={{ color: '#ff9800', fontWeight: 'bold' }}>Deporte:</span> {selectedSport?.name || 'No seleccionado'}
                     </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      <strong>Coach:</strong> {selectedCoach?.user?.fullName || 'No asignado'}
+                    <Typography variant="body2" sx={{ color: '#fff', mb: 1 }}>
+                      <span style={{ color: '#ff9800', fontWeight: 'bold' }}>Coach:</span> {selectedCoach?.user?.fullName || 'No asignado'}
                     </Typography>
                   </Grid>
                 </Grid>

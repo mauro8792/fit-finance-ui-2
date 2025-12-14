@@ -141,6 +141,56 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
     }
   };
 
+  // Continuar actividad existente
+  const handleContinueExisting = async () => {
+    if (!existingActivity) return;
+    
+    try {
+      // Usar el trackId de la actividad existente
+      setTrackId(existingActivity.id);
+      
+      // Calcular tiempo transcurrido desde el inicio
+      const startTime = new Date(existingActivity.startedAt);
+      startTimeRef.current = startTime.getTime();
+      pausedTimeRef.current = 0;
+      
+      // Cargar puntos existentes si los hay
+      if (existingActivity.points && existingActivity.points.length > 0) {
+        setPoints(existingActivity.points.map(p => ({
+          latitude: parseFloat(p.latitude),
+          longitude: parseFloat(p.longitude),
+          timestamp: p.timestamp,
+          speed: p.speed || 0,
+          accuracy: p.accuracy || 10,
+        })));
+        
+        // Calcular distancia de los puntos existentes
+        let totalDist = 0;
+        for (let i = 1; i < existingActivity.points.length; i++) {
+          const p1 = existingActivity.points[i - 1];
+          const p2 = existingActivity.points[i];
+          totalDist += getDistanceMeters(
+            parseFloat(p1.latitude), parseFloat(p1.longitude),
+            parseFloat(p2.latitude), parseFloat(p2.longitude)
+          );
+        }
+        setDistanceMeters(totalDist);
+      }
+      
+      // Calcular tiempo transcurrido
+      const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+      setElapsedSeconds(elapsed);
+      
+      // Limpiar la actividad existente y comenzar tracking
+      setExistingActivity(null);
+      setStatus('tracking');
+      
+    } catch (err) {
+      console.error('Error continuando actividad:', err);
+      setError('Error al continuar la actividad');
+    }
+  };
+
   // Obtener posición inicial
   useEffect(() => {
     if (navigator.geolocation) {
@@ -422,10 +472,10 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
             p: 2,
             mb: 3,
           }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <Typography fontSize={32}>{existingInfo.emoji}</Typography>
-              <Box>
-                <Typography color={COLORS.text} fontWeight={600}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
+              <Typography fontSize={40}>{existingInfo.emoji}</Typography>
+              <Box sx={{ flex: 1 }}>
+                <Typography color={COLORS.text} fontWeight={700} fontSize={18}>
                   {existingInfo.label}
                 </Typography>
                 <Typography color={COLORS.textMuted} fontSize={12}>
@@ -438,16 +488,72 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
                 </Typography>
               </Box>
             </Box>
-            {existingActivity.distanceMeters > 0 && (
-              <Typography color={COLORS.textMuted} fontSize={13}>
-                Distancia: {(existingActivity.distanceMeters / 1000).toFixed(2)} km
-              </Typography>
-            )}
+            
+            {/* Stats de la actividad */}
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ 
+                flex: 1, 
+                textAlign: 'center', 
+                p: 1.5, 
+                borderRadius: 2, 
+                background: `${COLORS.orange}22` 
+              }}>
+                <Typography color={COLORS.orange} fontWeight={700} fontSize={20}>
+                  {(() => {
+                    const elapsed = Math.floor((Date.now() - new Date(existingActivity.startedAt).getTime()) / 1000);
+                    const hrs = Math.floor(elapsed / 3600);
+                    const mins = Math.floor((elapsed % 3600) / 60);
+                    const secs = elapsed % 60;
+                    if (hrs > 0) return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+                    return `${mins}:${secs.toString().padStart(2, '0')}`;
+                  })()}
+                </Typography>
+                <Typography color={COLORS.textMuted} fontSize={10}>TIEMPO</Typography>
+              </Box>
+              {existingActivity.points?.length > 0 && (
+                <Box sx={{ 
+                  flex: 1, 
+                  textAlign: 'center', 
+                  p: 1.5, 
+                  borderRadius: 2, 
+                  background: `${COLORS.green}22` 
+                }}>
+                  <Typography color={COLORS.green} fontWeight={700} fontSize={20}>
+                    {existingActivity.points.length}
+                  </Typography>
+                  <Typography color={COLORS.textMuted} fontSize={10}>PUNTOS GPS</Typography>
+                </Box>
+              )}
+            </Box>
           </Box>
         </Box>
 
         {/* Botones de acción */}
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {/* VOLVER AL MAPA - Opción principal */}
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={handleContinueExisting}
+            sx={{
+              py: 2,
+              background: `linear-gradient(135deg, ${COLORS.orange} 0%, #e68a00 100%)`,
+              '&:hover': { background: '#e68a00' },
+              fontWeight: 700,
+              fontSize: 16,
+            }}
+          >
+            🗺️ Volver al Mapa
+          </Button>
+          <Typography 
+            variant="caption" 
+            color={COLORS.textMuted} 
+            textAlign="center"
+            sx={{ mt: -1 }}
+          >
+            La actividad sigue en curso, el tiempo no se pausó
+          </Typography>
+          
           {/* Guardar lo que hay */}
           <Button
             variant="contained"
@@ -465,27 +571,30 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
           
           {/* Cancelar y empezar nueva */}
           <Button
-            variant="contained"
+            variant="outlined"
             fullWidth
             onClick={handleCancelExisting}
             sx={{
               py: 1.5,
-              background: COLORS.red,
-              '&:hover': { background: '#dc2626' },
+              borderColor: COLORS.red,
+              color: COLORS.red,
+              '&:hover': { 
+                background: `${COLORS.red}22`,
+                borderColor: COLORS.red,
+              },
               fontWeight: 700,
             }}
           >
-            🗑️ Descartar y Empezar Nueva
+            🗑️ Descartar
           </Button>
           
           <Button
-            variant="outlined"
+            variant="text"
             fullWidth
             onClick={onCancel}
             sx={{
-              py: 1.5,
-              borderColor: COLORS.textMuted,
-              color: COLORS.text,
+              py: 1,
+              color: COLORS.textMuted,
             }}
           >
             ← Volver

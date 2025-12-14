@@ -7,14 +7,18 @@ import { LogoutOutlined, Menu as MenuIcon } from '@mui/icons-material';
 import { useAuthStore } from '../hooks';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import FinalMobileDrawer from './FinalMobileDrawer';
+import ProfileSwitcher from './ProfileSwitcher';
 
 export default function BrandingHeader() {
-  const { startLogout, user, student, userType } = useAuthStore();
-  const isMobile = useMediaQuery('(max-width:768px)'); // Cambiado de 600px a 768px
+  const { startLogout, user, student, userType, hasMultipleProfiles, profiles } = useAuthStore();
+  const isMobile = useMediaQuery('(max-width:768px)');
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   
+  // Check robusto: tiene perfil dual
+  const showProfileSwitcher = hasMultipleProfiles || (profiles?.coach && profiles?.student);
+  
   // Debug logs
-  console.log('BrandingHeader Debug:', { isMobile, userType, showMobileMenu: isMobile && (userType === 'admin' || userType === 'superadmin' || userType === 'student' || userType === 'coach') });
+  console.log('BrandingHeader Debug:', { isMobile, userType, showProfileSwitcher, hasMultipleProfiles, profiles });
   
   // Solo mostrar drawer para admin/superadmin/coach en móvil, o para estudiantes
   // Temporalmente mostrar siempre en mobile para debug
@@ -49,8 +53,10 @@ export default function BrandingHeader() {
         <GymLogo height={48} />
       </Box>
       <Box display='flex' alignItems='center' gap={2}>
-        {/* Solo mostrar chip, nombre y logout en desktop */}
-        {!isMobile && userType && (
+        {/* ProfileSwitcher para usuarios con perfil dual, o Chip normal */}
+        {!isMobile && showProfileSwitcher ? (
+          <ProfileSwitcher />
+        ) : !isMobile && userType && (
           <Chip 
             label={
               userType === 'student'

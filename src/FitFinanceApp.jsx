@@ -41,6 +41,7 @@ import DashboardMock from './components/DashboardMock';
 import Layout from './components/Layout';
 import { InstallPWABanner } from './components/InstallPWABanner';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
+import ProfileSelector from './components/ProfileSelector';
 
 export const FitFinanceApp = () => {
   const [theme, colorMode] = useMode();
@@ -73,6 +74,18 @@ export const FitFinanceApp = () => {
             <CircularProgress size={60} />
             <Typography variant="h6">Verificando autenticación...</Typography>
           </Box>
+        </ThemeProvider>
+      </ColorModeContext.Provider>
+    );
+  }
+
+  // Pantalla de selección de perfil (coach con perfil dual)
+  if (status === 'select-profile') {
+    return (
+      <ColorModeContext.Provider value={colorMode}>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <ProfileSelector />
         </ThemeProvider>
       </ColorModeContext.Provider>
     );
