@@ -548,20 +548,51 @@ const CardioSection = ({ studentId }) => {
             borderBottom: `2px solid ${COLORS.orange}`,
           }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-              <Typography fontSize={24}>⚠️</Typography>
-              <Box>
+              <Typography fontSize={28}>
+                {getTrackerActivityInfo(pendingActivity.activityType)?.emoji || '🏃'}
+              </Typography>
+              <Box sx={{ flex: 1 }}>
                 <Typography fontWeight={700} color={COLORS.orange}>
                   Actividad en Progreso
                 </Typography>
                 <Typography fontSize={12} color={COLORS.textMuted}>
-                  {getTrackerActivityInfo(pendingActivity.activityType)?.label || pendingActivity.activityType} - 
+                  {getTrackerActivityInfo(pendingActivity.activityType)?.label || pendingActivity.activityType}
+                </Typography>
+                <Typography fontSize={11} color={COLORS.textMuted}>
                   Iniciada: {new Date(pendingActivity.startedAt).toLocaleString('es-AR', {
                     day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
                   })}
+                  {' · '}
+                  <Typography component="span" color={COLORS.green} fontWeight={600}>
+                    {(() => {
+                      const elapsed = Math.floor((Date.now() - new Date(pendingActivity.startedAt).getTime()) / 1000);
+                      const hrs = Math.floor(elapsed / 3600);
+                      const mins = Math.floor((elapsed % 3600) / 60);
+                      if (hrs > 0) return `${hrs}h ${mins}min transcurridos`;
+                      return `${mins}min transcurridos`;
+                    })()}
+                  </Typography>
                 </Typography>
               </Box>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
+              {/* Botón VER MAPA - Principal */}
+              <Button
+                size="small"
+                variant="contained"
+                onClick={() => {
+                  setSelectedActivity(pendingActivity.activityType);
+                  setView('gps');
+                }}
+                sx={{ 
+                  bgcolor: COLORS.orange, 
+                  flex: 2,
+                  fontWeight: 700,
+                  '&:hover': { bgcolor: '#e68a00' }
+                }}
+              >
+                🗺️ Ver Mapa
+              </Button>
               <Button
                 size="small"
                 variant="contained"
