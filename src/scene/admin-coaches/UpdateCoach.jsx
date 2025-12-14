@@ -15,7 +15,12 @@ import {
   Chip,
   Alert,
   Avatar,
+  Card,
+  CardContent,
+  Grid,
 } from '@mui/material';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useTheme } from '@mui/material/styles';
 import { useCoachesStore, useSportsStore } from '../../hooks';
 
@@ -115,47 +120,111 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
     switch (activeTab) {
       case 0:
         return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            <TextField
-              label="Especialización"
-              value={formData.specialization}
-              onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
-              placeholder="Ej: Fuerza, Hipertrofia, Funcional..."
-              fullWidth
-            />
-            <TextField
-              label="Experiencia"
-              value={formData.experience}
-              onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
-              placeholder="Ej: 5 años, Principiante, Experto..."
-              fullWidth
-            />
-            <TextField
-              label="Certificaciones"
-              value={formData.certification}
-              onChange={(e) => setFormData({ ...formData, certification: e.target.value })}
-              placeholder="Ej: NSCA, ACSM, Entrenador Personal..."
-              fullWidth
-            />
-            <TextField
-              label="Salario"
-              type="number"
-              value={formData.salary}
-              onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
-              placeholder="Salario mensual"
-              error={!!formErrors.salary}
-              helperText={formErrors.salary}
-              fullWidth
-            />
-            <TextField
-              label="Biografía"
-              value={formData.bio}
-              onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              placeholder="Descripción personal del coach..."
-              multiline
-              rows={4}
-              fullWidth
-            />
+          <Box sx={{ mt: 2 }}>
+            <Grid container spacing={2}>
+              {/* Columna izquierda */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Especialización"
+                  value={formData.specialization}
+                  onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                  placeholder="Ej: Fuerza, Hipertrofia, Funcional..."
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Experiencia"
+                  value={formData.experience}
+                  onChange={(e) => setFormData({ ...formData, experience: e.target.value })}
+                  placeholder="Ej: 5 años, Principiante, Experto..."
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Certificaciones"
+                  value={formData.certification}
+                  onChange={(e) => setFormData({ ...formData, certification: e.target.value })}
+                  placeholder="Ej: NSCA, ACSM, Entrenador Personal..."
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Salario"
+                  type="number"
+                  value={formData.salary}
+                  onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                  placeholder="Salario mensual"
+                  error={!!formErrors.salary}
+                  helperText={formErrors.salary}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+              
+              {/* Biografía - ancho completo */}
+              <Grid item xs={12}>
+                <TextField
+                  label="Biografía"
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  placeholder="Descripción personal del coach..."
+                  multiline
+                  rows={3}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+
+              {/* Indicador de Perfil Personal - ancho completo */}
+              <Grid item xs={12}>
+                <Card 
+                  sx={{ 
+                    bgcolor: selectedCoach?.hasPersonalProfile 
+                      ? 'rgba(76, 175, 80, 0.1)' 
+                      : 'rgba(255,255,255,0.05)',
+                    border: selectedCoach?.hasPersonalProfile 
+                      ? '1px solid rgba(76, 175, 80, 0.5)' 
+                      : '1px solid rgba(255,255,255,0.1)',
+                  }}
+                >
+                  <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <FitnessCenterIcon 
+                        sx={{ 
+                          fontSize: 28, 
+                          color: selectedCoach?.hasPersonalProfile ? '#4caf50' : 'rgba(255,255,255,0.3)',
+                        }} 
+                      />
+                      <Box sx={{ flex: 1 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: '#fff' }}>
+                            📱 Perfil Personal
+                          </Typography>
+                          {selectedCoach?.hasPersonalProfile && (
+                            <CheckCircleIcon sx={{ fontSize: 16, color: '#4caf50' }} />
+                          )}
+                        </Box>
+                        <Typography 
+                          variant="caption" 
+                          sx={{ color: 'rgba(255,255,255,0.6)' }}
+                        >
+                          {selectedCoach?.hasPersonalProfile 
+                            ? 'Puede usar la app como alumno'
+                            : 'Sin perfil personal'
+                          }
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </CardContent>
+                </Card>
+              </Grid>
+            </Grid>
           </Box>
         );
 
@@ -219,7 +288,7 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
       maxWidth="md"
       fullWidth
       PaperProps={{
-        sx: { minHeight: '500px' }
+        sx: { minHeight: '400px' }
       }}
     >
       <DialogTitle sx={{ 

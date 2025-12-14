@@ -5,11 +5,22 @@ import { useAuthStore } from '../../hooks';
 import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
 import SportsMmaIcon from '@mui/icons-material/SportsMma';
 import { tokens } from '../../theme';
+import ProfileSwitcher from '../../components/ProfileSwitcher';
 
 const Topbar = () => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { startLogout, user, student, userType } = useAuthStore();
+  const { startLogout, user, student, userType, hasMultipleProfiles, profiles } = useAuthStore();
+  
+  // Check robusto: tiene perfil dual si hasMultipleProfiles O si tiene ambos profiles
+  const showProfileSwitcher = hasMultipleProfiles || (profiles?.coach && profiles?.student);
+  
+  console.log('🎨 Topbar render:', { 
+    hasMultipleProfiles, 
+    profiles, 
+    showProfileSwitcher,
+    userType 
+  });
   
   return (
     <Box
@@ -48,7 +59,10 @@ const Topbar = () => {
       </Box>
 
       <Box display='flex' alignItems='center' gap={{ xs: 1, sm: 2 }}>
-        {userType && (
+        {/* ProfileSwitcher para usuarios con perfil dual */}
+        {showProfileSwitcher ? (
+          <ProfileSwitcher />
+        ) : userType && (
           <Chip 
             label={
               userType === 'student'

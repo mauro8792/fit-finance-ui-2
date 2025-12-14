@@ -20,6 +20,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
 import CollectionsBookmarkIcon from '@mui/icons-material/CollectionsBookmark';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 
 import { tokens } from '../theme';
 import { useAuthStore } from '../hooks';
@@ -93,10 +94,13 @@ MobileMenuItem.propTypes = {
 const FinalMobileDrawer = ({ open, onClose }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
-  const { user, startLogout, userType, student } = useAuthStore();
+  const { user, startLogout, userType, student, hasMultipleProfiles, profiles, selectProfile } = useAuthStore();
   const [selected, setSelected] = useState('Dashboard');
 
-  console.log('FinalMobileDrawer rendered:', { open, userType });
+  // Check robusto para perfil dual
+  const showProfileSwitch = hasMultipleProfiles || (profiles?.coach && profiles?.student);
+
+  console.log('FinalMobileDrawer rendered:', { open, userType, showProfileSwitch });
 
   // Función para manejar logout
   const handleLogout = () => {
@@ -243,6 +247,48 @@ const FinalMobileDrawer = ({ open, onClose }) => {
             {userType === 'student' ? 'Estudiante' : 
              userType === 'coach' ? 'Coach' : 'Administrador'}
           </Typography>
+          
+          {/* Botón cambiar perfil para usuarios con perfil dual */}
+          {showProfileSwitch && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 1,
+                mt: 2,
+                p: 1.5,
+                borderRadius: 2,
+                bgcolor: 'rgba(255, 152, 0, 0.15)',
+                border: '1px solid rgba(255, 152, 0, 0.3)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  bgcolor: 'rgba(255, 152, 0, 0.25)',
+                },
+                '&:active': {
+                  transform: 'scale(0.98)',
+                }
+              }}
+              onClick={() => {
+                const newProfile = userType === 'coach' ? 'student' : 'coach';
+                selectProfile(newProfile, true);
+                onClose();
+              }}
+            >
+              <SwapHorizIcon sx={{ color: colors.orangeAccent[500], fontSize: 20 }} />
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: colors.orangeAccent[500], 
+                  fontWeight: 600,
+                  fontSize: '0.85rem'
+                }}
+              >
+                Cambiar a {userType === 'coach' ? '📱 Mi Entreno' : '🏋️ Coach'}
+              </Typography>
+            </Box>
+          )}
         </Box>
         
         {/* Menu Items */}

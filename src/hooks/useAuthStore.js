@@ -8,9 +8,25 @@ import {
   getStudentDashboard,
   getStudentFees,
 } from "../store/auth/thunks";
+import {
+  selectProfile as selectProfileAction,
+  switchProfile as switchProfileAction,
+  clearActiveProfile as clearActiveProfileAction,
+} from "../store/auth/authSlice";
 
 export const useAuthStore = () => {
-  const { status, user, student, userType, errorMessage, token } = useSelector(
+  const { 
+    status, 
+    user, 
+    student, 
+    userType, 
+    errorMessage, 
+    token,
+    // Perfil dual
+    profiles,
+    hasMultipleProfiles,
+    activeProfile,
+  } = useSelector(
     (state) => state.auth
   );
   const dispatch = useDispatch();
@@ -77,6 +93,23 @@ export const useAuthStore = () => {
     }
   }, []);
 
+  // ========== PERFIL DUAL ==========
+  
+  // Seleccionar perfil (coach o student)
+  const selectProfile = useCallback((profile, remember = false) => {
+    dispatch(selectProfileAction({ profile, remember }));
+  }, [dispatch]);
+
+  // Cambiar entre perfiles
+  const switchUserProfile = useCallback(() => {
+    dispatch(switchProfileAction());
+  }, [dispatch]);
+
+  // Limpiar preferencia de perfil
+  const clearProfilePreference = useCallback(() => {
+    dispatch(clearActiveProfileAction());
+  }, [dispatch]);
+
   return {
     //* Properties
     status,
@@ -85,6 +118,10 @@ export const useAuthStore = () => {
     userType,
     errorMessage,
     token,
+    // Perfil dual
+    profiles,
+    hasMultipleProfiles,
+    activeProfile,
 
     //* Methods
     startLogin,
@@ -95,5 +132,9 @@ export const useAuthStore = () => {
     getStudentFeesData,
     getCoachStudentsData,
     getStudentById,
+    // Perfil dual
+    selectProfile,
+    switchUserProfile,
+    clearProfilePreference,
   };
 };
