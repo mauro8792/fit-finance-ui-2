@@ -148,6 +148,7 @@ const FinalMobileDrawer = ({ open, onClose }) => {
         <>
           <MobileMenuItem title='Dashboard' to='/coach/dashboard' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileMenuItem title='Cuotas' to='/coach/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Biblioteca' to='/coach/templates' icon={<CollectionsBookmarkIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Ejercicios' to='/coach/exercise-catalog' icon={<FitnessCenterIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileMenuItem title='Alimentos' to='/coach/food-catalog' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />

@@ -34,6 +34,8 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
     bio: '',
     salary: '',
     sportIds: [],
+    defaultFeeAmount: '',
+    paymentAlias: '',
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -69,6 +71,8 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
         bio: selectedCoach.bio || '',
         salary: selectedCoach.salary ? selectedCoach.salary.toString() : '',
         sportIds: selectedCoach.sports?.map(sport => sport.id) || [],
+        defaultFeeAmount: selectedCoach.defaultFeeAmount ? selectedCoach.defaultFeeAmount.toString() : '',
+        paymentAlias: selectedCoach.paymentAlias || '',
       });
     }
   }, [selectedCoach]);
@@ -81,6 +85,8 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
       bio: '',
       salary: '',
       sportIds: [],
+      defaultFeeAmount: '',
+      paymentAlias: '',
     });
     setFormErrors({});
     setSubmitError('');
@@ -107,6 +113,7 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
       const updateData = {
         ...formData,
         salary: formData.salary ? parseFloat(formData.salary) : undefined,
+        defaultFeeAmount: formData.defaultFeeAmount ? parseFloat(formData.defaultFeeAmount) : undefined,
       };
 
       await updateCoach(coachId, updateData);
@@ -162,6 +169,39 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
                   placeholder="Salario mensual"
                   error={!!formErrors.salary}
                   helperText={formErrors.salary}
+                  fullWidth
+                  size="small"
+                />
+              </Grid>
+
+              {/* Configuración de Cuotas */}
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" color="primary" sx={{ mt: 2, mb: 1 }}>
+                  💰 Configuración de Cuotas
+                </Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Precio de Cuota Mensual"
+                  type="number"
+                  value={formData.defaultFeeAmount}
+                  onChange={(e) => setFormData({ ...formData, defaultFeeAmount: e.target.value })}
+                  placeholder="35000"
+                  helperText="Precio base que cobra este coach"
+                  fullWidth
+                  size="small"
+                  InputProps={{
+                    startAdornment: <Typography sx={{ mr: 0.5, color: 'text.secondary' }}>$</Typography>,
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  label="Alias de Pago"
+                  value={formData.paymentAlias}
+                  onChange={(e) => setFormData({ ...formData, paymentAlias: e.target.value })}
+                  placeholder="mi.alias.mp"
+                  helperText="Alias para recibir transferencias"
                   fullWidth
                   size="small"
                 />

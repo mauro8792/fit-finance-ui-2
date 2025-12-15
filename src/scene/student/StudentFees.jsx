@@ -8,23 +8,34 @@ import {
   Chip,
   LinearProgress,
   Alert,
-  Button
+  Button,
+  IconButton,
 } from '@mui/material';
 import { 
   CheckCircle, 
   Warning, 
-  Error,
-  Payment,
-  ArrowBack
+  Error as ErrorIcon,
+  ArrowBack,
+  ContentCopy,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
-import { Header, Layout } from '../../components';
+import { useFeesStore } from '../../hooks/useFeesStore';
+
+const COLORS = {
+  orange: '#ff9800',
+  green: '#4caf50',
+  red: '#f44336',
+  blue: '#2196f3',
+  dark: '#1a1a2e',
+  cardBg: 'rgba(255,255,255,0.05)',
+};
 
 export const StudentFees = () => {
   const navigate = useNavigate();
   const { getStudentFeesData } = useAuthStore();
-  // ...existing code...
+  const { getMyCoachPaymentInfo } = useFeesStore();
+  
   const [fees, setFees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [summary, setSummary] = useState({
@@ -33,699 +44,287 @@ export const StudentFees = () => {
     partial: 0,
     pending: 0
   });
+  const [coachPaymentInfo, setCoachPaymentInfo] = useState(null);
+  const [copiedAlias, setCopiedAlias] = useState(false);
 
   useEffect(() => {
-    const loadFees = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const data = await getStudentFeesData();
-        setFees(data.fees || []);
-        setSummary(data.summary || {});
+        const [feesData, paymentInfo] = await Promise.all([
+          getStudentFeesData(),
+          getMyCoachPaymentInfo().catch(() => null),
+        ]);
+        setFees(feesData.fees || []);
+        setSummary(feesData.summary || {});
+        setCoachPaymentInfo(paymentInfo);
       } catch (error) {
-        console.error('Error cargando cuotas:', error);
+        console.error('Error cargando datos:', error);
       } finally {
         setLoading(false);
       }
     };
-    loadFees();
-  }, [getStudentFeesData]);
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleCopyAlias = () => {
+    if (coachPaymentInfo?.coach?.paymentAlias) {
+      navigator.clipboard.writeText(coachPaymentInfo.coach.paymentAlias);
+      setCopiedAlias(true);
+      setTimeout(() => setCopiedAlias(false), 2000);
+    }
+  };
+
+  const getStatusColor = (status, isOverdue) => {
+    if (status === 'paid') return COLORS.green;
+    if (isOverdue) return COLORS.red;
+    if (status === 'partial') return COLORS.orange;
+    return COLORS.red;
+  };
 
   if (loading) {
     return (
-        <Box m={{ xs: 1, sm: 2 }}>
-          <Header title="Mis Cuotas" subtitle="Cargando información..." />
-          <LinearProgress sx={{ mt: 2 }} />
-        </Box>
+      <Box m={{ xs: 1, sm: 2 }}>
+        <Typography variant="h5" fontWeight="bold" color="white" mb={2}>
+          💰 Mis Cuotas
+        </Typography>
+        <LinearProgress sx={{ bgcolor: 'rgba(255,152,0,0.2)', '& .MuiLinearProgress-bar': { bgcolor: COLORS.orange } }} />
+      </Box>
     );
   }
 
   return (
-      <Box m={{ xs: 1, sm: 2 }}>
-        <Box display="flex" alignItems="center" mb={3}>
-          <Button 
-            startIcon={<ArrowBack />} 
-            onClick={() => navigate('/')}
-            variant="contained"
-            sx={{ 
-              mr: 3,
-              bgcolor: '#70d8bd',
-              '&:hover': { bgcolor: '#5cbaa3' }
-            }}
-          >
-            Volver a Inicio
-          </Button>
-          <Header title="📊 Historial de Cuotas"  />
-        </Box>
+    <Box m={{ xs: 1, sm: 2 }}>
+      {/* Header */}
+      <Box display="flex" alignItems="center" gap={2} mb={3}>
+        <IconButton 
+          onClick={() => navigate('/')}
+          sx={{ 
+            bgcolor: COLORS.orange,
+            color: 'white',
+            '&:hover': { bgcolor: '#e68a00' },
+          }}
+        >
+          <ArrowBack />
+        </IconButton>
+        <Typography variant="h5" fontWeight="bold" color="white">
+          💰 Mis Cuotas
+        </Typography>
+      </Box>
 
-        {/* Resumen */}
-        <Grid container spacing={3} mb={3}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%)',
-              color: 'white',
-              height: 140
-            }}>
-              <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Payment sx={{ fontSize: 40, mb: 1 }} />
-                <Typography 
-                  variant="h4" 
-                  fontWeight="bold"
-                  sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-                >
-                  {summary.total || 0}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    opacity: 0.95,
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-                    fontWeight: 500
-                  }}
-                >
-                  Total Cuotas
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
-              color: 'white',
-              height: 140
-            }}>
-              <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <CheckCircle sx={{ fontSize: 40, mb: 1 }} />
-                <Typography 
-                  variant="h4" 
-                  fontWeight="bold"
-                  sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-                >
-                  {summary.paid || 0}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    opacity: 0.95,
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-                    fontWeight: 500
-                  }}
-                >
-                  Pagadas
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)',
-              color: 'white',
-              height: 140
-            }}>
-              <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Warning sx={{ fontSize: 40, mb: 1 }} />
-                <Typography 
-                  variant="h4" 
-                  fontWeight="bold"
-                  sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-                >
-                  {summary.partial || 0}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    opacity: 0.95,
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-                    fontWeight: 500
-                  }}
-                >
-                  Parciales
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card sx={{ 
-              background: 'linear-gradient(135deg, #e84393 0%, #fd79a8 100%)',
-              color: 'white',
-              height: 140
-            }}>
-              <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                <Error sx={{ fontSize: 40, mb: 1 }} />
-                <Typography 
-                  variant="h4" 
-                  fontWeight="bold"
-                  sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-                >
-                  {summary.pending || 0}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    opacity: 0.95,
-                    textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-                    fontWeight: 500
-                  }}
-                >
-                  Pendientes
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+      {/* Resumen: Solo si tiene pendientes */}
+      {(summary.pending > 0 || summary.partial > 0) && (
+        <Card sx={{ 
+          mb: 3,
+          bgcolor: 'rgba(244, 67, 54, 0.1)',
+          border: `2px solid ${COLORS.red}`,
+          p: 2,
+          textAlign: 'center',
+        }}>
+          <Typography variant="body2" color="rgba(255,255,255,0.7)" mb={1}>
+            💸 Tenés pendiente:
+          </Typography>
+          <Typography variant="h3" fontWeight="bold" color={COLORS.red}>
+            ${fees.filter(f => f.status !== 'paid').reduce((sum, f) => sum + (f.remainingAmount || f.value || 0), 0).toLocaleString()}
+          </Typography>
+          <Typography variant="caption" color="rgba(255,255,255,0.5)">
+            {summary.pending + summary.partial} cuota{(summary.pending + summary.partial) !== 1 ? 's' : ''} sin pagar
+          </Typography>
+        </Card>
+      )}
 
-        {/* Tabla de Cuotas */}
-        <Card>
-          <CardContent>
-            <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-              <Box display="flex" alignItems="center">
-                <Payment sx={{ fontSize: 24, mr: 1, color: 'primary.main' }} />
-                <Typography variant="h5" fontWeight="bold">
-                  📋 Historial de Cuotas
+      {/* Si está todo pago */}
+      {summary.pending === 0 && summary.partial === 0 && summary.paid > 0 && (
+        <Card sx={{ 
+          mb: 3,
+          bgcolor: 'rgba(76, 175, 80, 0.1)',
+          border: `2px solid ${COLORS.green}`,
+          p: 2,
+          textAlign: 'center',
+        }}>
+          <Typography variant="h5" fontWeight="bold" color={COLORS.green}>
+            ✅ ¡Estás al día!
+          </Typography>
+          <Typography variant="caption" color="rgba(255,255,255,0.5)">
+            Todas tus cuotas están pagadas
+          </Typography>
+        </Card>
+      )}
+
+      {/* Info de Pago del Coach */}
+      {coachPaymentInfo?.hasCoach && coachPaymentInfo?.coach?.paymentAlias && (
+        <Card sx={{ 
+          mb: 3, 
+          bgcolor: 'rgba(33, 150, 243, 0.1)',
+          border: `2px solid ${COLORS.blue}`,
+        }}>
+          <CardContent sx={{ py: 2 }}>
+            <Typography variant="subtitle1" fontWeight="bold" color={COLORS.blue} mb={2}>
+              💳 Datos para Transferencia
+            </Typography>
+            
+            <Box sx={{ 
+              bgcolor: 'rgba(255,255,255,0.05)', 
+              p: 2, 
+              borderRadius: 2,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 1,
+            }}>
+              <Box>
+                <Typography variant="caption" color="rgba(255,255,255,0.5)">
+                  Alias / CBU:
                 </Typography>
+                <Typography variant="h6" fontWeight="bold" color="white" sx={{ fontFamily: 'monospace' }}>
+                  {coachPaymentInfo.coach.paymentAlias}
+                </Typography>
+                {coachPaymentInfo.coach.name && (
+                  <Typography variant="caption" color="rgba(255,255,255,0.5)">
+                    Titular: {coachPaymentInfo.coach.name}
+                  </Typography>
+                )}
               </Box>
-              <Typography variant="body2" color="text.secondary" fontStyle="italic">
-                📊 Solo consulta - Para pagar ve a Inicio
-              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleCopyAlias}
+                startIcon={<ContentCopy />}
+                sx={{ 
+                  color: copiedAlias ? COLORS.green : 'white',
+                  borderColor: copiedAlias ? COLORS.green : 'rgba(255,255,255,0.3)',
+                }}
+              >
+                {copiedAlias ? '¡Copiado!' : 'Copiar'}
+              </Button>
             </Box>
-            {fees.length > 0 ? (
-              <Grid container spacing={2}>
-                {fees.map((fee) => (
-                  <Grid item xs={12} sm={6} md={4} lg={3} key={fee.id}>
-                    <Card 
-                      sx={{
-                        height: 280,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderRadius: 3,
-                        cursor: 'default',
-                        transition: 'all 0.2s ease',
-                        overflow: 'hidden',
-                        position: 'relative',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                        '&:hover': {
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          transform: 'translateY(-1px)'
-                        },
-                        background: 'white',
-                        borderTop: fee.status === 'paid' ? '4px solid #4caf50' : 
-                                  fee.status === 'partial' ? '4px solid #ff9800' : 
-                                  '4px solid #f44336'
-                      }}
-                    >
-                      <Box sx={{
-                        background: fee.isCurrent ? 
-                          'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)' : 
-                          fee.isOverdue ? 
-                          'linear-gradient(135deg, #fff3e0 0%, #ffebee 100%)' : 
-                          'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                        p: 1.5,
-                        borderBottom: '1px solid rgba(0,0,0,0.05)'
-                      }}>
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                          <Typography 
-                            variant="h6" 
-                            fontWeight="bold" 
-                            sx={{ 
-                              color: '#1565c0',
-                              fontSize: '1.1rem'
-                            }}
-                          >
-                            {fee.monthName || `${fee.month}/${fee.year}`}
-                          </Typography>
-                          {fee.isCurrent && (
-                            <Chip 
-                              label="Actual" 
-                              size="small" 
-                              sx={{ 
-                                bgcolor: '#1976d2', 
-                                color: 'white',
-                                fontWeight: 'bold',
-                                fontSize: '0.7rem'
-                              }} 
-                            />
-                          )}
-                          {fee.isOverdue && (
-                            <Chip 
-                              label="Vencida" 
-                              size="small" 
-                              sx={{ 
-                                bgcolor: '#d32f2f', 
-                                color: 'white',
-                                fontWeight: 'bold',
-                                fontSize: '0.7rem'
-                              }} 
-                            />
-                          )}
-                        </Box>
-                        <Typography 
-                          variant="h5" 
-                          fontWeight="bold" 
-                          sx={{ 
-                            color: '#1565c0',
-                            fontSize: '1.3rem'
-                          }}
-                        >
-                          ${fee.value?.toLocaleString() || fee.amount?.toLocaleString()}
-                        </Typography>
-                      </Box>
-                      <CardContent sx={{ 
-                        flex: 1, 
-                        display: 'flex', 
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        p: 1.5,
-                        bgcolor: 'white'
-                      }}>
-                        <Box mb={1.5}>
-                          <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: '#424242',
-                                fontWeight: 600,
-                                fontSize: '0.85rem'
-                              }}
-                            >
-                              Pagado
-                            </Typography>
-                            <Typography 
-                              variant="body1" 
-                              fontWeight="bold" 
-                              sx={{
-                                color: fee.amountPaid > 0 ? '#2e7d32' : '#9e9e9e',
-                                fontSize: '0.95rem'
-                              }}
-                            >
-                              ${fee.amountPaid?.toLocaleString()}
-                            </Typography>
-                          </Box>
-                          <Box display="flex" justifyContent="space-between" alignItems="center">
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: '#424242',
-                                fontWeight: 600,
-                                fontSize: '0.85rem'
-                              }}
-                            >
-                              Pendiente
-                            </Typography>
-                            <Typography 
-                              variant="body1" 
-                              fontWeight="bold" 
-                              sx={{
-                                color: fee.remainingAmount > 0 ? '#d32f2f' : '#2e7d32',
-                                fontSize: '0.95rem'
-                              }}
-                            >
-                              ${fee.remainingAmount?.toLocaleString() || (fee.amount - fee.amountPaid)?.toLocaleString()}
-                            </Typography>
-                          </Box>
-                        </Box>
-                        <Box>
-                          <Box display="flex" justifyContent="center" mb={0.5}>
-                            <Chip 
-                              label={fee.status === 'paid' ? '✅ Pagado' : 
-                                    fee.status === 'partial' ? '⚠️ Parcial' : '❌ Pendiente'}
-                              color={fee.status === 'paid' ? 'success' : 
-                                    fee.status === 'partial' ? 'warning' : 'error'}
-                              size="small"
-                              sx={{ fontWeight: 'bold' }}
-                            />
-                          </Box>
-                          {(fee.status !== 'paid' && fee.paymentStatus !== 'paid') && (
-                            <Box 
-                              sx={{
-                                textAlign: 'center',
-                                bgcolor: 'info.main',
-                                color: 'white',
-                                py: 0.3,
-                                px: 1,
-                                borderRadius: 1,
-                                mx: -1.5,
-                                mb: -1.5
-                              }}
-                            >
-                              <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.7rem' }}>
-                                💳 Ve a Inicio para pagar
-                              </Typography>
-                            </Box>
-                          )}
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
-            ) : (
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography variant="h6" gutterBottom>
-                  📋 No tienes cuotas registradas aún
-                </Typography>
-                <Typography variant="body2">
-                  Las cuotas aparecerán aquí cuando se generen.
-                </Typography>
-              </Alert>
+
+            {coachPaymentInfo.coach.paymentNotes && (
+              <Typography variant="body2" color="rgba(255,255,255,0.7)" mt={2} fontStyle="italic">
+                💡 {coachPaymentInfo.coach.paymentNotes}
+              </Typography>
             )}
           </CardContent>
         </Card>
-      </Box>
+      )}
+
+      {/* Lista de Cuotas */}
+      <Typography variant="subtitle1" fontWeight="bold" color="rgba(255,255,255,0.7)" mb={2}>
+        📋 Historial de Cuotas
+      </Typography>
+
+      {fees.length > 0 ? (
+        <Box display="flex" flexDirection="column" gap={2}>
+          {fees.map((fee) => (
+            <Card 
+              key={fee.id}
+              sx={{
+                bgcolor: COLORS.cardBg,
+                border: `2px solid ${getStatusColor(fee.status, fee.isOverdue)}`,
+                borderRadius: 2,
+                overflow: 'hidden',
+              }}
+            >
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  p: 2,
+                  flexWrap: 'wrap',
+                  gap: 1,
+                }}
+              >
+                {/* Izquierda: Mes y Estado */}
+                <Box display="flex" alignItems="center" gap={2}>
+                  <Box>
+                    <Typography variant="h6" fontWeight="bold" color="white">
+                      {fee.monthName}
+                    </Typography>
+                    <Typography variant="caption" color="rgba(255,255,255,0.5)">
+                      {fee.year}
+                    </Typography>
+                  </Box>
+                  
+                  {fee.isCurrent && (
+                    <Chip 
+                      label="Actual" 
+                      size="small" 
+                      sx={{ bgcolor: COLORS.blue, color: 'white', fontWeight: 'bold' }} 
+                    />
+                  )}
+                  {fee.isOverdue && (
+                    <Chip 
+                      label="Vencida" 
+                      size="small" 
+                      sx={{ bgcolor: COLORS.red, color: 'white', fontWeight: 'bold' }} 
+                    />
+                  )}
+                </Box>
+
+                {/* Centro: Monto */}
+                <Box textAlign="center">
+                  <Typography variant="h5" fontWeight="bold" color={COLORS.orange}>
+                    ${fee.value?.toLocaleString()}
+                  </Typography>
+                </Box>
+
+                {/* Derecha: Estado de pago */}
+                <Box textAlign="right" minWidth={100}>
+                  {fee.status === 'paid' ? (
+                    <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
+                      <CheckCircle sx={{ color: COLORS.green, fontSize: 20 }} />
+                      <Typography variant="body2" color={COLORS.green} fontWeight="bold">
+                        Pagada
+                      </Typography>
+                    </Box>
+                  ) : fee.status === 'partial' ? (
+                    <Box>
+                      <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
+                        <Warning sx={{ color: COLORS.orange, fontSize: 20 }} />
+                        <Typography variant="body2" color={COLORS.orange} fontWeight="bold">
+                          Parcial
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color="rgba(255,255,255,0.5)">
+                        Pagado: ${fee.amountPaid?.toLocaleString()}
+                      </Typography>
+                      <Typography variant="caption" display="block" color={COLORS.red}>
+                        Resta: ${fee.remainingAmount?.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Box>
+                      <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
+                        <ErrorIcon sx={{ color: COLORS.red, fontSize: 20 }} />
+                        <Typography variant="body2" color={COLORS.red} fontWeight="bold">
+                          Pendiente
+                        </Typography>
+                      </Box>
+                      <Typography variant="caption" color={COLORS.red}>
+                        ${fee.remainingAmount?.toLocaleString() || fee.value?.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            </Card>
+          ))}
+        </Box>
+      ) : (
+        <Alert 
+          severity="info" 
+          sx={{ 
+            bgcolor: 'rgba(33, 150, 243, 0.1)', 
+            color: 'white',
+            border: `1px solid ${COLORS.blue}`,
+          }}
+        >
+          No tenés cuotas registradas aún. Aparecerán cuando se generen.
+        </Alert>
+      )}
+    </Box>
   );
-  //     <Grid container spacing={3} mb={3}>
-  //       <Grid item xs={12} sm={6} md={3}>
-  //         <Card sx={{ 
-  //           background: 'linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%)',
-  //           color: 'white',
-  //           height: 140
-  //         }}>
-  //           <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-  //             <Payment sx={{ fontSize: 40, mb: 1 }} />
-  //             <Typography 
-  //               variant="h4" 
-  //               fontWeight="bold"
-  //               sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-  //             >
-  //               {summary.total || 0}
-  //             </Typography>
-  //             <Typography 
-  //               variant="body2" 
-  //               sx={{ 
-  //                 opacity: 0.95,
-  //                 textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-  //                 fontWeight: 500
-  //               }}
-  //             >
-  //               Total Cuotas
-  //             </Typography>
-  //           </CardContent>
-  //         </Card>
-  //       </Grid>
-        
-  //       <Grid item xs={12} sm={6} md={3}>
-  //         <Card sx={{ 
-  //           background: 'linear-gradient(135deg, #00b894 0%, #00cec9 100%)',
-  //           color: 'white',
-  //           height: 140
-  //         }}>
-  //           <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-  //             <CheckCircle sx={{ fontSize: 40, mb: 1 }} />
-  //             <Typography 
-  //               variant="h4" 
-  //               fontWeight="bold"
-  //               sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-  //             >
-  //               {summary.paid || 0}
-  //             </Typography>
-  //             <Typography 
-  //               variant="body2" 
-  //               sx={{ 
-  //                 opacity: 0.95,
-  //                 textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-  //                 fontWeight: 500
-  //               }}
-  //             >
-  //               Pagadas
-  //             </Typography>
-  //           </CardContent>
-  //         </Card>
-  //       </Grid>
-
-  //       <Grid item xs={12} sm={6} md={3}>
-  //         <Card sx={{ 
-  //           background: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)',
-  //           color: 'white',
-  //           height: 140
-  //         }}>
-  //           <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-  //             <Warning sx={{ fontSize: 40, mb: 1 }} />
-  //             <Typography 
-  //               variant="h4" 
-  //               fontWeight="bold"
-  //               sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-  //             >
-  //               {summary.partial || 0}
-  //             </Typography>
-  //             <Typography 
-  //               variant="body2" 
-  //               sx={{ 
-  //                 opacity: 0.95,
-  //                 textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-  //                 fontWeight: 500
-  //               }}
-  //             >
-  //               Parciales
-  //             </Typography>
-  //           </CardContent>
-  //         </Card>
-  //       </Grid>
-
-  //       <Grid item xs={12} sm={6} md={3}>
-  //         <Card sx={{ 
-  //           background: 'linear-gradient(135deg, #e84393 0%, #fd79a8 100%)',
-  //           color: 'white',
-  //           height: 140
-  //         }}>
-  //           <CardContent sx={{ textAlign: 'center', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-  //             <Error sx={{ fontSize: 40, mb: 1 }} />
-  //             <Typography 
-  //               variant="h4" 
-  //               fontWeight="bold"
-  //               sx={{ textShadow: '2px 2px 4px rgba(0,0,0,0.3)' }}
-  //             >
-  //               {summary.pending || 0}
-  //             </Typography>
-  //             <Typography 
-  //               variant="body2" 
-  //               sx={{ 
-  //                 opacity: 0.95,
-  //                 textShadow: '1px 1px 2px rgba(0,0,0,0.2)',
-  //                 fontWeight: 500
-  //               }}
-  //             >
-  //               Pendientes
-  //             </Typography>
-  //           </CardContent>
-  //         </Card>
-  //       </Grid>
-  //     </Grid>
-
-  //     {/* Tabla de Cuotas */}
-  //     <Card>
-  //       <CardContent>
-  //         <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-  //           <Box display="flex" alignItems="center">
-  //             <Payment sx={{ fontSize: 24, mr: 1, color: 'primary.main' }} />
-  //             <Typography variant="h5" fontWeight="bold">
-  //               📋 Historial de Cuotas
-  //             </Typography>
-  //           </Box>
-  //           <Typography variant="body2" color="text.secondary" fontStyle="italic">
-  //             📊 Solo consulta - Para pagar ve a Inicio
-  //           </Typography>
-  //         </Box>
-          
-  //         {fees.length > 0 ? (
-  //           <Grid container spacing={2}>
-  //             {fees.map((fee) => (
-  //               <Grid item xs={12} sm={6} md={4} lg={3} key={fee.id}>
-  //                 <Card 
-  //                   sx={{
-  //                     height: 280,
-  //                     display: 'flex',
-  //                     flexDirection: 'column',
-  //                     borderRadius: 3,
-  //                     cursor: 'default', // Sin hover para pago
-  //                     transition: 'all 0.2s ease',
-  //                     overflow: 'hidden',
-  //                     position: 'relative',
-  //                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-  //                     '&:hover': {
-  //                       boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-  //                       transform: 'translateY(-1px)' // Hover más sutil
-  //                     },
-  //                     background: 'white',
-  //                     borderTop: fee.status === 'paid' ? '4px solid #4caf50' : 
-  //                               fee.status === 'partial' ? '4px solid #ff9800' : 
-  //                               '4px solid #f44336'
-  //                   }}
-  //                   onClick={() => {
-  //                     if (fee.status !== 'paid' && fee.paymentStatus !== 'paid') {
-  //                       console.log('Abriendo opciones de pago para cuota:', fee.id);
-  //                       // TODO: Implementar modal de opciones de pago
-  //                     }
-  //                   }}
-  //                 >
-  //                   {/* Header con degradado sutil */}
-  //                   <Box sx={{
-  //                     background: fee.isCurrent ? 
-  //                       'linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%)' : 
-  //                       fee.isOverdue ? 
-  //                       'linear-gradient(135deg, #fff3e0 0%, #ffebee 100%)' : 
-  //                       'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-  //                     p: 1.5, // Padding reducido para más espacio
-  //                     borderBottom: '1px solid rgba(0,0,0,0.05)'
-  //                   }}>
-  //                     <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}>
-  //                       <Typography 
-  //                         variant="h6" 
-  //                         fontWeight="bold" 
-  //                         sx={{ 
-  //                           color: '#1565c0',
-  //                           fontSize: '1.1rem' // Tamaño reducido
-  //                         }}
-  //                       >
-  //                         {fee.monthName || `${fee.month}/${fee.year}`}
-  //                       </Typography>
-                        
-  //                       {/* Chips de estado mejorados */}
-  //                       {fee.isCurrent && (
-  //                         <Chip 
-  //                           label="Actual" 
-  //                           size="small" 
-  //                           sx={{ 
-  //                             bgcolor: '#1976d2', 
-  //                             color: 'white',
-  //                             fontWeight: 'bold',
-  //                             fontSize: '0.7rem'
-  //                           }} 
-  //                         />
-  //                       )}
-  //                       {fee.isOverdue && (
-  //                         <Chip 
-  //                           label="Vencida" 
-  //                           size="small" 
-  //                           sx={{ 
-  //                             bgcolor: '#d32f2f', 
-  //                             color: 'white',
-  //                             fontWeight: 'bold',
-  //                             fontSize: '0.7rem'
-  //                           }} 
-  //                         />
-  //                       )}
-  //                     </Box>
-                      
-  //                     {/* Monto principal destacado */}
-  //                     <Typography 
-  //                       variant="h5" 
-  //                       fontWeight="bold" 
-  //                       sx={{ 
-  //                         color: '#1565c0',
-  //                         fontSize: '1.3rem' // Tamaño ligeramente reducido
-  //                       }}
-  //                     >
-  //                       ${fee.value?.toLocaleString() || fee.amount?.toLocaleString()}
-  //                     </Typography>
-  //                   </Box>
-
-  //                   {/* Contenido financiero */}
-  //                   <CardContent sx={{ 
-  //                     flex: 1, 
-  //                     display: 'flex', 
-  //                     flexDirection: 'column',
-  //                     justifyContent: 'space-between',
-  //                     p: 1.5, // Padding reducido
-  //                     bgcolor: 'white'
-  //                   }}>
-  //                     {/* Información de pagos */}
-  //                     <Box mb={1.5}> {/* Margen reducido */}
-  //                       <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.5}> {/* Margen reducido */}
-  //                         <Typography 
-  //                           variant="body2" 
-  //                           sx={{ 
-  //                             color: '#424242',
-  //                             fontWeight: 600,
-  //                             fontSize: '0.85rem' // Tamaño ligeramente reducido
-  //                           }}
-  //                         >
-  //                           Pagado
-  //                         </Typography>
-  //                         <Typography 
-  //                           variant="body1" 
-  //                           fontWeight="bold" 
-  //                           sx={{
-  //                             color: fee.amountPaid > 0 ? '#2e7d32' : '#9e9e9e',
-  //                             fontSize: '0.95rem' // Tamaño ligeramente reducido
-  //                           }}
-  //                         >
-  //                           ${fee.amountPaid?.toLocaleString()}
-  //                         </Typography>
-  //                       </Box>
-                        
-  //                       <Box display="flex" justifyContent="space-between" alignItems="center">
-  //                         <Typography 
-  //                           variant="body2" 
-  //                           sx={{ 
-  //                             color: '#424242',
-  //                             fontWeight: 600,
-  //                             fontSize: '0.85rem' // Tamaño ligeramente reducido
-  //                           }}
-  //                         >
-  //                           Pendiente
-  //                         </Typography>
-  //                         <Typography 
-  //                           variant="body1" 
-  //                           fontWeight="bold" 
-  //                           sx={{
-  //                             color: fee.remainingAmount > 0 ? '#d32f2f' : '#2e7d32',
-  //                             fontSize: '0.95rem' // Tamaño ligeramente reducido
-  //                           }}
-  //                         >
-  //                           ${fee.remainingAmount?.toLocaleString() || (fee.amount - fee.amountPaid)?.toLocaleString()}
-  //                         </Typography>
-  //                       </Box>
-  //                     </Box>
-
-  //                     {/* Footer */}
-  //                     <Box>
-  //                       {/* Estado mejorado */}
-  //                       <Box display="flex" justifyContent="center" mb={0.5}>
-  //                         <Chip 
-  //                           label={fee.status === 'paid' ? '✅ Pagado' : 
-  //                                 fee.status === 'partial' ? '⚠️ Parcial' : '❌ Pendiente'}
-  //                           color={fee.status === 'paid' ? 'success' : 
-  //                                 fee.status === 'partial' ? 'warning' : 'error'}
-  //                           size="small"
-  //                           sx={{ fontWeight: 'bold' }}
-  //                         />
-  //                       </Box>
-
-  //                       {/* Mensaje informativo en lugar de botón de pago */}
-  //                       {(fee.status !== 'paid' && fee.paymentStatus !== 'paid') && (
-  //                         <Box 
-  //                           sx={{
-  //                             textAlign: 'center',
-  //                             bgcolor: 'info.main',
-  //                             color: 'white',
-  //                             py: 0.3,
-  //                             px: 1,
-  //                             borderRadius: 1,
-  //                             mx: -1.5,
-  //                             mb: -1.5
-  //                           }}
-  //                         >
-  //                           <Typography variant="caption" fontWeight="bold" sx={{ fontSize: '0.7rem' }}>
-  //                             💳 Ve a Inicio para pagar
-  //                           </Typography>
-  //                         </Box>
-  //                       )}
-  //                     </Box>
-  //                   </CardContent>
-  //                 </Card>
-  //               </Grid>
-  //             ))}
-  //           </Grid>
-  //         ) : (
-  //           <Alert severity="info" sx={{ mt: 2 }}>
-  //             <Typography variant="h6" gutterBottom>
-  //               📋 No tienes cuotas registradas aún
-  //             </Typography>
-  //             <Typography variant="body2">
-  //               Las cuotas aparecerán aquí cuando se generen.
-  //             </Typography>
-  //           </Alert>
-  //         )}
-  //       </CardContent>
-  //     </Card>
-  //   </Box>
-  // );
 };
