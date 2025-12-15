@@ -4,12 +4,12 @@ import {
   Typography, 
   Card, 
   CardContent, 
-  Grid, 
   Chip,
   LinearProgress,
   Alert,
   Button,
   IconButton,
+  Collapse,
 } from '@mui/material';
 import { 
   CheckCircle, 
@@ -17,6 +17,9 @@ import {
   Error as ErrorIcon,
   ArrowBack,
   ContentCopy,
+  ExpandMore,
+  ExpandLess,
+  CalendarToday,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
@@ -46,6 +49,7 @@ export const StudentFees = () => {
   });
   const [coachPaymentInfo, setCoachPaymentInfo] = useState(null);
   const [copiedAlias, setCopiedAlias] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -76,11 +80,17 @@ export const StudentFees = () => {
     }
   };
 
-  const getStatusColor = (status, isOverdue) => {
-    if (status === 'paid') return COLORS.green;
-    if (isOverdue) return COLORS.red;
-    if (status === 'partial') return COLORS.orange;
-    return COLORS.red;
+  // Separar cuotas
+  const nextFee = fees.find(f => f.status !== 'paid' && (f.isCurrent || f.isNext));
+  const pendingFees = fees.filter(f => f.status !== 'paid' && f.id !== nextFee?.id);
+  const paidFees = fees.filter(f => f.status === 'paid');
+  const isUpToDate = summary.pending === 0 && summary.partial === 0;
+
+  // Formatear fecha de vencimiento
+  const formatDueDate = (dueDate) => {
+    if (!dueDate) return null;
+    const date = new Date(dueDate);
+    return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
   };
 
   if (loading) {
@@ -95,11 +105,11 @@ export const StudentFees = () => {
   }
 
   return (
-    <Box m={{ xs: 1, sm: 2 }}>
+    <Box m={{ xs: 1, sm: 2 }} pb={4}>
       {/* Header */}
       <Box display="flex" alignItems="center" gap={2} mb={3}>
         <IconButton 
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/student')}
           sx={{ 
             bgcolor: COLORS.orange,
             color: 'white',
@@ -109,100 +119,139 @@ export const StudentFees = () => {
           <ArrowBack />
         </IconButton>
         <Typography variant="h5" fontWeight="bold" color="white">
-          💰 Mis Cuotas
+          💰 Estado de Cuotas
         </Typography>
       </Box>
 
-      {/* Resumen: Solo si tiene pendientes */}
-      {(summary.pending > 0 || summary.partial > 0) && (
+      {/* CARD PRINCIPAL - Estado Actual */}
+      {isUpToDate ? (
+        // ✅ Al día
         <Card sx={{ 
           mb: 3,
-          bgcolor: 'rgba(244, 67, 54, 0.1)',
-          border: `2px solid ${COLORS.red}`,
-          p: 2,
-          textAlign: 'center',
-        }}>
-          <Typography variant="body2" color="rgba(255,255,255,0.7)" mb={1}>
-            💸 Tenés pendiente:
-          </Typography>
-          <Typography variant="h3" fontWeight="bold" color={COLORS.red}>
-            ${fees.filter(f => f.status !== 'paid').reduce((sum, f) => sum + (f.remainingAmount || f.value || 0), 0).toLocaleString()}
-          </Typography>
-          <Typography variant="caption" color="rgba(255,255,255,0.5)">
-            {summary.pending + summary.partial} cuota{(summary.pending + summary.partial) !== 1 ? 's' : ''} sin pagar
-          </Typography>
-        </Card>
-      )}
-
-      {/* Si está todo pago */}
-      {summary.pending === 0 && summary.partial === 0 && summary.paid > 0 && (
-        <Card sx={{ 
-          mb: 3,
-          bgcolor: 'rgba(76, 175, 80, 0.1)',
+          background: 'linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(76, 175, 80, 0.05) 100%)',
           border: `2px solid ${COLORS.green}`,
-          p: 2,
-          textAlign: 'center',
+          borderRadius: 3,
         }}>
-          <Typography variant="h5" fontWeight="bold" color={COLORS.green}>
-            ✅ ¡Estás al día!
-          </Typography>
-          <Typography variant="caption" color="rgba(255,255,255,0.5)">
-            Todas tus cuotas están pagadas
-          </Typography>
+          <CardContent sx={{ textAlign: 'center', py: 4 }}>
+            <CheckCircle sx={{ fontSize: 60, color: COLORS.green, mb: 1 }} />
+            <Typography variant="h4" fontWeight="bold" color={COLORS.green}>
+              ¡Estás al día! 🎉
+            </Typography>
+            <Typography variant="body1" color="rgba(255,255,255,0.7)" mt={1}>
+              No tenés cuotas pendientes
+            </Typography>
+          </CardContent>
         </Card>
-      )}
+      ) : nextFee ? (
+        // ⚠️ Próxima cuota
+        <Card sx={{ 
+          mb: 3,
+          background: nextFee.isOverdue 
+            ? 'linear-gradient(135deg, rgba(244, 67, 54, 0.3) 0%, rgba(244, 67, 54, 0.1) 100%)'
+            : 'linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(255, 152, 0, 0.05) 100%)',
+          border: `2px solid ${nextFee.isOverdue ? COLORS.red : COLORS.orange}`,
+          borderRadius: 3,
+        }}>
+          <CardContent sx={{ py: 3 }}>
+            {/* Badge superior */}
+            <Box display="flex" justifyContent="center" mb={2}>
+              <Chip 
+                label={nextFee.isOverdue ? "⚠️ VENCIDA" : nextFee.isCurrent ? "📅 CUOTA ACTUAL" : "📅 PRÓXIMA CUOTA"} 
+                sx={{ 
+                  bgcolor: nextFee.isOverdue ? COLORS.red : COLORS.orange, 
+                  color: 'white', 
+                  fontWeight: 'bold',
+                  fontSize: '0.9rem',
+                  px: 2,
+                }} 
+              />
+            </Box>
+
+            {/* Mes y monto */}
+            <Typography variant="h5" fontWeight="bold" color="white" textAlign="center">
+              {nextFee.monthName} {nextFee.year}
+            </Typography>
+            
+            <Typography variant="h3" fontWeight="bold" color={nextFee.isOverdue ? COLORS.red : COLORS.orange} textAlign="center" my={2}>
+              ${(nextFee.remainingAmount || nextFee.value)?.toLocaleString()}
+            </Typography>
+
+            {/* Fecha de vencimiento */}
+            {nextFee.dueDate && (
+              <Box display="flex" alignItems="center" justifyContent="center" gap={1} mb={2}>
+                <CalendarToday sx={{ fontSize: 18, color: 'rgba(255,255,255,0.7)' }} />
+                <Typography variant="body1" color="rgba(255,255,255,0.7)">
+                  {nextFee.isOverdue ? 'Venció el' : 'Vence el'} <strong style={{ color: 'white' }}>{formatDueDate(nextFee.dueDate)}</strong>
+                </Typography>
+              </Box>
+            )}
+
+            {/* Si es pago parcial */}
+            {nextFee.status === 'partial' && (
+              <Alert 
+                severity="info" 
+                sx={{ 
+                  bgcolor: 'rgba(255,152,0,0.1)', 
+                  border: `1px solid ${COLORS.orange}`,
+                  mb: 2,
+                }}
+              >
+                Ya pagaste ${nextFee.amountPaid?.toLocaleString()} - Te falta ${nextFee.remainingAmount?.toLocaleString()}
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Info de Pago del Coach */}
       {coachPaymentInfo?.hasCoach && coachPaymentInfo?.coach?.paymentAlias && (
         <Card sx={{ 
           mb: 3, 
           bgcolor: 'rgba(33, 150, 243, 0.1)',
-          border: `2px solid ${COLORS.blue}`,
+          border: `1px solid ${COLORS.blue}`,
+          borderRadius: 2,
         }}>
           <CardContent sx={{ py: 2 }}>
-            <Typography variant="subtitle1" fontWeight="bold" color={COLORS.blue} mb={2}>
+            <Typography variant="subtitle2" fontWeight="bold" color={COLORS.blue} mb={2}>
               💳 Datos para Transferencia
             </Typography>
             
             <Box sx={{ 
-              bgcolor: 'rgba(255,255,255,0.05)', 
+              bgcolor: 'rgba(0,0,0,0.2)', 
               p: 2, 
               borderRadius: 2,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              flexWrap: 'wrap',
               gap: 1,
             }}>
-              <Box>
+              <Box flex={1}>
                 <Typography variant="caption" color="rgba(255,255,255,0.5)">
                   Alias / CBU:
                 </Typography>
-                <Typography variant="h6" fontWeight="bold" color="white" sx={{ fontFamily: 'monospace' }}>
+                <Typography variant="body1" fontWeight="bold" color="white" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
                   {coachPaymentInfo.coach.paymentAlias}
                 </Typography>
-                {coachPaymentInfo.coach.name && (
-                  <Typography variant="caption" color="rgba(255,255,255,0.5)">
-                    Titular: {coachPaymentInfo.coach.name}
-                  </Typography>
-                )}
               </Box>
-              <Button
-                variant="outlined"
-                size="small"
+              <IconButton
                 onClick={handleCopyAlias}
-                startIcon={<ContentCopy />}
+                size="small"
                 sx={{ 
                   color: copiedAlias ? COLORS.green : 'white',
-                  borderColor: copiedAlias ? COLORS.green : 'rgba(255,255,255,0.3)',
+                  bgcolor: 'rgba(255,255,255,0.1)',
                 }}
               >
-                {copiedAlias ? '¡Copiado!' : 'Copiar'}
-              </Button>
+                <ContentCopy fontSize="small" />
+              </IconButton>
             </Box>
+            {copiedAlias && (
+              <Typography variant="caption" color={COLORS.green} mt={1} display="block">
+                ✓ Copiado al portapapeles
+              </Typography>
+            )}
 
             {coachPaymentInfo.coach.paymentNotes && (
-              <Typography variant="body2" color="rgba(255,255,255,0.7)" mt={2} fontStyle="italic">
+              <Typography variant="body2" color="rgba(255,255,255,0.6)" mt={2} fontSize={12}>
                 💡 {coachPaymentInfo.coach.paymentNotes}
               </Typography>
             )}
@@ -210,110 +259,88 @@ export const StudentFees = () => {
         </Card>
       )}
 
-      {/* Lista de Cuotas */}
-      <Typography variant="subtitle1" fontWeight="bold" color="rgba(255,255,255,0.7)" mb={2}>
-        📋 Historial de Cuotas
-      </Typography>
-
-      {fees.length > 0 ? (
-        <Box display="flex" flexDirection="column" gap={2}>
-          {fees.map((fee) => (
-            <Card 
-              key={fee.id}
-              sx={{
-                bgcolor: COLORS.cardBg,
-                border: `2px solid ${getStatusColor(fee.status, fee.isOverdue)}`,
-                borderRadius: 2,
-                overflow: 'hidden',
-              }}
-            >
-              <Box 
+      {/* Cuotas futuras pendientes */}
+      {pendingFees.length > 0 && (
+        <Box mb={3}>
+          <Typography variant="subtitle2" color="rgba(255,255,255,0.5)" mb={1}>
+            Próximos meses pendientes ({pendingFees.length})
+          </Typography>
+          <Box display="flex" flexWrap="wrap" gap={1}>
+            {pendingFees.slice(0, 3).map((fee) => (
+              <Chip 
+                key={fee.id}
+                label={`${fee.monthName?.slice(0,3)} - $${fee.value?.toLocaleString()}`}
+                size="small"
                 sx={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between',
-                  p: 2,
-                  flexWrap: 'wrap',
-                  gap: 1,
+                  bgcolor: 'rgba(255,152,0,0.15)', 
+                  color: COLORS.orange,
+                  border: '1px solid rgba(255,152,0,0.3)',
                 }}
-              >
-                {/* Izquierda: Mes y Estado */}
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Box>
-                    <Typography variant="h6" fontWeight="bold" color="white">
-                      {fee.monthName}
-                    </Typography>
-                    <Typography variant="caption" color="rgba(255,255,255,0.5)">
-                      {fee.year}
+              />
+            ))}
+            {pendingFees.length > 3 && (
+              <Chip 
+                label={`+${pendingFees.length - 3} más`}
+                size="small"
+                sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
+              />
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* Historial de pagos (colapsable) */}
+      {paidFees.length > 0 && (
+        <Box>
+          <Button
+            fullWidth
+            onClick={() => setShowHistory(!showHistory)}
+            endIcon={showHistory ? <ExpandLess /> : <ExpandMore />}
+            sx={{ 
+              color: 'rgba(255,255,255,0.6)',
+              justifyContent: 'space-between',
+              textTransform: 'none',
+              mb: 1,
+            }}
+          >
+            <Typography variant="subtitle2">
+              ✅ Historial de pagos ({paidFees.length} cuota{paidFees.length !== 1 ? 's' : ''})
+            </Typography>
+          </Button>
+          
+          <Collapse in={showHistory}>
+            <Box display="flex" flexDirection="column" gap={1}>
+              {paidFees.map((fee) => (
+                <Box 
+                  key={fee.id}
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    p: 1.5,
+                    bgcolor: 'rgba(76, 175, 80, 0.05)',
+                    borderRadius: 1,
+                    border: '1px solid rgba(76, 175, 80, 0.2)',
+                  }}
+                >
+                  <Box display="flex" alignItems="center" gap={1}>
+                    <CheckCircle sx={{ color: COLORS.green, fontSize: 18 }} />
+                    <Typography variant="body2" color="white">
+                      {fee.monthName} {fee.year}
                     </Typography>
                   </Box>
-                  
-                  {fee.isCurrent && (
-                    <Chip 
-                      label="Actual" 
-                      size="small" 
-                      sx={{ bgcolor: COLORS.blue, color: 'white', fontWeight: 'bold' }} 
-                    />
-                  )}
-                  {fee.isOverdue && (
-                    <Chip 
-                      label="Vencida" 
-                      size="small" 
-                      sx={{ bgcolor: COLORS.red, color: 'white', fontWeight: 'bold' }} 
-                    />
-                  )}
-                </Box>
-
-                {/* Centro: Monto */}
-                <Box textAlign="center">
-                  <Typography variant="h5" fontWeight="bold" color={COLORS.orange}>
+                  <Typography variant="body2" color={COLORS.green} fontWeight="bold">
                     ${fee.value?.toLocaleString()}
                   </Typography>
                 </Box>
-
-                {/* Derecha: Estado de pago */}
-                <Box textAlign="right" minWidth={100}>
-                  {fee.status === 'paid' ? (
-                    <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
-                      <CheckCircle sx={{ color: COLORS.green, fontSize: 20 }} />
-                      <Typography variant="body2" color={COLORS.green} fontWeight="bold">
-                        Pagada
-                      </Typography>
-                    </Box>
-                  ) : fee.status === 'partial' ? (
-                    <Box>
-                      <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
-                        <Warning sx={{ color: COLORS.orange, fontSize: 20 }} />
-                        <Typography variant="body2" color={COLORS.orange} fontWeight="bold">
-                          Parcial
-                        </Typography>
-                      </Box>
-                      <Typography variant="caption" color="rgba(255,255,255,0.5)">
-                        Pagado: ${fee.amountPaid?.toLocaleString()}
-                      </Typography>
-                      <Typography variant="caption" display="block" color={COLORS.red}>
-                        Resta: ${fee.remainingAmount?.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Box>
-                      <Box display="flex" alignItems="center" gap={0.5} justifyContent="flex-end">
-                        <ErrorIcon sx={{ color: COLORS.red, fontSize: 20 }} />
-                        <Typography variant="body2" color={COLORS.red} fontWeight="bold">
-                          Pendiente
-                        </Typography>
-                      </Box>
-                      <Typography variant="caption" color={COLORS.red}>
-                        ${fee.remainingAmount?.toLocaleString() || fee.value?.toLocaleString()}
-                      </Typography>
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            </Card>
-          ))}
+              ))}
+            </Box>
+          </Collapse>
         </Box>
-      ) : (
+      )}
+
+      {/* Sin cuotas */}
+      {fees.length === 0 && (
         <Alert 
           severity="info" 
           sx={{ 
