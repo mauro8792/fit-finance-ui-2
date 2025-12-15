@@ -17,7 +17,16 @@ import {
   Tab,
   Fade,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Select,
+  MenuItem,
+  Alert,
+  Snackbar,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import HomeIcon from '@mui/icons-material/Home';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
@@ -29,9 +38,10 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import StudentPermissions from '../../components/StudentPermissions';
-import { useAuthStore } from '../../hooks';
+import { useAuthStore, useStudentsStore, useSportsStore } from '../../hooks';
 // RoutineWizard se movió a página completa: /coach/create-routine/:studentId
 import { useRoutineStore } from '../../hooks/useRoutineStore';
+import { useFeesStore } from '../../hooks/useFeesStore';
 import NutritionProfileCard from './NutritionProfileCard';
 import { getTrainingHistory, getExerciseHistory, getWeightHistory, getStudentSetNotes } from '../../api/fitFinanceApi';
 import { getNutritionDashboard, getWeeklySummary, getNutritionProfile } from '../../api/nutritionApi';
@@ -67,6 +77,8 @@ const StudentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getStudentById } = useAuthStore();
+  const { changeStudentPlan } = useStudentsStore();
+  const { getCoachPlanPrices } = useFeesStore();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -77,6 +89,13 @@ const StudentDetail = () => {
   
   // Tab activo: 0=Información, 1=Entrenamiento, 2=Nutrición
   const [activeTab, setActiveTab] = useState(1); // Por defecto Entrenamiento
+  
+  // Modal para cambiar plan
+  const [showChangePlanDialog, setShowChangePlanDialog] = useState(false);
+  const [availablePlans, setAvailablePlans] = useState([]);
+  const [selectedPlanId, setSelectedPlanId] = useState('');
+  const [changingPlan, setChangingPlan] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   
   // Función para recargar datos de nutrición y cardio
   const reloadNutritionData = () => {
@@ -101,6 +120,91 @@ const StudentDetail = () => {
         setCardioSummary(combinedCardio);
       })
       .finally(() => setLoadingNutrition(false));
+  };
+  
+  // Cargar planes disponibles para el coach
+  const [loadingPlans, setLoadingPlans] = useState(false);
+  const [coachPlanPrices, setCoachPlanPrices] = useState([]);
+  
+  const loadAvailablePlans = async () => {
+    try {
+      setLoadingPlans(true);
+      console.log('🔄 Cargando planes disponibles...');
+      const plans = await getCoachPlanPrices();
+      console.log('📋 Planes recibidos:', plans);
+      setAvailablePlans(plans || []);
+      setCoachPlanPrices(plans || []);
+    } catch (err) {
+      console.error('❌ Error cargando planes:', err);
+      setSnackbar({ 
+        open: true, 
+        message: 'Error al cargar los planes', 
+        severity: 'error' 
+      });
+    } finally {
+      setLoadingPlans(false);
+    }
+  };
+  
+  // Cargar precios del coach al montar el componente
+  useEffect(() => {
+    const loadCoachPrices = async () => {
+      try {
+        const plans = await getCoachPlanPrices();
+        setCoachPlanPrices(plans || []);
+      } catch (err) {
+        console.error('Error cargando precios del coach:', err);
+      }
+    };
+    loadCoachPrices();
+  }, []);
+  
+  // Helper para obtener el precio del coach para un plan
+  const getCoachPriceForPlan = (sportPlanId) => {
+    const plan = coachPlanPrices.find(p => p.id === sportPlanId);
+    return plan?.coachPrice || plan?.defaultPrice || null;
+  };
+  
+  // Abrir modal de cambio de plan
+  const handleOpenChangePlan = async () => {
+    await loadAvailablePlans();
+    // Solo pre-seleccionar si el plan actual está en las opciones
+    const currentPlanId = student?.sportPlan?.id;
+    // Se establecerá después de cargar los planes
+    setSelectedPlanId('');
+    setShowChangePlanDialog(true);
+  };
+  
+  // Confirmar cambio de plan
+  const handleConfirmChangePlan = async () => {
+    if (!selectedPlanId || selectedPlanId === student?.sportPlan?.id) {
+      setShowChangePlanDialog(false);
+      return;
+    }
+    
+    try {
+      setChangingPlan(true);
+      const result = await changeStudentPlan(student.id, selectedPlanId);
+      setSnackbar({ 
+        open: true, 
+        message: result.message || '✅ Plan actualizado correctamente', 
+        severity: 'success' 
+      });
+      setShowChangePlanDialog(false);
+      
+      // Recargar datos del alumno
+      const updatedStudent = await getStudentById(id);
+      setStudent(updatedStudent);
+    } catch (err) {
+      console.error('Error cambiando plan:', err);
+      setSnackbar({ 
+        open: true, 
+        message: err.response?.data?.message || '❌ Error al cambiar el plan', 
+        severity: 'error' 
+      });
+    } finally {
+      setChangingPlan(false);
+    }
   };
   
   // Función auxiliar para combinar resúmenes de cardio
@@ -345,6 +449,7 @@ const StudentDetail = () => {
   };
 
   return (
+    <>
     <Box sx={{ backgroundColor: COLORS.bg, pb: 4 }}>
       {/* Header Premium */}
       <Box sx={{ 
@@ -518,13 +623,23 @@ const StudentDetail = () => {
                           width: 'fit-content',
                         }}
                       />
-                      {student.sportPlan && (
+                      {student.sportPlan ? (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, mt: 1 }}>
-                          <Typography fontSize={12} color={COLORS.textMuted}>
-                            📋 {student.sportPlan.name}
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography fontSize={12} color={COLORS.textMuted}>
+                              📋 {student.sportPlan.name}
+                            </Typography>
+                            <IconButton 
+                              size="small" 
+                              onClick={handleOpenChangePlan}
+                              sx={{ color: COLORS.orange, p: 0.5 }}
+                              title="Cambiar plan"
+                            >
+                              <EditIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Box>
                           <Typography fontSize={13} fontWeight={600} color={COLORS.green}>
-                            💰 ${student.sportPlan.monthlyFee}/mes
+                            💰 ${(getCoachPriceForPlan(student.sportPlan.id) || student.sportPlan.monthlyFee).toLocaleString()}/mes
                           </Typography>
                           <Typography fontSize={12} color={COLORS.orange}>
                             🔄 {student.sportPlan.weeklyFrequency}x/semana
@@ -534,6 +649,17 @@ const StudentDetail = () => {
                               {student.sportPlan.description}
                             </Typography>
                           )}
+                        </Box>
+                      ) : (
+                        <Box sx={{ mt: 1 }}>
+                          <Button
+                            size="small"
+                            startIcon={<AddIcon />}
+                            onClick={handleOpenChangePlan}
+                            sx={{ color: COLORS.orange, textTransform: 'none' }}
+                          >
+                            Asignar plan
+                          </Button>
                         </Box>
                       )}
                     </Box>
@@ -2772,6 +2898,188 @@ const StudentDetail = () => {
         </Box>
       )}
     </Box>
+    
+    {/* Modal nativo para cambiar plan - evita problemas de aria-hidden */}
+    {showChangePlanDialog && (
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setShowChangePlanDialog(false);
+        }}
+      >
+        <div 
+          style={{
+            backgroundColor: COLORS.card,
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ 
+            padding: '16px', 
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: 'white',
+          }}>
+            📋 Cambiar Plan de {student?.firstName}
+          </div>
+          <div style={{ padding: '16px' }}>
+        {loadingPlans ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
+            <CircularProgress size={32} sx={{ color: COLORS.orange }} />
+          </Box>
+        ) : availablePlans.length === 0 ? (
+          <Alert severity="info" sx={{ bgcolor: 'rgba(33,150,243,0.1)' }}>
+            No tenés planes configurados. Andá a <strong>Cuotas → Configurar Pagos</strong> para configurar tus precios, o verificá que tengas deportes asignados.
+          </Alert>
+        ) : (
+          <>
+            <Typography variant="body2" color={COLORS.textMuted} mb={2}>
+              Seleccioná el nuevo plan para este alumno:
+            </Typography>
+            
+            {/* Lista de planes con radio buttons nativos */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {availablePlans.map((plan) => (
+                <label
+                  key={plan.id}
+                  htmlFor={`plan-${plan.id}`}
+                  style={{
+                    padding: '16px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    border: selectedPlanId === plan.id 
+                      ? '2px solid #4caf50' 
+                      : '1px solid rgba(255,255,255,0.2)',
+                    backgroundColor: selectedPlanId === plan.id 
+                      ? 'rgba(76,175,80,0.15)' 
+                      : 'rgba(255,255,255,0.05)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                  }}
+                >
+                  <input
+                    type="radio"
+                    id={`plan-${plan.id}`}
+                    name="planSelection"
+                    value={plan.id}
+                    checked={selectedPlanId === plan.id}
+                    onChange={() => {
+                      console.log('Radio cambiado a:', plan.id);
+                      setSelectedPlanId(plan.id);
+                    }}
+                    style={{ 
+                      width: '20px', 
+                      height: '20px',
+                      accentColor: '#4caf50',
+                    }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 'bold', color: 'white', marginBottom: '4px' }}>
+                      {plan.name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#888' }}>
+                      {plan.sport?.name} • {plan.weeklyFrequency}x/semana
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 'bold', color: '#4cceac' }}>
+                    ${(plan.coachPrice || plan.defaultPrice).toLocaleString()}
+                  </div>
+                </label>
+              ))}
+            </div>
+            
+            {student?.sportPlan && !availablePlans.find(p => p.id === student.sportPlan.id) && (
+              <Alert severity="info" sx={{ mt: 2, bgcolor: 'rgba(33,150,243,0.1)' }}>
+                ⚠️ El plan actual ({student.sportPlan.name}) no está en tus deportes.
+              </Alert>
+            )}
+            
+            {selectedPlanId && (
+              <Alert severity="warning" sx={{ mt: 2, bgcolor: 'rgba(255,152,0,0.1)' }}>
+                ⚠️ Las cuotas pendientes se actualizarán con el nuevo precio.
+              </Alert>
+            )}
+          </>
+        )}
+          </div>
+          <div style={{ 
+            padding: '16px', 
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+          }}>
+            <button 
+              type="button"
+              onClick={() => setShowChangePlanDialog(false)}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: 'transparent',
+                color: '#888',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              onClick={handleConfirmChangePlan}
+              disabled={changingPlan || !selectedPlanId || selectedPlanId === student?.sportPlan?.id}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: (!selectedPlanId || selectedPlanId === student?.sportPlan?.id) ? '#555' : COLORS.green,
+                color: 'white',
+                cursor: (!selectedPlanId || selectedPlanId === student?.sportPlan?.id) ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+              }}
+            >
+              {changingPlan ? 'Guardando...' : 'Confirmar Cambio'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {/* Snackbar para mensajes */}
+    <Snackbar
+      open={snackbar.open}
+      autoHideDuration={4000}
+      onClose={() => setSnackbar({ ...snackbar, open: false })}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    >
+      <Alert 
+        onClose={() => setSnackbar({ ...snackbar, open: false })} 
+        severity={snackbar.severity}
+        sx={{ width: '100%' }}
+      >
+        {snackbar.message}
+      </Alert>
+    </Snackbar>
+  </>
   );
 };
 

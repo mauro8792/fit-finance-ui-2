@@ -97,6 +97,144 @@ export const useFeesStore = () => {
     }
   };
 
+  // ========== MÉTODOS PARA COACHES ==========
+
+  /**
+   * Obtener cuotas de los alumnos del coach
+   */
+  const getMyStudentsFees = async ({ month, year } = {}) => {
+    try {
+      let urlPayload = `${url}/coach/my-students-fees`;
+      const params = [];
+      if (month) params.push(`month=${month}`);
+      if (year) params.push(`year=${year}`);
+      if (params.length > 0) {
+        urlPayload += `?${params.join('&')}`;
+      }
+
+      const { data } = await financeApi.get(urlPayload);
+      return data;
+    } catch (error) {
+      console.error("Error al obtener cuotas de mis alumnos:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Marcar cuota como pagada (para coaches)
+   */
+  const markFeeAsPaid = async (feeId, paymentReference = '') => {
+    try {
+      const { data } = await financeApi.post(
+        `${url}/${feeId}/mark-paid-by-coach`,
+        { paymentReference }
+      );
+      return data;
+    } catch (error) {
+      console.error("Error al marcar cuota como pagada:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Actualizar configuración de pago del coach
+   */
+  const updatePaymentConfig = async ({ paymentAlias, paymentNotes, defaultFeeAmount }) => {
+    try {
+      const { data } = await financeApi.put(`${url}/coach/payment-config`, {
+        paymentAlias,
+        paymentNotes,
+        defaultFeeAmount,
+      });
+      return data;
+    } catch (error) {
+      console.error("Error al actualizar configuración de pago:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Obtener info de pago del coach (para alumnos)
+   */
+  const getMyCoachPaymentInfo = async () => {
+    try {
+      const { data } = await financeApi.get(`${url}/my-coach-payment-info`);
+      return data;
+    } catch (error) {
+      console.error("Error al obtener info de pago del coach:", error);
+      throw error;
+    }
+  };
+
+  // ========== AUMENTOS PROGRAMADOS ==========
+
+  /**
+   * Crear un aumento programado
+   */
+  const createPriceSchedule = async (scheduleData) => {
+    try {
+      const { data } = await financeApi.post(`${url}/price-schedule`, scheduleData);
+      return data;
+    } catch (error) {
+      console.error("Error al crear aumento programado:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Obtener aumentos programados
+   */
+  const getPriceSchedules = async () => {
+    try {
+      const { data } = await financeApi.get(`${url}/price-schedule`);
+      return data;
+    } catch (error) {
+      console.error("Error al obtener aumentos programados:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Cancelar un aumento programado
+   */
+  const cancelPriceSchedule = async (scheduleId) => {
+    try {
+      const { data } = await financeApi.delete(`${url}/price-schedule/${scheduleId}`);
+      return data;
+    } catch (error) {
+      console.error("Error al cancelar aumento:", error);
+      throw error;
+    }
+  };
+
+  // ========== PRECIOS POR PLAN ==========
+
+  /**
+   * Obtener planes con precios del coach
+   */
+  const getCoachPlanPrices = async () => {
+    try {
+      const { data } = await financeApi.get(`${url}/coach/plan-prices`);
+      return data;
+    } catch (error) {
+      console.error("Error al obtener precios por plan:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Guardar precios por plan del coach
+   */
+  const saveCoachPlanPrices = async (prices) => {
+    try {
+      const { data } = await financeApi.put(`${url}/coach/plan-prices`, { prices });
+      return data;
+    } catch (error) {
+      console.error("Error al guardar precios por plan:", error);
+      throw error;
+    }
+  };
+
   return {
     //* Propiedades
     fees,
@@ -108,5 +246,18 @@ export const useFeesStore = () => {
     getUnpaidFeesByStudent,
     validateSequentialPayment,
     checkStudentUnpaidFees,
+    // Métodos para coaches
+    getMyStudentsFees,
+    markFeeAsPaid,
+    updatePaymentConfig,
+    // Aumentos programados
+    createPriceSchedule,
+    getPriceSchedules,
+    cancelPriceSchedule,
+    // Precios por plan
+    getCoachPlanPrices,
+    saveCoachPlanPrices,
+    // Métodos para alumnos
+    getMyCoachPaymentInfo,
   };
 };

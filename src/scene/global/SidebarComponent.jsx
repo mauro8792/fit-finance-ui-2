@@ -112,6 +112,7 @@ const SidebarComponent = () => {
         <>
           <Item title='Dashboard' to='/coach/dashboard' icon={<DashboardIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Mis Alumnos' to='/coach/students' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} />
+          <Item title='Cuotas' to='/coach/fees' icon={<PaidIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Biblioteca' to='/coach/templates' icon={<CollectionsBookmarkIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Ejercicios' to='/coach/exercise-catalog' icon={<LibraryBooksIcon />} selected={selected} setSelected={setSelected} />
           <Item title='Alimentos' to='/coach/food-catalog' icon={<RestaurantIcon />} selected={selected} setSelected={setSelected} />

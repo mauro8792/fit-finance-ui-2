@@ -229,6 +229,25 @@ export const useStudentsStore = () => {
     dispatch(clearSelectedStudent());
   }, [dispatch]);
 
+  /**
+   * Cambiar el plan de un alumno (para coaches)
+   * También actualiza automáticamente las cuotas pendientes
+   */
+  const changeStudentPlan = useCallback(
+    async (studentId, sportPlanId) => {
+      try {
+        const { data } = await financeApi.put(`/students/${studentId}/change-plan`, {
+          sportPlanId,
+        });
+        return data;
+      } catch (error) {
+        console.error('Error al cambiar plan:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
   return {
     //* Propiedades
     students,
@@ -253,5 +272,6 @@ export const useStudentsStore = () => {
     create,
     clearError: clearErrorMessage,
     clearSelectedStudent: clearSelectedStudentData,
+    changeStudentPlan,
   };
 };

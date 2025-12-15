@@ -37,6 +37,7 @@ import { TemplateLibrary } from './scene/coach/templates';
 import CoachFoodCatalog from './scene/coach/CoachFoodCatalog';
 import CoachStudents from './scene/coach/CoachStudents';
 import CreateRoutinePage from './scene/coach/CreateRoutinePage';
+import { CoachFees } from './scene/coach/CoachFees';
 import DashboardMock from './components/DashboardMock';
 import Layout from './components/Layout';
 import { InstallPWABanner } from './components/InstallPWABanner';
@@ -139,6 +140,7 @@ export const FitFinanceApp = () => {
                   <Route path="/coach/exercise-catalog" element={<ExerciseCatalogManager />} />
                   <Route path="/coach/templates" element={<TemplateLibrary />} />
                   <Route path="/coach/food-catalog" element={<CoachFoodCatalog />} />
+                  <Route path="/coach/fees" element={<CoachFees />} />
                   <Route path="*" element={<Navigate to="/coach/dashboard" />} />
                 </>
               )}
