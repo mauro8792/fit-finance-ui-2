@@ -18,6 +18,8 @@ import {
   Card,
   CardContent,
   Grid,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -36,6 +38,7 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
     sportIds: [],
     defaultFeeAmount: '',
     paymentAlias: '',
+    hasPersonalProfile: false,
   });
   const [formErrors, setFormErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -73,6 +76,7 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
         sportIds: selectedCoach.sports?.map(sport => sport.id) || [],
         defaultFeeAmount: selectedCoach.defaultFeeAmount ? selectedCoach.defaultFeeAmount.toString() : '',
         paymentAlias: selectedCoach.paymentAlias || '',
+        hasPersonalProfile: selectedCoach.hasPersonalProfile || false,
       });
     }
   }, [selectedCoach]);
@@ -87,6 +91,7 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
       sportIds: [],
       defaultFeeAmount: '',
       paymentAlias: '',
+      hasPersonalProfile: false,
     });
     setFormErrors({});
     setSubmitError('');
@@ -221,24 +226,32 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
                 />
               </Grid>
 
-              {/* Indicador de Perfil Personal - ancho completo */}
+              {/* Perfil Personal - Switch editable */}
               <Grid item xs={12}>
                 <Card 
                   sx={{ 
-                    bgcolor: selectedCoach?.hasPersonalProfile 
+                    bgcolor: formData.hasPersonalProfile 
                       ? 'rgba(76, 175, 80, 0.1)' 
                       : 'rgba(255,255,255,0.05)',
-                    border: selectedCoach?.hasPersonalProfile 
+                    border: formData.hasPersonalProfile 
                       ? '1px solid rgba(76, 175, 80, 0.5)' 
                       : '1px solid rgba(255,255,255,0.1)',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      bgcolor: formData.hasPersonalProfile 
+                        ? 'rgba(76, 175, 80, 0.15)' 
+                        : 'rgba(255,255,255,0.08)',
+                    },
                   }}
+                  onClick={() => setFormData({ ...formData, hasPersonalProfile: !formData.hasPersonalProfile })}
                 >
                   <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                       <FitnessCenterIcon 
                         sx={{ 
                           fontSize: 28, 
-                          color: selectedCoach?.hasPersonalProfile ? '#4caf50' : 'rgba(255,255,255,0.3)',
+                          color: formData.hasPersonalProfile ? '#4caf50' : 'rgba(255,255,255,0.3)',
                         }} 
                       />
                       <Box sx={{ flex: 1 }}>
@@ -246,7 +259,7 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
                           <Typography variant="body1" sx={{ fontWeight: 600, color: '#fff' }}>
                             📱 Perfil Personal
                           </Typography>
-                          {selectedCoach?.hasPersonalProfile && (
+                          {formData.hasPersonalProfile && (
                             <CheckCircleIcon sx={{ fontSize: 16, color: '#4caf50' }} />
                           )}
                         </Box>
@@ -254,12 +267,18 @@ const UpdateCoach = ({ open, onClose, coachId }) => {
                           variant="caption" 
                           sx={{ color: 'rgba(255,255,255,0.6)' }}
                         >
-                          {selectedCoach?.hasPersonalProfile 
-                            ? 'Puede usar la app como alumno'
-                            : 'Sin perfil personal'
+                          {formData.hasPersonalProfile 
+                            ? 'Puede usar la app como alumno para entrenar'
+                            : 'Sin perfil personal - Click para habilitar'
                           }
                         </Typography>
                       </Box>
+                      <Switch
+                        checked={formData.hasPersonalProfile}
+                        onChange={(e) => setFormData({ ...formData, hasPersonalProfile: e.target.checked })}
+                        onClick={(e) => e.stopPropagation()}
+                        color="success"
+                      />
                     </Box>
                   </CardContent>
                 </Card>
