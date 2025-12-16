@@ -25,9 +25,13 @@ import {
   MenuItem,
   Alert,
   Snackbar,
+  Menu,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import HomeIcon from '@mui/icons-material/Home';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ArchiveIcon from '@mui/icons-material/Archive';
+import DeleteIcon from '@mui/icons-material/Delete';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -96,6 +100,11 @@ const StudentDetail = () => {
   const [selectedPlanId, setSelectedPlanId] = useState('');
   const [changingPlan, setChangingPlan] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  
+  // Menú de opciones para macrociclos
+  const [macroMenuAnchor, setMacroMenuAnchor] = useState(null);
+  const [selectedMacroForMenu, setSelectedMacroForMenu] = useState(null);
+  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
   
   // Función para recargar datos de nutrición y cardio
   const reloadNutritionData = () => {
@@ -446,6 +455,51 @@ const StudentDetail = () => {
     getAllMacroCycles()
       .then((allMacros) => setMacros(allMacros.filter(m => m.studentId == id)))
       .finally(() => setLoadingMacros(false));
+  };
+
+  // Funciones para manejar macrociclos
+  const handleMacroMenuOpen = (event, macro) => {
+    event.stopPropagation();
+    setMacroMenuAnchor(event.currentTarget);
+    setSelectedMacroForMenu(macro);
+  };
+
+  const handleMacroMenuClose = () => {
+    setMacroMenuAnchor(null);
+    setSelectedMacroForMenu(null);
+  };
+
+  const handleArchiveMacro = async () => {
+    if (!selectedMacroForMenu) return;
+    try {
+      const { financeApi } = await import('../../api');
+      await financeApi.patch(`/macrocycle/${selectedMacroForMenu.id}`, { status: 'archived' });
+      setSnackbar({ open: true, message: 'Macrociclo archivado correctamente', severity: 'success' });
+      // Recargar macrociclos
+      getAllMacroCycles()
+        .then((allMacros) => setMacros(allMacros.filter(m => m.studentId == id)));
+    } catch (error) {
+      console.error('Error archivando macrociclo:', error);
+      setSnackbar({ open: true, message: 'Error al archivar macrociclo', severity: 'error' });
+    }
+    handleMacroMenuClose();
+  };
+
+  const handleDeleteMacro = async () => {
+    if (!selectedMacroForMenu) return;
+    try {
+      const { financeApi } = await import('../../api');
+      await financeApi.delete(`/macrocycle/${selectedMacroForMenu.id}`);
+      setSnackbar({ open: true, message: 'Macrociclo eliminado correctamente', severity: 'success' });
+      // Recargar macrociclos
+      getAllMacroCycles()
+        .then((allMacros) => setMacros(allMacros.filter(m => m.studentId == id)));
+    } catch (error) {
+      console.error('Error eliminando macrociclo:', error);
+      setSnackbar({ open: true, message: 'Error al eliminar macrociclo', severity: 'error' });
+    }
+    setConfirmDeleteDialog(false);
+    handleMacroMenuClose();
   };
 
   return (
@@ -1347,7 +1401,9 @@ const StudentDetail = () => {
                   </Box>
                 ) : (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
-                    {macros.map((macro, index) => {
+                    {macros
+                      .filter(m => m.status !== 'archived') // Ocultar archivados
+                      .map((macro, index) => {
                       const startDate = macro.startDate ? new Date(macro.startDate) : new Date();
                       const endDate = macro.endDate ? new Date(macro.endDate) : new Date();
                       const today = new Date();
@@ -1355,22 +1411,28 @@ const StudentDetail = () => {
                       const elapsedDays = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
                       const progress = Math.min(100, Math.max(0, (elapsedDays / totalDays) * 100));
                       
-                      // Determinar estado
-                      let status = 'active';
-                      let statusLabel = '🔥 Activo';
-                      let statusColor = COLORS.green;
-                      let borderColor = COLORS.gold;
+                      // Usar el status real del macrociclo
+                      let status = macro.status || 'draft';
+                      let statusLabel = '📝 Borrador';
+                      let statusColor = COLORS.textMuted;
+                      let borderColor = 'rgba(255,255,255,0.2)';
                       
-                      if (today < startDate) {
-                        status = 'upcoming';
-                        statusLabel = '📅 Próximo';
+                      if (status === 'active') {
+                        statusLabel = '🔥 Activo';
+                        statusColor = COLORS.green;
+                        borderColor = COLORS.gold;
+                      } else if (status === 'published') {
+                        statusLabel = '📢 Publicado';
                         statusColor = COLORS.blue;
                         borderColor = COLORS.blue;
-                      } else if (today > endDate) {
-                        status = 'finished';
-                        statusLabel = '✅ Finalizado';
-                        statusColor = COLORS.textMuted;
-                        borderColor = 'rgba(255,255,255,0.2)';
+                      } else if (status === 'paused') {
+                        statusLabel = '⏸️ Pausado';
+                        statusColor = COLORS.orange;
+                        borderColor = COLORS.orange;
+                      } else if (status === 'completed') {
+                        statusLabel = '✅ Completado';
+                        statusColor = COLORS.green;
+                        borderColor = COLORS.green;
                       }
                       
                       const isFirst = index === 0;
@@ -1401,11 +1463,14 @@ const StudentDetail = () => {
                             },
                           }}
                         >
-                          {/* Badge de estado */}
+                          {/* Header con badge y menú */}
                           <Box sx={{ 
                             position: 'absolute', 
                             top: 8, 
                             right: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 0.5,
                           }}>
                             <Chip 
                               label={statusLabel}
@@ -1418,9 +1483,19 @@ const StudentDetail = () => {
                                 fontWeight: 600,
                               }}
                             />
+                            <IconButton
+                              size="small"
+                              onClick={(e) => handleMacroMenuOpen(e, macro)}
+                              sx={{ 
+                                color: COLORS.textMuted,
+                                '&:hover': { color: COLORS.text, bgcolor: 'rgba(255,255,255,0.1)' },
+                              }}
+                            >
+                              <MoreVertIcon fontSize="small" />
+                            </IconButton>
                           </Box>
 
-                          <Typography variant="h6" fontWeight="bold" color={isFirst ? COLORS.gold : COLORS.text} mb={1} pr={8}>
+                          <Typography variant="h6" fontWeight="bold" color={isFirst ? COLORS.gold : COLORS.text} mb={1} pr={12}>
                             {macro.name}
                           </Typography>
                           
@@ -1430,8 +1505,8 @@ const StudentDetail = () => {
                             </Typography>
                           </Box>
 
-                          {/* Mini barra de progreso */}
-                          {status === 'active' && (
+                          {/* Mini barra de progreso para activos/publicados */}
+                          {(status === 'active' || status === 'published') && (
                             <Box>
                               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
                                 <Typography fontSize={10} color={COLORS.textMuted}>Progreso</Typography>
@@ -1453,15 +1528,21 @@ const StudentDetail = () => {
                             </Box>
                           )}
                           
-                          {status === 'finished' && (
+                          {status === 'completed' && (
                             <Typography fontSize={11} color={COLORS.green} fontWeight={600}>
                               ✓ Completado al 100%
                             </Typography>
                           )}
                           
-                          {status === 'upcoming' && (
-                            <Typography fontSize={11} color={COLORS.blue}>
-                              Comienza en {Math.ceil((startDate - today) / (1000 * 60 * 60 * 24))} días
+                          {status === 'draft' && (
+                            <Typography fontSize={11} color={COLORS.textMuted}>
+                              Sin publicar aún
+                            </Typography>
+                          )}
+                          
+                          {status === 'paused' && (
+                            <Typography fontSize={11} color={COLORS.orange}>
+                              Rutina pausada
                             </Typography>
                           )}
                         </Box>
@@ -3064,6 +3145,68 @@ const StudentDetail = () => {
       </div>
     )}
     
+    {/* Menú de opciones para macrociclos */}
+    <Menu
+      anchorEl={macroMenuAnchor}
+      open={Boolean(macroMenuAnchor)}
+      onClose={handleMacroMenuClose}
+      PaperProps={{
+        sx: {
+          bgcolor: '#1a1a2e',
+          border: '1px solid rgba(255,255,255,0.1)',
+          '& .MuiMenuItem-root': {
+            color: '#e0e0e0',
+            '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
+          },
+        },
+      }}
+    >
+      <MenuItem onClick={handleArchiveMacro}>
+        <ArchiveIcon sx={{ mr: 1, fontSize: 18 }} />
+        Archivar
+      </MenuItem>
+      <MenuItem 
+        onClick={() => setConfirmDeleteDialog(true)}
+        sx={{ color: '#f44336 !important' }}
+      >
+        <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+        Eliminar
+      </MenuItem>
+    </Menu>
+
+    {/* Diálogo de confirmación para eliminar */}
+    <Dialog
+      open={confirmDeleteDialog}
+      onClose={() => setConfirmDeleteDialog(false)}
+      PaperProps={{
+        sx: {
+          bgcolor: '#1a1a2e',
+          border: '1px solid rgba(255,255,255,0.1)',
+        },
+      }}
+    >
+      <DialogTitle sx={{ color: '#f44336' }}>
+        ⚠️ Eliminar Macrociclo
+      </DialogTitle>
+      <DialogContent>
+        <Typography color="#e0e0e0">
+          ¿Estás seguro de que querés eliminar "{selectedMacroForMenu?.name}"?
+        </Typography>
+        <Typography color="#888" fontSize={13} mt={1}>
+          Esta acción no se puede deshacer y se eliminarán todos los mesociclos, 
+          microciclos y ejercicios asociados.
+        </Typography>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setConfirmDeleteDialog(false)} sx={{ color: '#888' }}>
+          Cancelar
+        </Button>
+        <Button onClick={handleDeleteMacro} sx={{ color: '#f44336' }}>
+          Eliminar
+        </Button>
+      </DialogActions>
+    </Dialog>
+
     {/* Snackbar para mensajes */}
     <Snackbar
       open={snackbar.open}

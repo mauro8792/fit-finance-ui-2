@@ -20,6 +20,7 @@ import {
   ExpandMore,
   ExpandLess,
   CalendarToday,
+  ReceiptLong,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
@@ -107,20 +108,39 @@ export const StudentFees = () => {
   return (
     <Box m={{ xs: 1, sm: 2 }} pb={4}>
       {/* Header */}
-      <Box display="flex" alignItems="center" gap={2} mb={3}>
-        <IconButton 
-          onClick={() => navigate('/student')}
-          sx={{ 
-            bgcolor: COLORS.orange,
-            color: 'white',
-            '&:hover': { bgcolor: '#e68a00' },
+      <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
+        <Box display="flex" alignItems="center" gap={2}>
+          <IconButton 
+            onClick={() => navigate('/student')}
+            sx={{ 
+              bgcolor: COLORS.orange,
+              color: 'white',
+              '&:hover': { bgcolor: '#e68a00' },
+            }}
+          >
+            <ArrowBack />
+          </IconButton>
+          <Typography variant="h5" fontWeight="bold" color="white">
+            💰 Estado de Cuotas
+          </Typography>
+        </Box>
+        <Button
+          variant="outlined"
+          startIcon={<ReceiptLong />}
+          onClick={() => navigate('/student/payment-history')}
+          sx={{
+            borderColor: 'rgba(255,255,255,0.3)',
+            color: 'rgba(255,255,255,0.8)',
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            px: { xs: 1, sm: 2 },
+            '&:hover': {
+              borderColor: COLORS.orange,
+              bgcolor: 'rgba(255,152,0,0.1)',
+            },
           }}
         >
-          <ArrowBack />
-        </IconButton>
-        <Typography variant="h5" fontWeight="bold" color="white">
-          💰 Estado de Cuotas
-        </Typography>
+          Historial
+        </Button>
       </Box>
 
       {/* CARD PRINCIPAL - Estado Actual */}

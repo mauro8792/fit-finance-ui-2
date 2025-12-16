@@ -27,9 +27,15 @@ export const useRoutineStore = () => {
     return response.data;
   }, []);
 
-  // Obtener todos los macro-ciclos
+  // Obtener todos los macro-ciclos (para coach/admin)
   const getAllMacroCycles = useCallback(async () => {
     const response = await fitFinanceApi.get(`/macrocycle`);
+    return response.data;
+  }, []);
+
+  // Obtener MIS rutinas (para estudiante logueado - más seguro)
+  const getMyRoutines = useCallback(async () => {
+    const response = await fitFinanceApi.get(`/macrocycle/my-routines`);
     return response.data;
   }, []);
 
@@ -80,6 +86,7 @@ export const useRoutineStore = () => {
   return {
     createMacroCycle,
     getAllMacroCycles,
+    getMyRoutines,
     getMacrocycleById,
     createMesocycle,
     getMesocyclesByMacro,

@@ -111,7 +111,7 @@ export const StudentRoutine = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { student } = useAuthStore();
   const {
-    getAllMacroCycles,
+    getMyRoutines,
     getMesocyclesByMacro,
     fetchMicrocyclesByMesocycle,
   } = useRoutineStore();
@@ -233,8 +233,8 @@ export const StudentRoutine = () => {
         return;
       }
       try {
-        const allMacros = await getAllMacroCycles();
-        const myMacros = allMacros.filter((m) => m.studentId === student.id);
+        // 🔐 Usar endpoint seguro que solo devuelve MIS rutinas
+        const myMacros = await getMyRoutines();
         setMacros(myMacros);
 
         // ✅ MEJORA: Auto-seleccionar si hay solo un macrociclo
@@ -244,39 +244,43 @@ export const StudentRoutine = () => {
           setError("No tenés rutinas asignadas.");
         }
       } catch (err) {
-        setError(err.message || "Error cargando macrocycles");
+        setError(err.message || "Error cargando rutinas");
       } finally {
         setLoading(false);
       }
     };
     fetchMacros();
-  }, [student, getAllMacroCycles]);
+  }, [student, getMyRoutines]);
 
-  // Cuando selecciona un macrocycle, buscar mesocycles ACTIVOS/PUBLICADOS solamente
+  // Cuando selecciona un macrocycle, buscar mesocycles del macrociclo seleccionado
   useEffect(() => {
     const fetchMesos = async () => {
       if (!selectedMacroId || !student?.id) return;
       setLoading(true);
       try {
-        // 🆕 Usar el nuevo endpoint que devuelve TODOS los mesociclos activos/publicados
+        // 🔧 Buscar mesociclos del macrociclo SELECCIONADO
         const response = await fetch(
-          `${VITE_API_URL}/mesocycle/student/${student.id}/active`
+          `${VITE_API_URL}/mesocycle/macrocycle/${selectedMacroId}`
         );
-        const data = await response.json();
+        const allMesos = await response.json();
 
-        if (data.mesocycles && data.mesocycles.length > 0) {
-          // Mostrar todos los mesociclos disponibles (activos/publicados)
-          setMesos(data.mesocycles);
+        // Filtrar solo los activos o publicados
+        const activeMesos = allMesos.filter(
+          (m) => m.status === "active" || m.status === "published"
+        );
+
+        if (activeMesos.length > 0) {
+          setMesos(activeMesos);
           setMicros([]);
           setMesoIdx(0);
           setMicroIdx(0);
           setDiaIdx(0);
-          setSelectedMesoId(data.mesocycles[0].id);
+          setSelectedMesoId(activeMesos[0].id);
           setError(null);
         } else {
           setMesos([]);
           setSelectedMesoId("");
-          setError(data.message || "No tienes una rutina activa asignada.");
+          setError("No tienes una rutina activa asignada en este programa.");
         }
       } catch (err) {
         setError(err.message || "Error cargando rutina activa");
