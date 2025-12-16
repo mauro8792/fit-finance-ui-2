@@ -17,6 +17,7 @@ import AdminStudents from './scene/admin-students';
 import { StudentDashboard } from './scene/student/StudentDashboard';
 import { StudentRoutine } from './scene/student/StudentRoutine';
 import { StudentFees } from './scene/student/StudentFees';
+import PaymentHistory from './scene/student/PaymentHistory';
 import TrainingHistory from './scene/student/TrainingHistory';
 import { HealthDashboard } from './scene/student/health';
 import { NutritionDashboard } from './scene/student/nutrition';
@@ -111,6 +112,7 @@ export const FitFinanceApp = () => {
                   <Route path="/" element={<DashboardMock />} />
                   <Route path="/student" element={<StudentDashboard />} />
                   <Route path="/student/fees" element={<StudentFees />} />
+                  <Route path="/student/payment-history" element={<PaymentHistory />} />
                   <Route path="/student/routine" element={<StudentRoutine />} />
                   <Route path="/student/progress" element={<HealthDashboard />} />
                   <Route path="/student/nutrition" element={<NutritionDashboard />} />

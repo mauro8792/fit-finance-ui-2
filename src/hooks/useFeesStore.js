@@ -166,6 +166,34 @@ export const useFeesStore = () => {
     }
   };
 
+  // ========== HISTORIAL DE PAGOS ==========
+
+  /**
+   * Obtener mi historial de pagos (alumno)
+   */
+  const getMyPaymentHistory = async (limit = 50) => {
+    try {
+      const { data } = await financeApi.get(`/payments/my-history?limit=${limit}`);
+      return data;
+    } catch (error) {
+      console.error("Error al obtener historial de pagos:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Obtener historial de pagos de un alumno (para coach/admin)
+   */
+  const getStudentPaymentHistory = async (studentId, limit = 50) => {
+    try {
+      const { data } = await financeApi.get(`/payments/student/${studentId}/history?limit=${limit}`);
+      return data;
+    } catch (error) {
+      console.error("Error al obtener historial de pagos del alumno:", error);
+      throw error;
+    }
+  };
+
   // ========== AUMENTOS PROGRAMADOS ==========
 
   /**
@@ -259,5 +287,8 @@ export const useFeesStore = () => {
     saveCoachPlanPrices,
     // Métodos para alumnos
     getMyCoachPaymentInfo,
+    // Historial de pagos
+    getMyPaymentHistory,
+    getStudentPaymentHistory,
   };
 };
