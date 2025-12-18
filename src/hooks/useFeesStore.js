@@ -263,6 +263,32 @@ export const useFeesStore = () => {
     }
   };
 
+  /**
+   * Aplicar aumentos programados a cuotas pendientes
+   */
+  const applyScheduledIncreases = async () => {
+    try {
+      const { data } = await financeApi.post(`${url}/coach/apply-increases`);
+      return data;
+    } catch (error) {
+      console.error("Error al aplicar aumentos:", error);
+      throw error;
+    }
+  };
+
+  /**
+   * Generar cuotas futuras para los alumnos del coach
+   */
+  const generateFutureFees = async () => {
+    try {
+      const { data } = await financeApi.post(`${url}/coach/generate-future-fees`);
+      return data;
+    } catch (error) {
+      console.error("Error al generar cuotas:", error);
+      throw error;
+    }
+  };
+
   return {
     //* Propiedades
     fees,
@@ -285,6 +311,9 @@ export const useFeesStore = () => {
     // Precios por plan
     getCoachPlanPrices,
     saveCoachPlanPrices,
+    // Aplicar aumentos y generar cuotas
+    applyScheduledIncreases,
+    generateFutureFees,
     // Métodos para alumnos
     getMyCoachPaymentInfo,
     // Historial de pagos

@@ -102,9 +102,12 @@ financeApi.interceptors.response.use(
 );
 
 // Obtener alumnos por coach userId
-export const getCoachStudents = async (coachUserId) => {
+export const getCoachStudents = async (coachUserId, includeInactive = false) => {
   try {
-    const response = await financeApi.get(`/students/coach/${coachUserId}`);
+    const url = includeInactive 
+      ? `/students/coach/${coachUserId}?includeInactive=true`
+      : `/students/coach/${coachUserId}`;
+    const response = await financeApi.get(url);
     return response.data;
   } catch (error) {
     console.error("Error al obtener alumnos del coach:", error);

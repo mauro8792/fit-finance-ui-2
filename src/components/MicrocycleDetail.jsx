@@ -18,6 +18,11 @@ const MicrocycleDetail = () => {
   const [selectedSet, setSelectedSet] = useState(null);
   const [selectedExerciseForSet, setSelectedExerciseForSet] = useState(null);
   
+  // Navegación entre microciclos
+  const [siblingMicrocycles, setSiblingMicrocycles] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  
   // Timer de descanso
   const [showTimer, setShowTimer] = useState(false);
   const [timerDuration, setTimerDuration] = useState(0);
@@ -54,12 +59,66 @@ const MicrocycleDetail = () => {
   const fetchMicrocycle = () => {
     setLoading(true);
     fitFinanceApi.get(`/microcycle/${id}`)
-      .then((res) => setMicrocycle(res.data))
+      .then((res) => {
+        setMicrocycle(res.data);
+        // Si tiene mesocycle, cargar los hermanos para navegación
+        const mesocycleId = res.data.mesocycle?.id || res.data.mesocycleId;
+        if (mesocycleId) {
+          fetchSiblingMicrocycles(mesocycleId, res.data.id);
+        }
+      })
       .finally(() => setLoading(false));
+  };
+
+  // Cargar microciclos hermanos del mismo mesociclo
+  const fetchSiblingMicrocycles = async (mesocycleId, currentId) => {
+    try {
+      const response = await fitFinanceApi.get(`/mesocycle/${mesocycleId}`);
+      const siblings = response.data?.microcycles || [];
+      // Ordenar por número, o por fecha de creación, o por id
+      const sorted = siblings.sort((a, b) => {
+        // Primero por número si existe
+        if (a.number && b.number) return a.number - b.number;
+        // Luego por fecha de inicio si existe
+        if (a.startDate && b.startDate) return new Date(a.startDate) - new Date(b.startDate);
+        // Luego por fecha de creación si existe
+        if (a.createdAt && b.createdAt) return new Date(a.createdAt) - new Date(b.createdAt);
+        // Fallback por id
+        return a.id - b.id;
+      });
+      setSiblingMicrocycles(sorted);
+      // Encontrar el índice actual
+      const idx = sorted.findIndex(m => m.id === currentId);
+      setCurrentIndex(idx);
+      console.log('📋 Microciclos hermanos:', sorted.map(m => ({ id: m.id, name: m.name })), 'Actual:', currentId, 'Index:', idx);
+    } catch (err) {
+      console.error('Error loading sibling microcycles:', err);
+    }
+  };
+
+  // Navegación entre microciclos con transición suave
+  const goToPrevious = () => {
+    if (currentIndex > 0) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        navigate(`/coach/microcycle/${siblingMicrocycles[currentIndex - 1].id}`);
+      }, 150);
+    }
+  };
+
+  const goToNext = () => {
+    if (currentIndex < siblingMicrocycles.length - 1) {
+      setIsTransitioning(true);
+      setTimeout(() => {
+        navigate(`/coach/microcycle/${siblingMicrocycles[currentIndex + 1].id}`);
+      }, 150);
+    }
   };
 
   useEffect(() => {
     fetchMicrocycle();
+    // Resetear transición cuando cambia el id
+    setIsTransitioning(false);
   }, [id]);
 
   const handleSaveEdits = () => {
@@ -211,7 +270,10 @@ const MicrocycleDetail = () => {
       overflow: 'auto',
       padding: isMobile ? 8 : 16, 
       fontFamily: 'system-ui, -apple-system, sans-serif',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      opacity: isTransitioning ? 0.3 : 1,
+      transform: isTransitioning ? 'scale(0.98)' : 'scale(1)',
+      transition: 'opacity 0.15s ease-out, transform 0.15s ease-out',
     }}>
       {/* Header simplificado */}
       <div style={{ marginBottom: 16 }}>
@@ -223,40 +285,148 @@ const MicrocycleDetail = () => {
           boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
           border: '1px solid #e0e0e0'
         }}>
-          {/* Fila 1: Volver + Título */}
+          {/* Fila 1: Navegación + Título (reorganizado para mobile) */}
           <div style={{ 
             display: 'flex', 
+            flexDirection: isMobile ? 'column' : 'row',
             alignItems: 'center',
-            marginBottom: isMobile ? 12 : 0,
-            gap: 10
+            gap: isMobile ? 8 : 10
           }}>
-            {isMobile && (
-              <button
-                onClick={() => navigate(-1)}
-                style={{
-                  background: '#f0f0f0',
-                  border: 'none',
-                  borderRadius: 8,
-                  padding: '8px 12px',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: '#555',
-                }}
-              >
-                ←
-              </button>
+            {/* En mobile: título arriba, flechas abajo */}
+            {isMobile ? (
+              <>
+                {/* Título centrado */}
+                <h1 style={{ 
+                  margin: 0, 
+                  fontSize: 18, 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  textAlign: 'center',
+                  width: '100%'
+                }}>
+                  {microcycle.name}
+                </h1>
+                
+                {/* Navegación con flechas */}
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: 12,
+                  width: '100%'
+                }}>
+                  <button
+                    onClick={goToPrevious}
+                    disabled={currentIndex <= 0}
+                    style={{
+                      background: currentIndex <= 0 ? '#e0e0e0' : '#667eea',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '6px 14px',
+                      cursor: currentIndex <= 0 ? 'not-allowed' : 'pointer',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: currentIndex <= 0 ? '#999' : '#fff',
+                    }}
+                  >
+                    ◀ Ant
+                  </button>
+                  
+                  {siblingMicrocycles.length > 1 && (
+                    <span style={{ 
+                      fontSize: 13, 
+                      color: '#667eea', 
+                      fontWeight: 600,
+                      background: 'rgba(102,126,234,0.1)',
+                      padding: '4px 12px',
+                      borderRadius: 12,
+                    }}>
+                      {currentIndex + 1} / {siblingMicrocycles.length}
+                    </span>
+                  )}
+                  
+                  <button
+                    onClick={goToNext}
+                    disabled={currentIndex >= siblingMicrocycles.length - 1}
+                    style={{
+                      background: currentIndex >= siblingMicrocycles.length - 1 ? '#e0e0e0' : '#667eea',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '6px 14px',
+                      cursor: currentIndex >= siblingMicrocycles.length - 1 ? 'not-allowed' : 'pointer',
+                      fontSize: 14,
+                      fontWeight: 600,
+                      color: currentIndex >= siblingMicrocycles.length - 1 ? '#999' : '#fff',
+                    }}
+                  >
+                    Sig ▶
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Desktop: flechas a los lados */}
+                <button
+                  onClick={goToPrevious}
+                  disabled={currentIndex <= 0}
+                  style={{
+                    background: currentIndex <= 0 ? '#e0e0e0' : '#667eea',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '10px 16px',
+                    cursor: currentIndex <= 0 ? 'not-allowed' : 'pointer',
+                    fontSize: 20,
+                    fontWeight: 600,
+                    color: currentIndex <= 0 ? '#999' : '#fff',
+                    transition: 'all 0.2s',
+                  }}
+                  title={currentIndex > 0 ? `Ir a ${siblingMicrocycles[currentIndex - 1]?.name || 'anterior'}` : 'No hay microciclo anterior'}
+                >
+                  ◀
+                </button>
+                
+                <h1 style={{ 
+                  margin: 0, 
+                  fontSize: 28, 
+                  fontWeight: 600, 
+                  color: '#2c3e50',
+                  flex: 1,
+                  textAlign: 'center'
+                }}>
+                  {microcycle.name}
+                  {siblingMicrocycles.length > 1 && (
+                    <span style={{ 
+                      fontSize: 14, 
+                      color: '#888', 
+                      fontWeight: 400,
+                      marginLeft: 8 
+                    }}>
+                      ({currentIndex + 1}/{siblingMicrocycles.length})
+                    </span>
+                  )}
+                </h1>
+                
+                <button
+                  onClick={goToNext}
+                  disabled={currentIndex >= siblingMicrocycles.length - 1}
+                  style={{
+                    background: currentIndex >= siblingMicrocycles.length - 1 ? '#e0e0e0' : '#667eea',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '10px 16px',
+                    cursor: currentIndex >= siblingMicrocycles.length - 1 ? 'not-allowed' : 'pointer',
+                    fontSize: 20,
+                    fontWeight: 600,
+                    color: currentIndex >= siblingMicrocycles.length - 1 ? '#999' : '#fff',
+                    transition: 'all 0.2s',
+                  }}
+                  title={currentIndex < siblingMicrocycles.length - 1 ? `Ir a ${siblingMicrocycles[currentIndex + 1]?.name || 'siguiente'}` : 'No hay microciclo siguiente'}
+                >
+                  ▶
+                </button>
+              </>
             )}
-            <h1 style={{ 
-              margin: 0, 
-              fontSize: isMobile ? 18 : 28, 
-              fontWeight: 600, 
-              color: '#2c3e50',
-              flex: 1,
-              textAlign: isMobile ? 'center' : 'left'
-            }}>
-              {microcycle.name}
-            </h1>
+            
             {!isMobile && (
               <>
                 <button
@@ -780,17 +950,18 @@ const MicrocycleDetail = () => {
                                       style={{ 
                                         background: '#4caf50', 
                                         color: '#fff', 
-                                        padding: '2px 6px', 
+                                        padding: '3px 8px', 
                                         borderRadius: 4, 
-                                        fontSize: 9,
-                                        cursor: 'pointer'
+                                        fontSize: 10,
+                                        cursor: 'pointer',
+                                        fontWeight: 600
                                       }}
                                       title="Ver sets registrados"
                                     >
-                                      {ex.sets.length} sets
+                                      {ex.sets.length}
                                     </span>
                                   ) : (
-                                    <span style={{ color: '#777', fontSize: 9 }}>Sin sets</span>
+                                    <span style={{ color: '#aaa', fontSize: 10 }}>-</span>
                                   )}
                                 </td>
                                 <td style={{ 
