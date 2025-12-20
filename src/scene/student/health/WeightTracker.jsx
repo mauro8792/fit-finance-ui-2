@@ -16,6 +16,8 @@ import {
 import dayjs from 'dayjs';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import {
   LineChart,
   Line,
@@ -29,27 +31,52 @@ import {
 import { tokens } from '../../../theme';
 import fitFinanceApi from '../../../api/fitFinanceApi';
 
-// Helper para obtener la fecha de hoy en formato YYYY-MM-DD (sin problemas de UTC)
-const getTodayDateString = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+// Helper para obtener la fecha LOCAL actual (sin problemas de UTC)
+const getLocalDate = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 };
 
-// Helper para formatear fecha a DD/MM/YYYY (sin problemas de UTC)
+// Formatear fecha a DD/MM/AAAA (para mostrar)
+const formatDateDisplay = (date) => {
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+// Formatear fecha a YYYY-MM-DD para el API (sin UTC, usando fecha local)
+const formatDateForApi = (date) => {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const d = date.getDate().toString().padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+// Obtener nombre del día
+const getDayName = (date) => {
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  return days[date.getDay()];
+};
+
+// Obtener nombre del mes
+const getMonthName = (date) => {
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  return months[date.getMonth()];
+};
+
+// Helper para formatear fecha a DD/MM/YYYY (sin problemas de UTC) - para el historial
 const formatDateToDDMMYYYY = (dateInput) => {
   if (!dateInput) return '';
   
   let dateString = dateInput;
   
-  // Si es un objeto Date, convertir a string ISO primero
+  // Si es un objeto Date, usar componentes locales
   if (dateInput instanceof Date) {
-    // Usar UTC para evitar problemas de timezone
-    const year = dateInput.getUTCFullYear();
-    const month = String(dateInput.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(dateInput.getUTCDate()).padStart(2, '0');
+    const day = String(dateInput.getDate()).padStart(2, '0');
+    const month = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const year = dateInput.getFullYear();
     return `${day}/${month}/${year}`;
   }
   
@@ -74,41 +101,33 @@ const WeightTracker = ({ studentId }) => {
   const [loading, setLoading] = useState(true);
   const [weightLogs, setWeightLogs] = useState([]);
   const [stats, setStats] = useState(null);
-  // Helper para obtener la fecha de hoy en formato DD/MM/YYYY
-  const getTodayDateString = () => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
-    return `${day}/${month}/${year}`;
-  };
-
-  // Helper para convertir DD/MM/YYYY a YYYY-MM-DD
-  const convertToBackendFormat = (dateStr) => {
-    if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return '';
-    const [day, month, year] = parts;
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  };
-
-  // Helper para validar formato DD/MM/YYYY
-  const isValidDate = (dateStr) => {
-    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-    if (!regex.test(dateStr)) return false;
-    const [, day, month, year] = dateStr.match(regex);
-    const d = new Date(year, month - 1, day);
-    return d.getDate() == day && d.getMonth() == month - 1 && d.getFullYear() == year;
-  };
-
   const [showForm, setShowForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(getLocalDate());
   const [formData, setFormData] = useState({
-    date: getTodayDateString(), // DD/MM/YYYY
     weight: '',
     notes: '',
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  
+  const today = getLocalDate();
+  
+  // Verificar si la fecha seleccionada es hoy
+  const isSelectedToday = selectedDate.getDate() === today.getDate() && 
+                          selectedDate.getMonth() === today.getMonth() && 
+                          selectedDate.getFullYear() === today.getFullYear();
+
+  // Navegar fecha
+  const goToPreviousDay = () => {
+    setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() - 1));
+  };
+
+  const goToNextDay = () => {
+    const nextDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+    if (nextDay <= today) {
+      setSelectedDate(nextDay);
+    }
+  };
 
   useEffect(() => {
     fetchWeightData();
@@ -139,38 +158,6 @@ const WeightTracker = ({ studentId }) => {
   };
 
 
-  const handleDateChange = (e) => {
-    let value = e.target.value;
-    
-    // Remover caracteres no numéricos excepto /
-    value = value.replace(/[^\d/]/g, '');
-    
-    // Aplicar máscara DD/MM/YYYY
-    if (value.length <= 2) {
-      // Solo día
-      setFormData({ ...formData, date: value });
-    } else if (value.length <= 5) {
-      // Día y mes
-      const parts = value.split('/');
-      if (parts.length === 1 && value.length === 2) {
-        setFormData({ ...formData, date: value + '/' });
-      } else if (parts.length === 2) {
-        setFormData({ ...formData, date: value });
-      }
-    } else {
-      // Día, mes y año
-      const parts = value.split('/');
-      if (parts.length === 2 && value.length === 5) {
-        setFormData({ ...formData, date: value + '/' });
-      } else if (parts.length === 3) {
-        // Limitar año a 4 dígitos
-        const [day, month, year] = parts;
-        const limitedYear = year.substring(0, 4);
-        setFormData({ ...formData, date: `${day}/${month}/${limitedYear}` });
-      }
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.weight) {
@@ -178,16 +165,11 @@ const WeightTracker = ({ studentId }) => {
       return;
     }
 
-    if (!isValidDate(formData.date)) {
-      setError('Por favor ingresa una fecha válida en formato DD/MM/YYYY');
-      return;
-    }
-
     try {
       const token = localStorage.getItem('token');
       
-      // Convertir DD/MM/YYYY a YYYY-MM-DD para el backend
-      const dateString = convertToBackendFormat(formData.date);
+      // Convertir Date a YYYY-MM-DD para el backend (usando fecha local)
+      const dateString = formatDateForApi(selectedDate);
       
       await fitFinanceApi.post(
         `/health/weight/${studentId}`,
@@ -201,14 +183,14 @@ const WeightTracker = ({ studentId }) => {
         }
       );
 
-            setSuccess('Peso registrado exitosamente');
-            setFormData({
-              date: getTodayDateString(),
-              weight: '',
-              notes: '',
-            });
-            setShowForm(false);
-            fetchWeightData();
+      setSuccess('Peso registrado exitosamente');
+      setFormData({
+        weight: '',
+        notes: '',
+      });
+      setSelectedDate(getLocalDate());
+      setShowForm(false);
+      fetchWeightData();
     } catch (err) {
       console.error('Error saving weight:', err);
       setError('Error al guardar el peso');
@@ -369,61 +351,89 @@ const WeightTracker = ({ studentId }) => {
       {showForm && (
         <Card sx={{ backgroundColor: colors.primary[400], mb: 3 }}>
           <CardContent>
-              <form onSubmit={handleSubmit}>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={4}>
+            <form onSubmit={handleSubmit}>
+              {/* Selector de Fecha con flechas */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color={colors.grey[300]} mb={1}>
+                  📅 Fecha
+                </Typography>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  backgroundColor: colors.primary[500],
+                  borderRadius: 2,
+                  p: 1,
+                  border: `1px solid ${colors.grey[700]}`,
+                }}>
+                  <IconButton 
+                    onClick={goToPreviousDay}
+                    sx={{ color: colors.grey[100] }}
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  
+                  <Box sx={{ textAlign: 'center', flex: 1 }}>
+                    <Typography variant="h5" fontWeight={700} color={colors.grey[100]}>
+                      {formatDateDisplay(selectedDate)}
+                    </Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>
+                      {getDayName(selectedDate)}, {selectedDate.getDate()} de {getMonthName(selectedDate)}
+                    </Typography>
+                  </Box>
+                  
+                  <IconButton 
+                    onClick={goToNextDay}
+                    disabled={isSelectedToday}
+                    sx={{ 
+                      color: isSelectedToday ? colors.grey[700] : colors.grey[100],
+                    }}
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth
-                    label="Fecha"
-                    value={formData.date}
-                    onChange={handleDateChange}
-                    placeholder="DD/MM/YYYY"
-                    helperText="Formato: DD/MM/YYYY (ej: 16/11/2025)"
+                    type="number"
+                    label="Peso (kg)"
+                    value={formData.weight}
+                    onChange={(e) =>
+                      setFormData({ ...formData, weight: e.target.value })
+                    }
+                    inputProps={{ step: '0.1', min: '0' }}
                     required
-                    inputProps={{
-                      maxLength: 10,
-                    }}
                   />
                 </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      type="number"
-                      label="Peso (kg)"
-                      value={formData.weight}
-                      onChange={(e) =>
-                        setFormData({ ...formData, weight: e.target.value })
-                      }
-                      inputProps={{ step: '0.1', min: '0' }}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      label="Notas (opcional)"
-                      value={formData.notes}
-                      onChange={(e) =>
-                        setFormData({ ...formData, notes: e.target.value })
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <Button
-                      type="submit"
-                      variant="contained"
-                      sx={{
-                        backgroundColor: colors.greenAccent[600],
-                        '&:hover': { backgroundColor: colors.greenAccent[700] },
-                      }}
-                    >
-                      Guardar
-                    </Button>
-                  </Grid>
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    label="Notas (opcional)"
+                    value={formData.notes}
+                    onChange={(e) =>
+                      setFormData({ ...formData, notes: e.target.value })
+                    }
+                  />
                 </Grid>
-              </form>
-            </CardContent>
-          </Card>
+                <Grid item xs={12}>
+                  <Button
+                    type="submit"
+                    variant="contained"
+                    sx={{
+                      backgroundColor: colors.greenAccent[600],
+                      '&:hover': { backgroundColor: colors.greenAccent[700] },
+                    }}
+                  >
+                    Guardar
+                  </Button>
+                </Grid>
+              </Grid>
+            </form>
+          </CardContent>
+        </Card>
       )}
 
       {/* Gráfico */}

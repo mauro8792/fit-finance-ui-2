@@ -14,6 +14,8 @@ import {
   calculatePace,
   estimateCalories,
   getActivityInfo,
+  estimateSteps,
+  saveManualSteps,
 } from '../../../api/activityTrackerApi';
 
 // Fix para iconos de Leaflet
@@ -375,6 +377,9 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
     
     const calories = estimateCalories(activityType, elapsedSeconds / 60);
     
+    // Estimar pasos basados en la distancia
+    const estimatedSteps = estimateSteps(activityType, distanceMeters);
+    
     try {
       await finishActivity(trackId, {
         durationSeconds: elapsedSeconds,
@@ -384,10 +389,29 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
         caloriesBurned: calories,
       });
       
+      // Guardar pasos estimados automáticamente si hay pasos
+      if (estimatedSteps > 0) {
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          const activityLabel = getActivityInfo(activityType).label;
+          await saveManualSteps(
+            studentId,
+            today,
+            estimatedSteps,
+            `${activityLabel} GPS - ${(distanceMeters / 1000).toFixed(2)}km`
+          );
+          console.log(`✅ Pasos guardados: ${estimatedSteps}`);
+        } catch (stepErr) {
+          // No bloquear si falla guardar pasos
+          console.error('Error guardando pasos:', stepErr);
+        }
+      }
+      
       onFinish({
         duration: elapsedSeconds,
         distance: distanceMeters,
         calories,
+        steps: estimatedSteps,
         points,
       });
     } catch (err) {
@@ -411,6 +435,7 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
   // Calcular stats para mostrar
   const pace = calculatePace(distanceMeters, elapsedSeconds);
   const calories = estimateCalories(activityType, elapsedSeconds / 60);
+  const steps = estimateSteps(activityType, distanceMeters);
 
   // Determinar color de GPS
   const gpsColor = gpsStatus === 'ready' 
@@ -877,17 +902,32 @@ const GpsTracker = ({ studentId, activityType, onFinish, onCancel }) => {
           </Typography>
           <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>RITMO</Typography>
         </Box>
-        <Box sx={{ 
-          textAlign: 'center',
-          p: 0.5,
-          borderRadius: 2,
-          backgroundColor: 'rgba(255,255,255,0.05)',
-        }}>
-          <Typography fontSize={18} fontWeight={800} color={COLORS.green}>
-            {currentSpeed.toFixed(1)}
-          </Typography>
-          <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>KM/H</Typography>
-        </Box>
+        {/* Mostrar pasos para walk/run, velocidad para otras actividades */}
+        {(activityType === 'walk' || activityType === 'run' || activityType === 'hike') ? (
+          <Box sx={{ 
+            textAlign: 'center',
+            p: 0.5,
+            borderRadius: 2,
+            backgroundColor: 'rgba(255,255,255,0.05)',
+          }}>
+            <Typography fontSize={18} fontWeight={800} color={COLORS.green}>
+              {steps > 0 ? (steps >= 1000 ? `${(steps/1000).toFixed(1)}k` : steps) : 0}
+            </Typography>
+            <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>PASOS</Typography>
+          </Box>
+        ) : (
+          <Box sx={{ 
+            textAlign: 'center',
+            p: 0.5,
+            borderRadius: 2,
+            backgroundColor: 'rgba(255,255,255,0.05)',
+          }}>
+            <Typography fontSize={18} fontWeight={800} color={COLORS.green}>
+              {currentSpeed.toFixed(1)}
+            </Typography>
+            <Typography fontSize={8} color={COLORS.textMuted} fontWeight={600}>KM/H</Typography>
+          </Box>
+        )}
         <Box sx={{ 
           textAlign: 'center',
           p: 0.5,

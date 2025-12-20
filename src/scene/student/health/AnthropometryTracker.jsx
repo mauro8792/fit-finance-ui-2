@@ -24,32 +24,66 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-// Helper para obtener la fecha de hoy en formato DD/MM/YYYY
-const getTodayDateString = () => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${day}/${month}/${year}`;
+// Helper para obtener la fecha LOCAL actual (sin problemas de UTC)
+const getLocalDate = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 };
 
-// Helper para convertir DD/MM/YYYY a YYYY-MM-DD
-const convertToBackendFormat = (dateStr) => {
-  if (!dateStr) return '';
-  const parts = dateStr.split('/');
-  if (parts.length !== 3) return '';
-  const [day, month, year] = parts;
-  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+// Formatear fecha a DD/MM/AAAA (para mostrar)
+const formatDateDisplay = (date) => {
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
 };
 
-// Helper para validar formato DD/MM/YYYY
-const isValidDate = (dateStr) => {
-  const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-  if (!regex.test(dateStr)) return false;
-  const [, day, month, year] = dateStr.match(regex);
-  const d = new Date(year, month - 1, day);
-  return d.getDate() == day && d.getMonth() == month - 1 && d.getFullYear() == year;
+// Formatear fecha a YYYY-MM-DD para el API (sin UTC, usando fecha local)
+const formatDateForApi = (date) => {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const d = date.getDate().toString().padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+// Obtener nombre del día
+const getDayName = (date) => {
+  const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  return days[date.getDay()];
+};
+
+// Obtener nombre del mes
+const getMonthName = (date) => {
+  const months = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  return months[date.getMonth()];
+};
+
+// Helper para formatear fecha a DD/MM/YYYY (sin problemas de UTC) - para el historial
+const formatDateToDDMMYYYY = (dateInput) => {
+  if (!dateInput) return '';
+  
+  // Si viene en formato YYYY-MM-DD o YYYY-MM-DDTHH:mm:ss.sssZ, parsear directamente
+  if (typeof dateInput === 'string' && dateInput.includes('-')) {
+    const datePart = dateInput.split('T')[0];
+    const [year, month, day] = datePart.split('-');
+    if (year && month && day) {
+      return `${day}/${month}/${year}`;
+    }
+  }
+  
+  // Si es un objeto Date
+  if (dateInput instanceof Date) {
+    const day = String(dateInput.getDate()).padStart(2, '0');
+    const month = String(dateInput.getMonth() + 1).padStart(2, '0');
+    const year = dateInput.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  
+  return dateInput;
 };
 
 const AnthropometryTracker = ({ studentId }) => {
@@ -60,8 +94,8 @@ const AnthropometryTracker = ({ studentId }) => {
   const [loading, setLoading] = useState(true);
   const [measurements, setMeasurements] = useState([]);
   const [showForm, setShowForm] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(getLocalDate());
   const [formData, setFormData] = useState({
-    date: getTodayDateString(),
     weight: '',
     // Pliegues cutáneos (mm)
     plieguePantorrilla: '',
@@ -84,6 +118,25 @@ const AnthropometryTracker = ({ studentId }) => {
   });
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  
+  const today = getLocalDate();
+  
+  // Verificar si la fecha seleccionada es hoy
+  const isSelectedToday = selectedDate.getDate() === today.getDate() && 
+                          selectedDate.getMonth() === today.getMonth() && 
+                          selectedDate.getFullYear() === today.getFullYear();
+
+  // Navegar fecha
+  const goToPreviousDay = () => {
+    setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() - 1));
+  };
+
+  const goToNextDay = () => {
+    const nextDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+    if (nextDay <= today) {
+      setSelectedDate(nextDay);
+    }
+  };
 
   useEffect(() => {
     fetchMeasurements();
@@ -107,61 +160,25 @@ const AnthropometryTracker = ({ studentId }) => {
     }
   };
 
-  const handleDateChange = (e) => {
-    let value = e.target.value;
-    
-    // Remover caracteres no numéricos excepto /
-    value = value.replace(/[^\d/]/g, '');
-    
-    // Aplicar máscara DD/MM/YYYY
-    if (value.length <= 2) {
-      // Solo día
-      setFormData((prev) => ({ ...prev, date: value }));
-    } else if (value.length <= 5) {
-      // Día y mes
-      const parts = value.split('/');
-      if (parts.length === 1 && value.length === 2) {
-        setFormData((prev) => ({ ...prev, date: value + '/' }));
-      } else if (parts.length === 2) {
-        setFormData((prev) => ({ ...prev, date: value }));
-      }
-    } else {
-      // Día, mes y año
-      const parts = value.split('/');
-      if (parts.length === 2 && value.length === 5) {
-        setFormData((prev) => ({ ...prev, date: value + '/' }));
-      } else if (parts.length === 3) {
-        // Limitar año a 4 dígitos
-        const [day, month, year] = parts;
-        const limitedYear = year.substring(0, 4);
-        setFormData((prev) => ({ ...prev, date: `${day}/${month}/${limitedYear}` }));
-      }
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!isValidDate(formData.date)) {
-      setError('Por favor ingresa una fecha válida en formato DD/MM/YYYY');
-      return;
-    }
 
     try {
       const token = localStorage.getItem('token');
       
-      // Convertir DD/MM/YYYY a YYYY-MM-DD para el backend
-      const dateString = convertToBackendFormat(formData.date);
+      // Convertir Date a YYYY-MM-DD para el backend (usando fecha local)
+      const dateString = formatDateForApi(selectedDate);
       
       // Filtrar solo los campos con valor
       const payload = Object.entries(formData).reduce((acc, [key, value]) => {
-        if (key === 'date') {
-          acc[key] = dateString;
-        } else if (value !== '' && value !== null && value !== undefined) {
+        if (value !== '' && value !== null && value !== undefined) {
           acc[key] = key === 'notes' ? value : parseFloat(value);
         }
         return acc;
       }, {});
+      
+      // Agregar fecha al payload
+      payload.date = dateString;
 
       await fitFinanceApi.post(
         `/health/anthropometry/${studentId}`,
@@ -199,8 +216,8 @@ const AnthropometryTracker = ({ studentId }) => {
   };
 
   const resetForm = () => {
+    setSelectedDate(getLocalDate());
     setFormData({
-      date: getTodayDateString(),
       weight: '',
       plieguePantorrilla: '',
       pliegueTriceps: '',
@@ -266,22 +283,50 @@ const AnthropometryTracker = ({ studentId }) => {
               Nueva Medición Antropométrica
             </Typography>
             <form onSubmit={handleSubmit}>
-              {/* Fecha y Peso */}
-              <Grid container spacing={2} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={6}>
-                  <TextField
-                    fullWidth
-                    label="Fecha"
-                    value={formData.date}
-                    onChange={handleDateChange}
-                    placeholder="DD/MM/YYYY"
-                    helperText="Formato: DD/MM/YYYY (ej: 16/11/2025)"
-                    required
-                    inputProps={{
-                      maxLength: 10,
+              {/* Selector de Fecha con flechas */}
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="subtitle2" color={colors.grey[300]} mb={1}>
+                  📅 Fecha
+                </Typography>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  backgroundColor: colors.primary[500],
+                  borderRadius: 2,
+                  p: 1,
+                  border: `1px solid ${colors.grey[700]}`,
+                }}>
+                  <IconButton 
+                    onClick={goToPreviousDay}
+                    sx={{ color: colors.grey[100] }}
+                  >
+                    <ChevronLeftIcon />
+                  </IconButton>
+                  
+                  <Box sx={{ textAlign: 'center', flex: 1 }}>
+                    <Typography variant="h5" fontWeight={700} color={colors.grey[100]}>
+                      {formatDateDisplay(selectedDate)}
+                    </Typography>
+                    <Typography variant="caption" color={colors.grey[400]}>
+                      {getDayName(selectedDate)}, {selectedDate.getDate()} de {getMonthName(selectedDate)}
+                    </Typography>
+                  </Box>
+                  
+                  <IconButton 
+                    onClick={goToNextDay}
+                    disabled={isSelectedToday}
+                    sx={{ 
+                      color: isSelectedToday ? colors.grey[700] : colors.grey[100],
                     }}
-                  />
-                </Grid>
+                  >
+                    <ChevronRightIcon />
+                  </IconButton>
+                </Box>
+              </Box>
+
+              {/* Peso */}
+              <Grid container spacing={2} sx={{ mb: 3 }}>
                 <Grid item xs={12} sm={6}>
                   <TextField
                     fullWidth

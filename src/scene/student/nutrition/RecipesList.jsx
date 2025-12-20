@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -22,24 +23,24 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import { tokens } from '../../../theme';
 import { getRecipes, deleteRecipe } from '../../../api/nutritionApi';
-import CreateRecipeModal from './CreateRecipeModal';
 
 const RecipesList = ({ studentId }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingRecipe, setEditingRecipe] = useState(null);
   const [deleting, setDeleting] = useState(null);
 
+  // Recargar recetas cuando se vuelve de la página de crear/editar
   useEffect(() => {
     loadRecipes();
-  }, [studentId]);
+  }, [studentId, location.key]);
 
   const loadRecipes = async () => {
     try {
@@ -70,26 +71,12 @@ const RecipesList = ({ studentId }) => {
     }
   };
 
+  const handleNewRecipe = () => {
+    navigate('/student/nutrition/recipe/new');
+  };
+
   const handleEdit = (recipe) => {
-    setEditingRecipe(recipe);
-    setShowCreateModal(true);
-  };
-
-  const handleCreateSuccess = (newRecipe) => {
-    if (editingRecipe) {
-      // Actualizar receta existente
-      setRecipes(recipes.map(r => r.id === newRecipe.id ? newRecipe : r));
-    } else {
-      // Agregar nueva receta
-      setRecipes([...recipes, newRecipe]);
-    }
-    setShowCreateModal(false);
-    setEditingRecipe(null);
-  };
-
-  const handleCloseModal = () => {
-    setShowCreateModal(false);
-    setEditingRecipe(null);
+    navigate('/student/nutrition/recipe/new', { state: { recipe } });
   };
 
   // Filtrar recetas por búsqueda
@@ -148,7 +135,7 @@ const RecipesList = ({ studentId }) => {
         <Button
           variant="contained"
           startIcon={<AddIcon />}
-          onClick={() => setShowCreateModal(true)}
+          onClick={handleNewRecipe}
           sx={{
             backgroundColor: colors.orangeAccent[500],
             color: '#fff',
@@ -186,7 +173,7 @@ const RecipesList = ({ studentId }) => {
             <Button
               variant="outlined"
               startIcon={<AddIcon />}
-              onClick={() => setShowCreateModal(true)}
+              onClick={handleNewRecipe}
               sx={{
                 color: colors.orangeAccent[500],
                 borderColor: colors.orangeAccent[500],
@@ -310,14 +297,6 @@ const RecipesList = ({ studentId }) => {
         </Box>
       )}
 
-      {/* Modal para crear/editar receta */}
-      <CreateRecipeModal
-        open={showCreateModal}
-        onClose={handleCloseModal}
-        studentId={studentId}
-        editingRecipe={editingRecipe}
-        onSuccess={handleCreateSuccess}
-      />
     </Box>
   );
 };

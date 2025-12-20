@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -46,6 +47,7 @@ const COLORS = {
 };
 
 const CardioSection = ({ studentId }) => {
+  const navigate = useNavigate();
   const [todayLogs, setTodayLogs] = useState([]);
   const [weekSummary, setWeekSummary] = useState(null);
   const [trackedActivities, setTrackedActivities] = useState([]);
@@ -108,12 +110,14 @@ const CardioSection = ({ studentId }) => {
   const combineWeeklySummaries = (cardioLog, tracked) => {
     if (!cardioLog && !tracked) return null;
     
+    // El backend ya filtra los pasos manuales del conteo de sesiones
     const totalSessions = (cardioLog?.totalSessions || 0) + (tracked?.totalActivities || 0);
     const totalMinutes = (cardioLog?.totalMinutes || 0) + (tracked?.totalDurationMinutes || 0);
     const totalDistance = (cardioLog?.totalDistance || 0) + (tracked?.totalDistanceKm || 0);
     const totalCalories = (cardioLog?.totalCalories || 0) + (tracked?.totalCalories || 0);
+    const totalSteps = (cardioLog?.totalSteps || 0) + (tracked?.totalSteps || 0);
     
-    // Combinar por tipo de actividad
+    // Combinar por tipo de actividad (el backend ya excluye pasos manuales)
     const byActivity = {};
     
     // Del cardio-log
@@ -144,13 +148,15 @@ const CardioSection = ({ studentId }) => {
       });
     }
     
-    if (totalSessions === 0) return null;
+    // Si no hay sesiones pero hay pasos, igual mostrar el resumen
+    if (totalSessions === 0 && totalSteps === 0) return null;
     
     return {
       totalSessions,
       totalMinutes,
       totalDistance: Math.round(totalDistance * 10) / 10,
       totalCalories,
+      totalSteps,
       byActivity,
     };
   };
@@ -525,6 +531,22 @@ const CardioSection = ({ studentId }) => {
           </Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
             <Button
+              variant="outlined"
+              size="small"
+              onClick={() => navigate('/student/cardio/steps')}
+              sx={{
+                borderColor: COLORS.orange,
+                color: COLORS.orange,
+                fontWeight: 600,
+                '&:hover': { 
+                  backgroundColor: `${COLORS.orange}22`,
+                  borderColor: COLORS.orange,
+                },
+              }}
+            >
+              🚶 Pasos
+            </Button>
+            <Button
               variant="contained"
               size="small"
               onClick={() => setView('selector')}
@@ -762,10 +784,17 @@ const CardioSection = ({ studentId }) => {
                           <Typography fontWeight={600} color={COLORS.text}>
                             {activity.label}
                           </Typography>
-                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5 }}>
-                            <Typography fontSize={12} color={COLORS.textMuted}>
-                              {formatDuration(log.durationMinutes)}
-                            </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.5, flexWrap: 'wrap' }}>
+                            {log.durationMinutes > 0 && (
+                              <Typography fontSize={12} color={COLORS.textMuted}>
+                                {formatDuration(log.durationMinutes)}
+                              </Typography>
+                            )}
+                            {log.steps > 0 && (
+                              <Typography fontSize={12} color={COLORS.green} fontWeight={600}>
+                                👟 {log.steps.toLocaleString()} pasos
+                              </Typography>
+                            )}
                             {log.distanceKm && (
                               <Typography fontSize={12} color={COLORS.textMuted}>
                                 • {log.distanceKm}km
@@ -805,7 +834,7 @@ const CardioSection = ({ studentId }) => {
             📊 ESTA SEMANA
           </Typography>
           
-          {weekSummary && weekSummary.totalSessions > 0 ? (
+          {weekSummary && (weekSummary.totalSessions > 0 || weekSummary.totalSteps > 0) ? (
             <Box>
               <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
                 <Box sx={{ 
@@ -854,6 +883,30 @@ const CardioSection = ({ studentId }) => {
                 )}
               </Box>
 
+              {/* Pasos totales de la semana */}
+              {weekSummary.totalSteps > 0 && (
+                <Box sx={{ 
+                  mt: 2,
+                  p: 2, 
+                  backgroundColor: 'rgba(76, 206, 172, 0.1)', 
+                  borderRadius: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 1,
+                }}>
+                  <Typography fontSize={24}>👟</Typography>
+                  <Box>
+                    <Typography variant="h5" fontWeight={700} color={COLORS.green}>
+                      {weekSummary.totalSteps.toLocaleString()}
+                    </Typography>
+                    <Typography fontSize={10} color={COLORS.textMuted}>
+                      pasos esta semana
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
+
               {/* Desglose por actividad */}
               {Object.keys(weekSummary.byActivity || {}).length > 0 && (
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
@@ -889,80 +942,27 @@ const CardioSection = ({ studentId }) => {
           )}
         </Box>
 
-        {/* Historial de actividades GPS */}
-        {trackedActivities.length > 0 && (
-          <Box sx={{ p: 2 }}>
-            <Typography fontSize={12} color={COLORS.textMuted} mb={1.5} fontWeight={600}>
-              📜 HISTORIAL DE RECORRIDOS
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {trackedActivities.map((track) => {
-                const activityInfo = getTrackerActivityInfo(track.activityType);
-                const durationMin = Math.round((track.durationSeconds || 0) / 60);
-                const distanceKm = (Number(track.distanceMeters) || 0) / 1000;
-                // La fecha viene en UTC, toLocaleString la convierte a hora local
-                const date = new Date(track.startedAt);
-                
-                return (
-                  <Box
-                    key={`history-${track.id}`}
-                    sx={{
-                      p: 1.5,
-                      borderRadius: 2,
-                      backgroundColor: 'rgba(0,0,0,0.3)',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Typography fontSize={24}>{activityInfo.emoji}</Typography>
-                      <Box>
-                        <Typography fontWeight={600} color={COLORS.text} fontSize={13}>
-                          {activityInfo.label}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                          <Typography fontSize={11} color={COLORS.textMuted}>
-                            {date.toLocaleString('es-AR', { 
-                              weekday: 'short', 
-                              day: 'numeric', 
-                              month: 'short',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: false,
-                            })}
-                          </Typography>
-                          <Typography fontSize={11} color={COLORS.green}>
-                            {formatTrackerDuration(track.durationSeconds || 0)}
-                          </Typography>
-                          {distanceKm > 0 && (
-                            <Typography fontSize={11} color={COLORS.blue}>
-                              {distanceKm.toFixed(2)}km
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                    </Box>
-                    {track.trackingMode === 'gps' && (
-                      <Button
-                        size="small"
-                        onClick={() => handleViewDetail(track.id)}
-                        sx={{
-                          minWidth: 'auto',
-                          color: COLORS.green,
-                          fontSize: 11,
-                          '&:hover': { backgroundColor: `${COLORS.green}22` },
-                        }}
-                      >
-                        🗺️ Ver
-                      </Button>
-                    )}
-                  </Box>
-                );
-              })}
-            </Box>
-          </Box>
-        )}
+        {/* Botón ver historial */}
+        <Box sx={{ p: 2 }}>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={() => navigate('/student/cardio/history')}
+            sx={{
+              borderColor: COLORS.border,
+              color: COLORS.textMuted,
+              py: 1.5,
+              borderRadius: 2,
+              '&:hover': {
+                borderColor: COLORS.green,
+                color: COLORS.green,
+                backgroundColor: 'rgba(76, 206, 172, 0.1)',
+              },
+            }}
+          >
+            📜 Ver historial completo →
+          </Button>
+        </Box>
       </Box>
 
       {/* Modal de Detalle con Mapa - Estilo App Real */}
@@ -1221,6 +1221,7 @@ const CardioSection = ({ studentId }) => {
           </Box>
         </Box>
       )}
+
     </>
   );
 };
