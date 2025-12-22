@@ -118,7 +118,9 @@ import { getNutritionDashboard, getWeeklySummary, getNutritionProfile } from '..
 import { getCardioSummary, getActivityInfo, formatDuration, INTENSITY_LEVELS } from '../../api/cardioApi';
 import { getCoachSummary as getTrackedSummary, getActivityInfo as getTrackedActivityInfo } from '../../api/activityTrackerApi';
 import StepsWeeklyChart from '../../components/charts/StepsWeeklyChart';
+import StepsProgressChart from '../../components/charts/StepsProgressChart';
 import WeightProgressChart from '../../components/charts/WeightProgressChart';
+import StepsWeightCorrelationChart from '../../components/charts/StepsWeightCorrelationChart';
 import NutritionWeeklyChart from '../../components/charts/NutritionWeeklyChart';
 import { 
   LineChart, 
@@ -2144,17 +2146,17 @@ const StudentDetail = () => {
                   </Grid>
                 </Grid>
 
-                {/* Sección de Pasos Semanales */}
+                {/* Sección de Evolución de Pasos Semanales */}
                 <Box sx={{ mb: 2 }}>
                   <Box sx={{ 
                     p: { xs: 1.5, sm: 2.5 }, 
                     borderRadius: 3,
-                    background: 'linear-gradient(135deg, rgba(76,206,172,0.1) 0%, rgba(104,112,250,0.05) 100%)',
-                    border: '1px solid rgba(76,206,172,0.2)',
+                    background: 'linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(76,206,172,0.05) 100%)',
+                    border: '1px solid rgba(255,152,0,0.2)',
                     overflow: 'hidden',
                     minWidth: 0,
                   }}>
-                    <StepsWeeklyChart studentId={student?.id} studentName={student?.firstName} />
+                    <StepsProgressChart studentId={student?.id} studentName={student?.firstName} />
                   </Box>
                 </Box>
 
@@ -2169,6 +2171,20 @@ const StudentDetail = () => {
                     minWidth: 0,
                   }}>
                     <WeightProgressChart studentId={student?.id} studentName={student?.firstName} />
+                  </Box>
+                </Box>
+
+                {/* Gráfico de Correlación Pasos-Peso */}
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ 
+                    p: { xs: 1.5, sm: 2.5 }, 
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(76,206,172,0.05) 100%)',
+                    border: '1px solid rgba(168,85,247,0.2)',
+                    overflow: 'hidden',
+                    minWidth: 0,
+                  }}>
+                    <StepsWeightCorrelationChart studentId={student?.id} studentName={student?.firstName} />
                   </Box>
                 </Box>
 
