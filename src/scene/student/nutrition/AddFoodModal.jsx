@@ -47,6 +47,8 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
   // Item siendo editado (para cambiar cantidad)
   const [editingItem, setEditingItem] = useState(null);
   const [editingQuantity, setEditingQuantity] = useState(100);
+  // Carrito expandido/colapsado
+  const [cartExpanded, setCartExpanded] = useState(false);
 
   useEffect(() => {
     if (open && studentId) {
@@ -57,6 +59,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
       setSelectedMealType('');
       setTabValue(0);
       setStep(1); // Resetear al paso 1
+      setCartExpanded(false); // Carrito colapsado por defecto
       
       setLoading(true);
       Promise.all([
@@ -588,114 +591,118 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
               )}
             </div>
 
-            {/* Carrito - Items agregados */}
+            {/* Carrito - Items agregados (colapsable) */}
             {cartItems.length > 0 && (
-          <div style={{ 
+              <div style={{ 
                 borderTop: `2px solid ${colors.greenAccent[600]}`,
                 backgroundColor: colors.primary[600],
                 flexShrink: 0,
-                maxHeight: '40vh',
-            overflowY: 'auto',
               }}>
-                {/* Header del carrito */}
-                <div style={{
-                  padding: '10px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  borderBottom: `1px solid ${colors.primary[400]}`,
-                  position: 'sticky',
-                  top: 0,
-                  backgroundColor: colors.primary[600],
-                  zIndex: 1,
-            }}>
+                {/* Header del carrito - clickeable para expandir/colapsar */}
+                <div 
+                  onClick={() => setCartExpanded(!cartExpanded)}
+                  style={{
+                    padding: '8px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    backgroundColor: colors.primary[600],
+                  }}
+                >
                   <Typography variant="subtitle2" color={colors.grey[100]} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <ShoppingCartIcon sx={{ fontSize: 18, color: colors.greenAccent[400] }} />
+                    <ShoppingCartIcon sx={{ fontSize: 16, color: colors.greenAccent[400] }} />
                     AGREGADOS ({itemsInCart})
-              </Typography>
-                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                    <Chip size="small" label={`${totals.calories} kcal`} sx={{ backgroundColor: colors.greenAccent[700], color: '#fff', fontSize: '11px' }} />
-                    <Chip size="small" label={`P: ${totals.protein}g`} sx={{ backgroundColor: colors.redAccent[700], color: '#fff', fontSize: '11px' }} />
-                    <Chip size="small" label={`H: ${totals.carbs}g`} sx={{ backgroundColor: colors.blueAccent[700], color: '#fff', fontSize: '11px' }} />
-                    <Chip size="small" label={`G: ${totals.fat}g`} sx={{ backgroundColor: colors.orangeAccent[700], color: '#fff', fontSize: '11px' }} />
-            </Box>
+                    <span style={{ fontSize: '12px', color: colors.grey[400] }}>
+                      {cartExpanded ? '▼' : '▲ Editar'}
+                    </span>
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'nowrap' }}>
+                    <Chip size="small" label={`${totals.calories} kcal`} sx={{ backgroundColor: colors.greenAccent[700], color: '#fff', fontSize: '10px', height: '20px' }} />
+                    <Chip size="small" label={`P: ${totals.protein}g`} sx={{ backgroundColor: colors.redAccent[700], color: '#fff', fontSize: '10px', height: '20px' }} />
+                    <Chip size="small" label={`H: ${totals.carbs}g`} sx={{ backgroundColor: colors.blueAccent[700], color: '#fff', fontSize: '10px', height: '20px' }} />
+                    <Chip size="small" label={`G: ${totals.fat}g`} sx={{ backgroundColor: colors.orangeAccent[700], color: '#fff', fontSize: '10px', height: '20px' }} />
+                  </Box>
                 </div>
 
-                {/* Lista de items en el carrito */}
-                <div style={{ padding: '8px 16px' }}>
-                  {cartItems.map((cartItem) => (
-                    <div 
-                      key={cartItem.id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        padding: '8px',
-                        marginBottom: '6px',
-                        backgroundColor: colors.primary[500],
-                        borderRadius: '8px',
-                      }}
-                    >
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <Typography 
-                          variant="body2" 
-                          color={colors.grey[100]}
-                          sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 0.5,
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {cartItem.isRecipe && <BlenderIcon sx={{ fontSize: 14, color: colors.blueAccent[400] }} />}
-                          {cartItem.item.name}
-            </Typography>
-                      </div>
-            <TextField
-                        type="text"
-                        inputMode="numeric"
-              size="small"
-                        value={cartItem.quantityGrams}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          // Permitir vacío o solo números
-                          if (val === '' || /^\d+$/.test(val)) {
-                            handleUpdateQuantity(cartItem.id, val === '' ? '' : parseInt(val));
-                          }
+                {/* Lista de items - solo visible cuando está expandido */}
+                {cartExpanded && (
+                  <div style={{ 
+                    maxHeight: '30vh', 
+                    overflowY: 'auto',
+                    borderTop: `1px solid ${colors.primary[400]}`,
+                    padding: '6px 12px',
+                  }}>
+                    {cartItems.map((cartItem) => (
+                      <div 
+                        key={cartItem.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 8px',
+                          marginBottom: '4px',
+                          backgroundColor: colors.primary[500],
+                          borderRadius: '6px',
                         }}
-                        onBlur={(e) => {
-                          // Si está vacío o es 0, poner 1 como mínimo
-                          const val = parseInt(e.target.value);
-                          if (!val || val < 1) {
-                            handleUpdateQuantity(cartItem.id, 1);
-                          }
-                        }}
-                        inputProps={{ style: { textAlign: 'center', padding: '4px' } }}
-              sx={{
-                          width: '70px',
-                '& .MuiOutlinedInput-root': {
-                            backgroundColor: colors.primary[400],
-                  '& fieldset': { borderColor: colors.grey[600] },
-                },
-                          '& .MuiInputBase-input': {
-                            color: colors.grey[100],
-                            fontSize: '13px',
-                          },
-                  }}
-                />
-                      <Typography variant="caption" color={colors.grey[400]} sx={{ width: '12px' }}>g</Typography>
-                      <IconButton
-                        size="small"
-                        onClick={() => handleRemoveFromCart(cartItem.id)}
-                        sx={{ color: colors.redAccent[400], padding: '4px' }}
                       >
-                        <DeleteIcon sx={{ fontSize: 18 }} />
-                      </IconButton>
-                    </div>
-                  ))}
-                </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Typography 
+                            variant="body2" 
+                            color={colors.grey[100]}
+                            sx={{ 
+                              fontSize: '13px',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {cartItem.isRecipe && <BlenderIcon sx={{ fontSize: 12, color: colors.blueAccent[400], mr: 0.5, verticalAlign: 'middle' }} />}
+                            {cartItem.item.name}
+                          </Typography>
+                        </div>
+                        <TextField
+                          type="text"
+                          inputMode="numeric"
+                          size="small"
+                          value={cartItem.quantityGrams}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d+$/.test(val)) {
+                              handleUpdateQuantity(cartItem.id, val === '' ? '' : parseInt(val));
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value);
+                            if (!val || val < 1) {
+                              handleUpdateQuantity(cartItem.id, 1);
+                            }
+                          }}
+                          inputProps={{ style: { textAlign: 'center', padding: '3px' } }}
+                          sx={{
+                            width: '60px',
+                            '& .MuiOutlinedInput-root': {
+                              backgroundColor: colors.primary[400],
+                              '& fieldset': { borderColor: colors.grey[600] },
+                            },
+                            '& .MuiInputBase-input': {
+                              color: colors.grey[100],
+                              fontSize: '12px',
+                            },
+                          }}
+                        />
+                        <Typography variant="caption" color={colors.grey[400]} sx={{ fontSize: '11px' }}>g</Typography>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleRemoveFromCart(cartItem.id)}
+                          sx={{ color: colors.redAccent[400], padding: '2px' }}
+                        >
+                          <DeleteIcon sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </>
