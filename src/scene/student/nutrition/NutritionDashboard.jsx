@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, createContext, useContext } from 'react';
 import {
   Box,
   Tabs,
@@ -22,7 +22,15 @@ import FoodLibrary from './FoodLibrary';
 import WeeklySummary from './WeeklySummary';
 import MealTypesConfig from './MealTypesConfig';
 import RecipesList from './RecipesList';
-import { initializeFoodLibrary, initializeMealTypes, getNutritionProfile, getFoodItems } from '../../../api/nutritionApi';
+import { initializeFoodLibrary, initializeMealTypes, getNutritionProfile, getFoodItems, getRecipes, getMealTypes } from '../../../api/nutritionApi';
+
+// Contexto para compartir los alimentos cacheados
+export const NutritionCacheContext = createContext(null);
+
+export const useNutritionCache = () => useContext(NutritionCacheContext);
+
+// Tiempo de expiración del caché (5 minutos)
+const CACHE_DURATION = 5 * 60 * 1000;
 
 function TabPanel({ children, value, index, ...other }) {
   return (
@@ -49,9 +57,54 @@ export const NutritionDashboard = () => {
   const [profile, setProfile] = useState(null);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
-  const [hasFoods, setHasFoods] = useState(true); // Asumir que sí hay hasta verificar
+  const [hasFoods, setHasFoods] = useState(true);
+  
+  // Caché de datos nutricionales
+  const [cachedFoods, setCachedFoods] = useState([]);
+  const [cachedRecipes, setCachedRecipes] = useState([]);
+  const [cachedMealTypes, setCachedMealTypes] = useState([]);
+  const [cacheTimestamp, setCacheTimestamp] = useState(null);
 
   const studentId = student?.id;
+
+  // Función para cargar y cachear todos los datos
+  const loadAndCacheData = useCallback(async (forceRefresh = false) => {
+    // Si hay caché válido y no forzamos refresh, no recargar
+    if (!forceRefresh && cacheTimestamp && (Date.now() - cacheTimestamp) < CACHE_DURATION) {
+      return;
+    }
+
+    try {
+      const [foods, recipes, mealTypes] = await Promise.all([
+        getFoodItems(studentId),
+        getRecipes(studentId),
+        getMealTypes(studentId),
+      ]);
+
+      setCachedFoods(foods || []);
+      setCachedRecipes(recipes || []);
+      
+      // Meal types por defecto si no hay
+      const defaultMealTypes = [
+        { id: 'desayuno', name: 'Desayuno' },
+        { id: 'almuerzo', name: 'Almuerzo' },
+        { id: 'merienda', name: 'Merienda' },
+        { id: 'cena', name: 'Cena' },
+        { id: 'snack', name: 'Snack' },
+      ];
+      setCachedMealTypes((mealTypes && mealTypes.length > 0) ? mealTypes : defaultMealTypes);
+      setCacheTimestamp(Date.now());
+      
+      return { foods, recipes, mealTypes };
+    } catch (err) {
+      console.error('Error caching nutrition data:', err);
+    }
+  }, [studentId, cacheTimestamp]);
+
+  // Función para invalidar caché (después de agregar/editar)
+  const invalidateCache = useCallback(() => {
+    setCacheTimestamp(null);
+  }, []);
 
   useEffect(() => {
     if (studentId) {
@@ -64,19 +117,28 @@ export const NutritionDashboard = () => {
       setLoading(true);
       setError(null);
       
-      // Verificar si ya tiene alimentos cargados
-      const foods = await getFoodItems(studentId);
-      setHasFoods(foods && foods.length > 0);
+      // Cargar y cachear alimentos
+      const data = await loadAndCacheData(true);
+      setHasFoods(data?.foods && data.foods.length > 0);
       
       // Intentar cargar el perfil nutricional
       const profileData = await getNutritionProfile(studentId);
       setProfile(profileData);
     } catch (err) {
-      // Si no hay perfil, no es error crítico
       console.log('No hay perfil nutricional configurado aún');
     } finally {
       setLoading(false);
     }
+  };
+
+  // Valor del contexto de caché
+  const cacheValue = {
+    foods: cachedFoods,
+    recipes: cachedRecipes,
+    mealTypes: cachedMealTypes,
+    refreshCache: () => loadAndCacheData(true),
+    invalidateCache,
+    isLoaded: cacheTimestamp !== null,
   };
 
   const handleInitialize = async () => {
@@ -137,6 +199,7 @@ export const NutritionDashboard = () => {
   }
 
   return (
+    <NutritionCacheContext.Provider value={cacheValue}>
     <Box
       sx={{
         width: '100%',
@@ -159,48 +222,89 @@ export const NutritionDashboard = () => {
           Registra tus comidas y controla tus macros diarios
         </Typography>
         
-        {/* Mostrar objetivos si hay perfil */}
+        {/* Mostrar objetivos si hay perfil - DESTACADO */}
         {profile && (
           <Box
             sx={{
               mt: 2,
-              p: 2,
-              backgroundColor: colors.primary[500],
-              borderRadius: '8px',
+              p: 2.5,
+              backgroundColor: colors.primary[600],
+              borderRadius: '12px',
+              border: `2px solid ${colors.orangeAccent[700]}`,
               display: 'flex',
+              justifyContent: 'space-around',
+              alignItems: 'center',
               flexWrap: 'wrap',
-              gap: 2,
+              gap: 1,
             }}
           >
-            <Box>
-              <Typography variant="caption" color={colors.grey[400]}>
+            {/* Calorías - Principal */}
+            <Box sx={{ textAlign: 'center', minWidth: '90px' }}>
+              <Typography variant="caption" color={colors.grey[400]} sx={{ fontSize: '11px' }}>
                 Objetivo diario
               </Typography>
-              <Typography variant="h6" color={colors.greenAccent[500]}>
-                {profile.targetDailyCalories} kcal
+              <Typography 
+                variant="h4" 
+                fontWeight="bold" 
+                color={colors.greenAccent[400]}
+                sx={{ lineHeight: 1.2 }}
+              >
+                {profile.targetDailyCalories}
+              </Typography>
+              <Typography variant="caption" color={colors.greenAccent[500]}>
+                kcal
               </Typography>
             </Box>
-            <Box>
-              <Typography variant="caption" color={colors.grey[400]}>
+            
+            {/* Separador */}
+            <Box sx={{ 
+              width: '1px', 
+              height: '50px', 
+              backgroundColor: colors.primary[400],
+              display: { xs: 'none', sm: 'block' }
+            }} />
+            
+            {/* Proteínas */}
+            <Box sx={{ textAlign: 'center', minWidth: '70px' }}>
+              <Typography variant="caption" color={colors.grey[400]} sx={{ fontSize: '11px' }}>
                 Proteínas
               </Typography>
-              <Typography variant="h6" color={colors.redAccent[400]}>
+              <Typography 
+                variant="h5" 
+                fontWeight="bold" 
+                color={colors.redAccent[400]}
+                sx={{ lineHeight: 1.2 }}
+              >
                 {profile.targetProteinGrams}g
               </Typography>
             </Box>
-            <Box>
-              <Typography variant="caption" color={colors.grey[400]}>
+            
+            {/* Grasas */}
+            <Box sx={{ textAlign: 'center', minWidth: '70px' }}>
+              <Typography variant="caption" color={colors.grey[400]} sx={{ fontSize: '11px' }}>
                 Grasas
               </Typography>
-              <Typography variant="h6" color={colors.orangeAccent[400]}>
+              <Typography 
+                variant="h5" 
+                fontWeight="bold" 
+                color={colors.orangeAccent[400]}
+                sx={{ lineHeight: 1.2 }}
+              >
                 {profile.targetFatGrams}g
               </Typography>
             </Box>
-            <Box>
-              <Typography variant="caption" color={colors.grey[400]}>
+            
+            {/* Hidratos */}
+            <Box sx={{ textAlign: 'center', minWidth: '70px' }}>
+              <Typography variant="caption" color={colors.grey[400]} sx={{ fontSize: '11px' }}>
                 Hidratos
               </Typography>
-              <Typography variant="h6" color={colors.blueAccent[400]}>
+              <Typography 
+                variant="h5" 
+                fontWeight="bold" 
+                color={colors.blueAccent[400]}
+                sx={{ lineHeight: 1.2 }}
+              >
                 {profile.targetCarbsGrams}g
               </Typography>
             </Box>
@@ -335,6 +439,7 @@ export const NutritionDashboard = () => {
         </TabPanel>
       </Box>
     </Box>
+    </NutritionCacheContext.Provider>
   );
 };
 

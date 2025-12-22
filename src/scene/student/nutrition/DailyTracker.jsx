@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -29,7 +30,6 @@ import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import TodayIcon from '@mui/icons-material/Today';
 import { tokens } from '../../../theme';
 import { getNutritionDashboard, deleteFoodLogEntry } from '../../../api/nutritionApi';
-import AddFoodModal from './AddFoodModal';
 import NutritionAlerts from './NutritionAlerts';
 
 const MacroProgress = ({ label, current, target, color, unit = 'g' }) => {
@@ -249,6 +249,8 @@ const DailyTracker = ({ studentId, profile }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const navigate = useNavigate();
+  const location = useLocation();
 
   // Usar fecha LOCAL, no UTC (para evitar que a las 9pm se muestre el día siguiente)
   const getLocalDateString = (date = new Date()) => {
@@ -258,12 +260,11 @@ const DailyTracker = ({ studentId, profile }) => {
   const [loading, setLoading] = useState(true);
   const [dashboard, setDashboard] = useState(null);
   const [selectedDate, setSelectedDate] = useState(getLocalDateString());
-  const [addFoodOpen, setAddFoodOpen] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState(null);
 
+  // Recargar datos cuando se vuelve de agregar alimentos
   useEffect(() => {
     loadDashboard();
-  }, [studentId, selectedDate]);
+  }, [studentId, selectedDate, location.key]);
 
   const loadDashboard = async () => {
     try {
@@ -287,14 +288,13 @@ const DailyTracker = ({ studentId, profile }) => {
   };
 
   const handleAddFood = (mealName) => {
-    setSelectedMeal(mealName);
-    setAddFoodOpen(true);
-  };
-
-  const handleFoodAdded = () => {
-    setAddFoodOpen(false);
-    setSelectedMeal(null);
-    loadDashboard();
+    navigate('/student/nutrition/add-food', {
+      state: {
+        studentId,
+        selectedMeal: mealName,
+        selectedDate,
+      },
+    });
   };
 
   const changeDate = (days) => {
@@ -469,15 +469,6 @@ const DailyTracker = ({ studentId, profile }) => {
         </Card>
       )}
 
-      {/* Modal para agregar alimento */}
-      <AddFoodModal
-        open={addFoodOpen}
-        onClose={() => setAddFoodOpen(false)}
-        onSuccess={handleFoodAdded}
-        studentId={studentId}
-        selectedMeal={selectedMeal}
-        selectedDate={selectedDate}
-      />
     </Box>
   );
 };

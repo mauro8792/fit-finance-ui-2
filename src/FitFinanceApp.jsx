@@ -22,6 +22,7 @@ import TrainingHistory from './scene/student/TrainingHistory';
 import { HealthDashboard } from './scene/student/health';
 import { NutritionDashboard } from './scene/student/nutrition';
 import NewRecipePage from './scene/student/nutrition/NewRecipePage';
+import AddFoodPage from './scene/student/nutrition/AddFoodPage';
 import { CardioDashboard } from './scene/student/cardio';
 import ManualStepsPage from './scene/student/cardio/ManualStepsPage';
 import CardioHistoryPage from './scene/student/cardio/CardioHistoryPage';
@@ -120,6 +121,7 @@ export const FitFinanceApp = () => {
                   <Route path="/student/progress" element={<HealthDashboard />} />
                   <Route path="/student/nutrition" element={<NutritionDashboard />} />
                   <Route path="/student/nutrition/recipe/new" element={<NewRecipePage />} />
+                  <Route path="/student/nutrition/add-food" element={<AddFoodPage />} />
                   <Route path="/student/cardio" element={<CardioDashboard />} />
                   <Route path="/student/cardio/steps" element={<ManualStepsPage />} />
                   <Route path="/student/cardio/history" element={<CardioHistoryPage />} />
