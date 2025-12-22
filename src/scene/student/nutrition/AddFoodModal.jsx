@@ -38,7 +38,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
   const [searchText, setSearchText] = useState('');
   const [error, setError] = useState(null);
   const [selectedMealType, setSelectedMealType] = useState('');
-  
+
   // Paso actual: 1 = seleccionar comida, 2 = agregar alimentos
   const [step, setStep] = useState(1);
   
@@ -191,19 +191,19 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
       // Guardar cada item
       for (const cartItem of cartItems) {
         const qty = parseInt(cartItem.quantityGrams) || 1; // Mínimo 1g
-        const entryData = {
-          date: selectedDate,
+      const entryData = {
+        date: selectedDate,
           quantityGrams: qty,
-          mealTypeId: selectedMealType || undefined,
-        };
+        mealTypeId: selectedMealType || undefined,
+      };
 
         if (cartItem.isRecipe) {
           entryData.recipeId = cartItem.recipeId;
-        } else {
+      } else {
           entryData.foodItemId = cartItem.foodItemId;
-        }
+      }
 
-        await addFoodLogEntry(studentId, entryData);
+      await addFoodLogEntry(studentId, entryData);
       }
       
       onSuccess();
@@ -254,21 +254,21 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: '18px' }}>🍎 Agregar Alimentos</h3>
-            <button 
-              onClick={onClose}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: colors.grey[300],
-                fontSize: '28px',
-                cursor: 'pointer',
-                padding: '0',
-                width: '30px',
-                height: '30px'
-              }}
-            >
-              ×
-            </button>
+          <button 
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: colors.grey[300],
+              fontSize: '28px',
+              cursor: 'pointer',
+              padding: '0',
+              width: '30px',
+              height: '30px'
+            }}
+          >
+            ×
+          </button>
           </div>
         </div>
 
@@ -448,16 +448,16 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                     {filteredFoods.map((food) => {
                       const inCart = cartItems.find(ci => ci.foodItemId === food.id);
                       return (
-                        <div
-                          key={food.id}
-                          style={{
+                      <div
+                        key={food.id}
+                        style={{
                             padding: '12px 16px',
-                            borderBottom: `1px solid ${colors.primary[600]}`,
+                          borderBottom: `1px solid ${colors.primary[600]}`,
                             backgroundColor: inCart ? colors.greenAccent[900] : colors.primary[500],
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
-                          }}
+                        }}
                         >
                           <div style={{ flex: 1 }}>
                             <div style={{ 
@@ -469,7 +469,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                               alignItems: 'center',
                               gap: '8px',
                             }}>
-                              {food.name}
+                          {food.name}
                               {inCart && (
                                 <Chip 
                                   size="small" 
@@ -482,11 +482,11 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                                   }}
                                 />
                               )}
-                            </div>
+                        </div>
                             <div style={{ fontSize: '11px', color: colors.grey[400] }}>
-                              P:{food.proteinPer100g}g | H:{food.carbsPer100g}g | G:{food.fatPer100g}g | {food.caloriesPer100g}kcal
-                            </div>
-                          </div>
+                          P:{food.proteinPer100g}g | H:{food.carbsPer100g}g | G:{food.fatPer100g}g | {food.caloriesPer100g}kcal
+                        </div>
+                      </div>
                           <IconButton
                             onClick={() => handleAddToCart(food, false)}
                             sx={{
@@ -519,16 +519,16 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                     {filteredRecipes.map((recipe) => {
                       const inCart = cartItems.find(ci => ci.recipeId === recipe.id);
                       return (
-                        <div
-                          key={recipe.id}
-                          style={{
+                      <div
+                        key={recipe.id}
+                        style={{
                             padding: '12px 16px',
-                            borderBottom: `1px solid ${colors.primary[600]}`,
+                          borderBottom: `1px solid ${colors.primary[600]}`,
                             backgroundColor: inCart ? colors.greenAccent[900] : colors.primary[500],
                             display: 'flex',
                             alignItems: 'center',
                             gap: '12px',
-                          }}
+                        }}
                         >
                           <div style={{ flex: 1 }}>
                             <div style={{ 
@@ -541,7 +541,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                               gap: '8px',
                             }}>
                               <BlenderIcon sx={{ fontSize: 16, color: colors.blueAccent[400] }} />
-                              {recipe.name}
+                          {recipe.name}
                               {inCart && (
                                 <Chip 
                                   size="small" 
@@ -558,7 +558,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                             <div style={{ fontSize: '11px', color: colors.grey[400] }}>
                               {recipe.totalGrams}g • P:{Math.round(recipe.proteinPer100g)}g | H:{Math.round(recipe.carbsPer100g)}g | G:{Math.round(recipe.fatPer100g)}g | {Math.round(recipe.caloriesPer100g)}kcal/100g
                             </div>
-                          </div>
+                        </div>
                           <IconButton
                             onClick={() => handleAddToCart(recipe, true)}
                             sx={{
@@ -590,12 +590,12 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
 
             {/* Carrito - Items agregados */}
             {cartItems.length > 0 && (
-              <div style={{
+          <div style={{ 
                 borderTop: `2px solid ${colors.greenAccent[600]}`,
                 backgroundColor: colors.primary[600],
                 flexShrink: 0,
                 maxHeight: '40vh',
-                overflowY: 'auto',
+            overflowY: 'auto',
               }}>
                 {/* Header del carrito */}
                 <div style={{
@@ -608,17 +608,17 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                   top: 0,
                   backgroundColor: colors.primary[600],
                   zIndex: 1,
-                }}>
+            }}>
                   <Typography variant="subtitle2" color={colors.grey[100]} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <ShoppingCartIcon sx={{ fontSize: 18, color: colors.greenAccent[400] }} />
                     AGREGADOS ({itemsInCart})
-                  </Typography>
+              </Typography>
                   <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <Chip size="small" label={`${totals.calories} kcal`} sx={{ backgroundColor: colors.greenAccent[700], color: '#fff', fontSize: '11px' }} />
                     <Chip size="small" label={`P: ${totals.protein}g`} sx={{ backgroundColor: colors.redAccent[700], color: '#fff', fontSize: '11px' }} />
                     <Chip size="small" label={`H: ${totals.carbs}g`} sx={{ backgroundColor: colors.blueAccent[700], color: '#fff', fontSize: '11px' }} />
                     <Chip size="small" label={`G: ${totals.fat}g`} sx={{ backgroundColor: colors.orangeAccent[700], color: '#fff', fontSize: '11px' }} />
-                  </Box>
+            </Box>
                 </div>
 
                 {/* Lista de items en el carrito */}
@@ -651,12 +651,12 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                         >
                           {cartItem.isRecipe && <BlenderIcon sx={{ fontSize: 14, color: colors.blueAccent[400] }} />}
                           {cartItem.item.name}
-                        </Typography>
+            </Typography>
                       </div>
-                      <TextField
+            <TextField
                         type="text"
                         inputMode="numeric"
-                        size="small"
+              size="small"
                         value={cartItem.quantityGrams}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -673,18 +673,18 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                           }
                         }}
                         inputProps={{ style: { textAlign: 'center', padding: '4px' } }}
-                        sx={{
+              sx={{
                           width: '70px',
-                          '& .MuiOutlinedInput-root': {
+                '& .MuiOutlinedInput-root': {
                             backgroundColor: colors.primary[400],
-                            '& fieldset': { borderColor: colors.grey[600] },
-                          },
+                  '& fieldset': { borderColor: colors.grey[600] },
+                },
                           '& .MuiInputBase-input': {
                             color: colors.grey[100],
                             fontSize: '13px',
                           },
-                        }}
-                      />
+                  }}
+                />
                       <Typography variant="caption" color={colors.grey[400]} sx={{ width: '12px' }}>g</Typography>
                       <IconButton
                         size="small"
@@ -710,38 +710,38 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
           flexShrink: 0,
           backgroundColor: colors.primary[600]
         }}>
-          <Button 
+              <Button 
             onClick={onClose}
-            variant="outlined"
-            fullWidth
-            disabled={saving}
-            sx={{ 
-              color: colors.grey[300],
-              borderColor: colors.grey[600],
+                variant="outlined"
+                fullWidth
+                disabled={saving}
+                sx={{ 
+                  color: colors.grey[300],
+                  borderColor: colors.grey[600],
               minHeight: '44px',
-            }}
-          >
+                }}
+              >
             Cancelar
-          </Button>
-          <Button
+              </Button>
+              <Button
             onClick={handleSaveAll}
             disabled={cartItems.length === 0 || saving}
-            variant="contained"
-            fullWidth
+                variant="contained"
+                fullWidth
             startIcon={saving ? <CircularProgress size={18} /> : <CheckIcon />}
-            sx={{ 
-              bgcolor: colors.greenAccent[600], 
+                sx={{ 
+                  bgcolor: colors.greenAccent[600], 
               minHeight: '44px',
               fontWeight: 'bold',
-              '&:hover': { bgcolor: colors.greenAccent[700] },
+                  '&:hover': { bgcolor: colors.greenAccent[700] },
               '&.Mui-disabled': {
                 bgcolor: colors.grey[700],
                 color: colors.grey[500],
               },
-            }}
-          >
+                }}
+              >
             {saving ? 'Guardando...' : `Guardar ${itemsInCart} item${itemsInCart !== 1 ? 's' : ''}`}
-          </Button>
+            </Button>
         </div>
       </div>
     </div>
