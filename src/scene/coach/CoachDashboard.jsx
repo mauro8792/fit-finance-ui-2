@@ -306,9 +306,34 @@ const CoachDashboard = () => {
             borderRadius: 3,
           }}>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box 
+                component="div"
+                role="button"
+                tabIndex={0}
+                sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  mb: 2,
+                  cursor: 'pointer',
+                  borderRadius: 1,
+                  p: 1,
+                  mx: -1,
+                  transition: 'background-color 0.2s',
+                  '&:hover': {
+                    backgroundColor: 'rgba(255,179,0,0.1)',
+                  },
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/coach/students');
+                }}
+              >
                 <Typography variant="h6" sx={{ color: '#fff', display: 'flex', alignItems: 'center', gap: 1 }}>
                   <GroupIcon sx={{ color: '#FFB300' }} /> Mis Alumnos ({totalStudents})
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#FFB300' }}>
+                  Ver todos →
                 </Typography>
               </Box>
 
