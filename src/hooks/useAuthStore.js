@@ -69,11 +69,11 @@ export const useAuthStore = () => {
   }, [dispatch]);
 
   // Obtener alumnos del coach
-  const getCoachStudentsData = useCallback(async (coachUserId) => {
+  const getCoachStudentsData = useCallback(async (coachUserId, includeInactive = false) => {
     try {
       // Usar el método de la API directamente, ya que no hay thunk
       return await import("../api/fitFinanceApi").then((mod) =>
-        mod.getCoachStudents(coachUserId)
+        mod.getCoachStudents(coachUserId, includeInactive)
       );
     } catch (error) {
       console.error("Error obteniendo alumnos del coach:", error);

@@ -213,3 +213,36 @@ export const isOutdoorActivity = (type) => {
   return Object.keys(OUTDOOR_ACTIVITIES).includes(type);
 };
 
+/**
+ * Estimar pasos basados en la distancia y tipo de actividad
+ * - Caminata: ~1,300 pasos por km (paso normal ~77cm)
+ * - Running: ~1,000 pasos por km (paso más largo ~100cm)
+ * - Otras actividades: 0 pasos
+ */
+export const estimateSteps = (activityType, distanceMeters) => {
+  const distanceKm = distanceMeters / 1000;
+  
+  switch (activityType) {
+    case 'walk':
+    case 'hike':
+    case 'treadmill':
+      return Math.round(distanceKm * 1300);
+    case 'run':
+      return Math.round(distanceKm * 1000);
+    default:
+      return 0;
+  }
+};
+
+/**
+ * Guardar pasos manuales (para el registro automático después de GPS)
+ */
+export const saveManualSteps = async (studentId, date, steps, notes) => {
+  const response = await financeApi.post(`/cardio/${studentId}/manual-steps`, {
+    date,
+    steps,
+    notes,
+  });
+  return response.data;
+};
+

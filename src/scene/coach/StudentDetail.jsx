@@ -1,5 +1,68 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { es } from 'date-fns/locale';
+import 'react-datepicker/dist/react-datepicker.css';
+
+// Registrar locale español
+registerLocale('es', es);
+
+// Estilos personalizados para el DatePicker con tema oscuro
+const datePickerStyles = `
+  .react-datepicker {
+    background-color: #1a1a2e !important;
+    border: 1px solid rgba(255,255,255,0.2) !important;
+    font-family: inherit !important;
+  }
+  .react-datepicker__header {
+    background-color: #141428 !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  }
+  .react-datepicker__current-month,
+  .react-datepicker__day-name,
+  .react-datepicker-time__header {
+    color: #FFB300 !important;
+  }
+  .react-datepicker__day {
+    color: #e0e0e0 !important;
+  }
+  .react-datepicker__day:hover {
+    background-color: rgba(255,179,0,0.2) !important;
+    border-radius: 4px !important;
+  }
+  .react-datepicker__day--selected,
+  .react-datepicker__day--keyboard-selected {
+    background-color: #4cceac !important;
+    color: #000 !important;
+    border-radius: 4px !important;
+  }
+  .react-datepicker__day--today {
+    background-color: rgba(255,179,0,0.3) !important;
+    border-radius: 4px !important;
+  }
+  .react-datepicker__day--outside-month {
+    color: #555 !important;
+  }
+  .react-datepicker__navigation-icon::before {
+    border-color: #FFB300 !important;
+  }
+  .react-datepicker__triangle {
+    display: none !important;
+  }
+  .react-datepicker-popper {
+    z-index: 9999 !important;
+  }
+`;
+
+// Inyectar estilos
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement('style');
+  styleSheet.innerText = datePickerStyles;
+  styleSheet.id = 'datepicker-dark-styles';
+  if (!document.getElementById('datepicker-dark-styles')) {
+    document.head.appendChild(styleSheet);
+  }
+}
 import {
   Box,
   Typography,
@@ -32,6 +95,8 @@ import HomeIcon from '@mui/icons-material/Home';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ArchiveIcon from '@mui/icons-material/Archive';
 import DeleteIcon from '@mui/icons-material/Delete';
+import PauseCircleIcon from '@mui/icons-material/PauseCircle';
+import PlayCircleIcon from '@mui/icons-material/PlayCircle';
 import PersonIcon from '@mui/icons-material/Person';
 import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
@@ -42,7 +107,8 @@ import RestaurantIcon from '@mui/icons-material/Restaurant';
 import AddIcon from '@mui/icons-material/Add';
 import SettingsIcon from '@mui/icons-material/Settings';
 import StudentPermissions from '../../components/StudentPermissions';
-import { useAuthStore, useStudentsStore, useSportsStore } from '../../hooks';
+import { useAuthStore, useSportsStore } from '../../hooks';
+import { useStudentsStore } from '../../hooks/useStudentsStore';
 // RoutineWizard se movió a página completa: /coach/create-routine/:studentId
 import { useRoutineStore } from '../../hooks/useRoutineStore';
 import { useFeesStore } from '../../hooks/useFeesStore';
@@ -51,6 +117,11 @@ import { getTrainingHistory, getExerciseHistory, getWeightHistory, getStudentSet
 import { getNutritionDashboard, getWeeklySummary, getNutritionProfile } from '../../api/nutritionApi';
 import { getCardioSummary, getActivityInfo, formatDuration, INTENSITY_LEVELS } from '../../api/cardioApi';
 import { getCoachSummary as getTrackedSummary, getActivityInfo as getTrackedActivityInfo } from '../../api/activityTrackerApi';
+import StepsWeeklyChart from '../../components/charts/StepsWeeklyChart';
+import StepsProgressChart from '../../components/charts/StepsProgressChart';
+import WeightProgressChart from '../../components/charts/WeightProgressChart';
+import StepsWeightCorrelationChart from '../../components/charts/StepsWeightCorrelationChart';
+import NutritionWeeklyChart from '../../components/charts/NutritionWeeklyChart';
 import { 
   LineChart, 
   Line, 
@@ -61,6 +132,31 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+
+// Función helper para formatear fechas en dd/mm/yyyy
+// Evita problemas de timezone parseando la fecha como local
+const formatDate = (date) => {
+  if (!date) return '-';
+  
+  // Si es string tipo "2025-12-31", parsear como fecha local (no UTC)
+  if (typeof date === 'string') {
+    // Si es formato ISO con T, extraer solo la parte de fecha
+    const dateStr = date.includes('T') ? date.split('T')[0] : date;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const [year, month, day] = parts;
+      return `${day}/${month}/${year}`;
+    }
+  }
+  
+  // Fallback para objetos Date
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '-';
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
+};
 
 const COLORS = {
   bg: '#0d0d0d',
@@ -81,7 +177,7 @@ const StudentDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getStudentById } = useAuthStore();
-  const { changeStudentPlan } = useStudentsStore();
+  const { changeStudentPlan, pauseStudent, reactivateStudent } = useStudentsStore();
   const { getCoachPlanPrices } = useFeesStore();
   const [student, setStudent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -105,6 +201,13 @@ const StudentDetail = () => {
   const [macroMenuAnchor, setMacroMenuAnchor] = useState(null);
   const [selectedMacroForMenu, setSelectedMacroForMenu] = useState(null);
   const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
+  
+  // Estados para pausar/reactivar alumno
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
+  const [showReactivateDialog, setShowReactivateDialog] = useState(false);
+  const [newStartDate, setNewStartDate] = useState(null); // Date object para react-datepicker
+  const [pausingStudent, setPausingStudent] = useState(false);
+  const [reactivatingStudent, setReactivatingStudent] = useState(false);
   
   // Función para recargar datos de nutrición y cardio
   const reloadNutritionData = () => {
@@ -213,6 +316,84 @@ const StudentDetail = () => {
       });
     } finally {
       setChangingPlan(false);
+    }
+  };
+
+  // ========== PAUSAR / REACTIVAR ALUMNO ==========
+  
+  // Confirmar pausa del alumno
+  const handleConfirmPause = async () => {
+    try {
+      setPausingStudent(true);
+      const result = await pauseStudent(student.id);
+      setSnackbar({ 
+        open: true, 
+        message: result.message || '⏸️ Alumno pausado correctamente', 
+        severity: 'success' 
+      });
+      setShowPauseDialog(false);
+      
+      // Recargar datos del alumno
+      const updatedStudent = await getStudentById(id);
+      setStudent(updatedStudent);
+    } catch (err) {
+      console.error('Error pausando alumno:', err);
+      setSnackbar({ 
+        open: true, 
+        message: err.response?.data?.message || '❌ Error al pausar el alumno', 
+        severity: 'error' 
+      });
+    } finally {
+      setPausingStudent(false);
+    }
+  };
+
+  // Abrir modal de reactivar
+  const handleOpenReactivate = () => {
+    // Establecer fecha de hoy como default
+    setNewStartDate(new Date());
+    setShowReactivateDialog(true);
+  };
+
+  // Confirmar reactivación del alumno
+  const handleConfirmReactivate = async () => {
+    if (!newStartDate) {
+      setSnackbar({ 
+        open: true, 
+        message: '⚠️ Debe seleccionar una fecha de inicio', 
+        severity: 'warning' 
+      });
+      return;
+    }
+
+    try {
+      setReactivatingStudent(true);
+      // Convertir Date a string en formato YYYY-MM-DD (extraer directamente los componentes)
+      const year = newStartDate.getFullYear();
+      const month = String(newStartDate.getMonth() + 1).padStart(2, '0');
+      const day = String(newStartDate.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      console.log('Fecha seleccionada:', newStartDate.toString(), '-> enviando:', dateStr);
+      const result = await reactivateStudent(student.id, dateStr);
+      setSnackbar({ 
+        open: true, 
+        message: result.message || '▶️ Alumno reactivado correctamente', 
+        severity: 'success' 
+      });
+      setShowReactivateDialog(false);
+      
+      // Recargar datos del alumno
+      const updatedStudent = await getStudentById(id);
+      setStudent(updatedStudent);
+    } catch (err) {
+      console.error('Error reactivando alumno:', err);
+      setSnackbar({ 
+        open: true, 
+        message: err.response?.data?.message || '❌ Error al reactivar el alumno', 
+        severity: 'error' 
+      });
+    } finally {
+      setReactivatingStudent(false);
     }
   };
   
@@ -546,13 +727,13 @@ const StudentDetail = () => {
             <Typography variant="h4" fontWeight="bold" color={COLORS.text}>
               {studentName}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap' }}>
+            <Box sx={{ display: 'flex', gap: 1, mt: 1, flexWrap: 'wrap', alignItems: 'center' }}>
               <Chip 
-                label={student.isActive ? '✅ Activo' : '❌ Inactivo'} 
+                label={student.isActive ? '✅ Activo' : '⏸️ Pausado'} 
                 size="small"
                 sx={{ 
-                  backgroundColor: student.isActive ? 'rgba(76,206,172,0.2)' : 'rgba(244,67,54,0.2)',
-                  color: student.isActive ? COLORS.green : '#f44336',
+                  backgroundColor: student.isActive ? 'rgba(76,206,172,0.2)' : 'rgba(255,152,0,0.2)',
+                  color: student.isActive ? COLORS.green : COLORS.orange,
                   fontWeight: 600,
                 }}
               />
@@ -568,6 +749,44 @@ const StudentDetail = () => {
                     '& .MuiChip-icon': { color: COLORS.purple },
                   }}
                 />
+              )}
+              {/* Botones de Pausar / Reactivar */}
+              {student.isActive ? (
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<PauseCircleIcon />}
+                  onClick={() => setShowPauseDialog(true)}
+                  sx={{ 
+                    ml: 1,
+                    borderColor: COLORS.orange,
+                    color: COLORS.orange,
+                    fontSize: 12,
+                    textTransform: 'none',
+                    '&:hover': { 
+                      borderColor: COLORS.orange, 
+                      backgroundColor: 'rgba(255,152,0,0.1)' 
+                    },
+                  }}
+                >
+                  Pausar
+                </Button>
+              ) : (
+                <Button
+                  size="small"
+                  variant="contained"
+                  startIcon={<PlayCircleIcon />}
+                  onClick={handleOpenReactivate}
+                  sx={{ 
+                    ml: 1,
+                    backgroundColor: COLORS.green,
+                    fontSize: 12,
+                    textTransform: 'none',
+                    '&:hover': { backgroundColor: '#3da88f' },
+                  }}
+                >
+                  Reactivar
+                </Button>
               )}
             </Box>
           </Box>
@@ -650,7 +869,7 @@ const StudentDetail = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <CalendarTodayIcon sx={{ color: COLORS.orange, fontSize: 18 }} />
                     <Typography fontSize={13} color={COLORS.text}>
-                      Alta: {student.startDate ? new Date(student.startDate).toLocaleDateString() : '-'}
+                      Alta: {formatDate(student.startDate)}
                     </Typography>
                   </Box>
                 </Box>
@@ -1584,7 +1803,7 @@ const StudentDetail = () => {
 
         {/* ===================== TAB 2: NUTRICIÓN ===================== */}
         <Fade in={activeTab === 2} timeout={300} unmountOnExit>
-          <Box sx={{ display: activeTab === 2 ? 'block' : 'none' }}>
+          <Box sx={{ display: activeTab === 2 ? 'block' : 'none', width: '100%', minWidth: 0, overflow: 'hidden' }}>
             {/* Botones de acción */}
             <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, mb: 1 }}>
               <Chip
@@ -1926,6 +2145,62 @@ const StudentDetail = () => {
                     </Box>
                   </Grid>
                 </Grid>
+
+                {/* Sección de Evolución de Pasos Semanales */}
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ 
+                    p: { xs: 1.5, sm: 2.5 }, 
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(76,206,172,0.05) 100%)',
+                    border: '1px solid rgba(255,152,0,0.2)',
+                    overflow: 'hidden',
+                    minWidth: 0,
+                  }}>
+                    <StepsProgressChart studentId={student?.id} studentName={student?.firstName} />
+                  </Box>
+                </Box>
+
+                {/* Gráfico de Peso Semanal Detallado */}
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ 
+                    p: { xs: 1.5, sm: 2.5 }, 
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, rgba(104,112,250,0.1) 0%, rgba(168,85,247,0.05) 100%)',
+                    border: '1px solid rgba(104,112,250,0.2)',
+                    overflow: 'hidden',
+                    minWidth: 0,
+                  }}>
+                    <WeightProgressChart studentId={student?.id} studentName={student?.firstName} />
+                  </Box>
+                </Box>
+
+                {/* Gráfico de Correlación Pasos-Peso */}
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ 
+                    p: { xs: 1.5, sm: 2.5 }, 
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(76,206,172,0.05) 100%)',
+                    border: '1px solid rgba(168,85,247,0.2)',
+                    overflow: 'hidden',
+                    minWidth: 0,
+                  }}>
+                    <StepsWeightCorrelationChart studentId={student?.id} studentName={student?.firstName} />
+                  </Box>
+                </Box>
+
+                {/* Gráfico de Nutrición Semanal Detallado */}
+                <Box sx={{ mb: 2 }}>
+                  <Box sx={{ 
+                    p: { xs: 1.5, sm: 2.5 }, 
+                    borderRadius: 3,
+                    background: 'linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(239,68,68,0.05) 100%)',
+                    border: '1px solid rgba(255,152,0,0.2)',
+                    overflow: 'hidden',
+                    minWidth: 0,
+                  }}>
+                    <NutritionWeeklyChart studentId={student?.id} />
+                  </Box>
+                </Box>
 
                 {/* Fila de alertas y acciones */}
                 <Grid container spacing={2}>
@@ -3206,6 +3481,246 @@ const StudentDetail = () => {
         </Button>
       </DialogActions>
     </Dialog>
+
+    {/* Modal nativo para pausar alumno */}
+    {showPauseDialog && (
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setShowPauseDialog(false);
+        }}
+      >
+        <div 
+          style={{
+            backgroundColor: COLORS.card,
+            borderRadius: '12px',
+            maxWidth: '450px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ 
+            padding: '16px', 
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: 'white',
+          }}>
+            ⏸️ Pausar Alumno
+          </div>
+          <div style={{ padding: '16px', color: '#e0e0e0' }}>
+            <p style={{ marginBottom: '12px' }}>
+              ¿Estás seguro de que querés pausar a <strong>{student?.firstName} {student?.lastName}</strong>?
+            </p>
+            <div style={{ 
+              backgroundColor: 'rgba(255,152,0,0.1)', 
+              border: '1px solid rgba(255,152,0,0.3)',
+              borderRadius: '8px',
+              padding: '12px',
+              marginBottom: '12px',
+            }}>
+              <p style={{ margin: 0, fontSize: '14px', color: COLORS.orange }}>
+                ⚠️ Se cancelarán automáticamente todas las cuotas pendientes (mes actual y futuros).
+              </p>
+            </div>
+            <p style={{ fontSize: '14px', color: '#888', margin: 0 }}>
+              Cuando el alumno retome, podrás reactivarlo con una nueva fecha de inicio.
+            </p>
+          </div>
+          <div style={{ 
+            padding: '16px', 
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+          }}>
+            <button 
+              type="button"
+              onClick={() => setShowPauseDialog(false)}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: 'transparent',
+                color: '#888',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              onClick={handleConfirmPause}
+              disabled={pausingStudent}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: COLORS.orange,
+                color: 'white',
+                cursor: pausingStudent ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                opacity: pausingStudent ? 0.7 : 1,
+              }}
+            >
+              {pausingStudent ? 'Pausando...' : '⏸️ Pausar Alumno'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Modal nativo para reactivar alumno */}
+    {showReactivateDialog && (
+      <div 
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px',
+        }}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setShowReactivateDialog(false);
+        }}
+      >
+        <div 
+          style={{
+            backgroundColor: COLORS.card,
+            borderRadius: '12px',
+            maxWidth: '450px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ 
+            padding: '16px', 
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            fontSize: '18px',
+            fontWeight: 'bold',
+            color: 'white',
+          }}>
+            ▶️ Reactivar Alumno
+          </div>
+          <div style={{ padding: '16px', color: '#e0e0e0' }}>
+            <p style={{ marginBottom: '16px' }}>
+              Reactivar a <strong>{student?.firstName} {student?.lastName}</strong>
+            </p>
+            
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+              📅 Nueva fecha de inicio:
+            </label>
+            <DatePicker
+              selected={newStartDate}
+              onChange={(date) => {
+                // Ajustar a mediodía para evitar problemas de timezone
+                if (date) {
+                  date.setHours(12, 0, 0, 0);
+                }
+                setNewStartDate(date);
+              }}
+              dateFormat="dd/MM/yyyy"
+              locale="es"
+              placeholderText="Seleccionar fecha"
+              showPopperArrow={false}
+              popperPlacement="bottom-start"
+              customInput={
+                <input
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    backgroundColor: 'rgba(255,255,255,0.05)',
+                    color: 'white',
+                    fontSize: '16px',
+                    marginBottom: '16px',
+                    cursor: 'pointer',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              }
+            />
+            
+            <div style={{ 
+              backgroundColor: 'rgba(76,206,172,0.1)', 
+              border: '1px solid rgba(76,206,172,0.3)',
+              borderRadius: '8px',
+              padding: '12px',
+            }}>
+              <p style={{ margin: 0, fontSize: '14px', color: COLORS.green }}>
+                ✅ Se generarán nuevas cuotas desde esta fecha con el precio actual del plan.
+              </p>
+            </div>
+          </div>
+          <div style={{ 
+            padding: '16px', 
+            borderTop: '1px solid rgba(255,255,255,0.1)',
+            display: 'flex',
+            justifyContent: 'flex-end',
+            gap: '12px',
+          }}>
+            <button 
+              type="button"
+              onClick={() => setShowReactivateDialog(false)}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: 'transparent',
+                color: '#888',
+                cursor: 'pointer',
+                fontSize: '14px',
+              }}
+            >
+              Cancelar
+            </button>
+            <button 
+              type="button"
+              onClick={handleConfirmReactivate}
+              disabled={reactivatingStudent || !newStartDate}
+              style={{
+                padding: '10px 20px',
+                border: 'none',
+                borderRadius: '8px',
+                backgroundColor: !newStartDate ? '#555' : COLORS.green,
+                color: 'white',
+                cursor: (reactivatingStudent || !newStartDate) ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: 'bold',
+                opacity: reactivatingStudent ? 0.7 : 1,
+              }}
+            >
+              {reactivatingStudent ? 'Reactivando...' : '▶️ Reactivar Alumno'}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Snackbar para mensajes */}
     <Snackbar

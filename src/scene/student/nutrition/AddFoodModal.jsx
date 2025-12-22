@@ -10,11 +10,16 @@ import {
   Chip,
   Tabs,
   Tab,
+  IconButton,
+  Badge,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CheckIcon from '@mui/icons-material/Check';
 import RestaurantIcon from '@mui/icons-material/Restaurant';
 import BlenderIcon from '@mui/icons-material/Blender';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { tokens } from '../../../theme';
 import { getFoodItems, getMealTypes, addFoodLogEntry, getRecipes } from '../../../api/nutritionApi';
 
@@ -32,25 +37,26 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
   const [saving, setSaving] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [error, setError] = useState(null);
-
-  const [selectedFood, setSelectedFood] = useState(null);
-  const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [quantity, setQuantity] = useState(100);
   const [selectedMealType, setSelectedMealType] = useState('');
-
-  // El item seleccionado puede ser un alimento o una receta
-  const selectedItem = selectedFood || selectedRecipe;
-  const isRecipe = !!selectedRecipe;
+  
+  // Paso actual: 1 = seleccionar comida, 2 = agregar alimentos
+  const [step, setStep] = useState(1);
+  
+  // Estado del carrito - lista de items a agregar
+  const [cartItems, setCartItems] = useState([]);
+  // Item siendo editado (para cambiar cantidad)
+  const [editingItem, setEditingItem] = useState(null);
+  const [editingQuantity, setEditingQuantity] = useState(100);
 
   useEffect(() => {
     if (open && studentId) {
-      setSelectedFood(null);
-      setSelectedRecipe(null);
-      setQuantity(100);
+      setCartItems([]);
+      setEditingItem(null);
       setSearchText('');
       setError(null);
       setSelectedMealType('');
       setTabValue(0);
+      setStep(1); // Resetear al paso 1
       
       setLoading(true);
       Promise.all([
@@ -61,13 +67,27 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
         .then(([foodsData, mealTypesData, recipesData]) => {
           setFoods(foodsData || []);
           setFilteredFoods(foodsData || []);
-          setMealTypes(mealTypesData || []);
           setRecipes(recipesData || []);
           setFilteredRecipes(recipesData || []);
           
-          if (selectedMeal && mealTypesData) {
-            const found = mealTypesData.find(m => m.name === selectedMeal);
-            if (found) setSelectedMealType(found.id);
+          // Si no hay meal types configurados, usar tipos por defecto
+          const defaultMealTypes = [
+            { id: 'desayuno', name: 'Desayuno' },
+            { id: 'almuerzo', name: 'Almuerzo' },
+            { id: 'merienda', name: 'Merienda' },
+            { id: 'cena', name: 'Cena' },
+            { id: 'snack', name: 'Snack' },
+          ];
+          const meals = (mealTypesData && mealTypesData.length > 0) ? mealTypesData : defaultMealTypes;
+          setMealTypes(meals);
+          
+          // Si viene un meal preseleccionado, usarlo y saltar al paso 2
+          if (selectedMeal && meals) {
+            const found = meals.find(m => m.name === selectedMeal);
+            if (found) {
+              setSelectedMealType(found.id);
+              setStep(2); // Saltar al paso 2 si ya viene preseleccionado
+            }
           }
         })
         .catch(err => {
@@ -95,37 +115,72 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
     }
   }, [searchText, foods, recipes]);
 
-  const calculateMacros = () => {
-    if (!selectedItem || !quantity) return null;
-    const factor = quantity / 100;
+  // Agregar item al carrito con cantidad por defecto
+  const handleAddToCart = (item, isRecipe = false) => {
+    const existingIndex = cartItems.findIndex(ci => 
+      isRecipe ? ci.recipeId === item.id : ci.foodItemId === item.id
+    );
+    
+    if (existingIndex >= 0) {
+      // Ya existe, aumentar cantidad
+      const updated = [...cartItems];
+      updated[existingIndex].quantityGrams += 100;
+      setCartItems(updated);
+    } else {
+      // Agregar nuevo
+      const newItem = {
+        id: Date.now(), // ID temporal para el carrito
+        item: item,
+        isRecipe: isRecipe,
+        foodItemId: isRecipe ? null : item.id,
+        recipeId: isRecipe ? item.id : null,
+        quantityGrams: isRecipe ? (item.totalGrams || 100) : 100,
+      };
+      setCartItems([...cartItems, newItem]);
+    }
+    setSearchText(''); // Limpiar búsqueda para seguir agregando
+  };
+
+  // Eliminar item del carrito
+  const handleRemoveFromCart = (cartItemId) => {
+    setCartItems(cartItems.filter(ci => ci.id !== cartItemId));
+  };
+
+  // Actualizar cantidad de un item
+  const handleUpdateQuantity = (cartItemId, newQuantity) => {
+    setCartItems(cartItems.map(ci => 
+      ci.id === cartItemId ? { ...ci, quantityGrams: newQuantity } : ci
+    ));
+  };
+
+  // Calcular totales del carrito
+  const calculateCartTotals = () => {
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+
+    cartItems.forEach(ci => {
+      const qty = parseInt(ci.quantityGrams) || 0;
+      const factor = qty / 100;
+      totalCalories += ci.item.caloriesPer100g * factor;
+      totalProtein += ci.item.proteinPer100g * factor;
+      totalCarbs += ci.item.carbsPer100g * factor;
+      totalFat += ci.item.fatPer100g * factor;
+    });
+
     return {
-      calories: (selectedItem.caloriesPer100g * factor).toFixed(1),
-      protein: (selectedItem.proteinPer100g * factor).toFixed(1),
-      carbs: (selectedItem.carbsPer100g * factor).toFixed(1),
-      fat: (selectedItem.fatPer100g * factor).toFixed(1),
+      calories: Math.round(totalCalories),
+      protein: Math.round(totalProtein * 10) / 10,
+      carbs: Math.round(totalCarbs * 10) / 10,
+      fat: Math.round(totalFat * 10) / 10,
     };
   };
 
-  const handleSelectFood = (food) => {
-    setSelectedFood(food);
-    setSelectedRecipe(null);
-  };
-
-  const handleSelectRecipe = (recipe) => {
-    setSelectedRecipe(recipe);
-    setSelectedFood(null);
-    // Para recetas, sugerir el total de gramos como cantidad inicial
-    setQuantity(recipe.totalGrams || 100);
-  };
-
-  const handleBack = () => {
-    setSelectedFood(null);
-    setSelectedRecipe(null);
-  };
-
-  const handleSave = async () => {
-    if (!selectedItem || !quantity) {
-      setError('Seleccioná un alimento o receta y una cantidad');
+  // Guardar todos los items del carrito
+  const handleSaveAll = async () => {
+    if (cartItems.length === 0) {
+      setError('Agregá al menos un alimento');
       return;
     }
 
@@ -133,19 +188,23 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
     setError(null);
     
     try {
-      const entryData = {
-        date: selectedDate,
-        quantityGrams: parseInt(quantity),
-        mealTypeId: selectedMealType || undefined,
-      };
+      // Guardar cada item
+      for (const cartItem of cartItems) {
+        const qty = parseInt(cartItem.quantityGrams) || 1; // Mínimo 1g
+        const entryData = {
+          date: selectedDate,
+          quantityGrams: qty,
+          mealTypeId: selectedMealType || undefined,
+        };
 
-      if (isRecipe) {
-        entryData.recipeId = selectedRecipe.id;
-      } else {
-        entryData.foodItemId = selectedFood.id;
+        if (cartItem.isRecipe) {
+          entryData.recipeId = cartItem.recipeId;
+        } else {
+          entryData.foodItemId = cartItem.foodItemId;
+        }
+
+        await addFoodLogEntry(studentId, entryData);
       }
-
-      await addFoodLogEntry(studentId, entryData);
       
       onSuccess();
       onClose();
@@ -157,7 +216,8 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
     }
   };
 
-  const macros = calculateMacros();
+  const totals = calculateCartTotals();
+  const itemsInCart = cartItems.length;
 
   if (!open) return null;
 
@@ -180,7 +240,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
         borderTopRightRadius: '16px',
         width: '100%',
         maxWidth: '600px',
-        height: '85vh',
+        height: '90vh',
         display: 'flex',
         flexDirection: 'column'
       }}>
@@ -188,45 +248,136 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
         <div style={{
           backgroundColor: colors.primary[600],
           color: colors.grey[100],
-          padding: '16px 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          padding: '12px 16px',
           flexShrink: 0,
           borderBottom: `1px solid ${colors.primary[400]}`
         }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '18px' }}>🍎 Agregar Alimento</h3>
-            {selectedMeal && (
-              <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: colors.orangeAccent[400] }}>
-                para {selectedMeal}
-              </p>
-            )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: '18px' }}>🍎 Agregar Alimentos</h3>
+            <button 
+              onClick={onClose}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: colors.grey[300],
+                fontSize: '28px',
+                cursor: 'pointer',
+                padding: '0',
+                width: '30px',
+                height: '30px'
+              }}
+            >
+              ×
+            </button>
           </div>
-          <button 
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: colors.grey[300],
-              fontSize: '28px',
-              cursor: 'pointer',
-              padding: '0',
-              width: '30px',
-              height: '30px'
-            }}
-          >
-            ×
-          </button>
         </div>
 
         {loading ? (
           <div style={{ padding: '40px', textAlign: 'center' }}>
             <CircularProgress />
           </div>
-        ) : !selectedItem ? (
-          /* PASO 1: Seleccionar alimento o receta */
+        ) : step === 1 ? (
+          /* ========== PASO 1: Seleccionar tipo de comida ========== */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ 
+              padding: '24px 16px', 
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+              <Typography variant="h6" color={colors.grey[100]} sx={{ mb: 1, textAlign: 'center' }}>
+                ¿A qué comida querés agregar?
+              </Typography>
+              <Typography variant="body2" color={colors.grey[400]} sx={{ mb: 3, textAlign: 'center' }}>
+                Seleccioná el momento del día
+              </Typography>
+              
+              <div style={{ 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '12px', 
+                width: '100%',
+                maxWidth: '300px',
+              }}>
+                {mealTypes.map((mt) => (
+                  <Button
+                    key={mt.id}
+                    variant="contained"
+                    fullWidth
+                    onClick={() => {
+                      setSelectedMealType(mt.id);
+                      setStep(2);
+                    }}
+                    sx={{
+                      backgroundColor: colors.primary[400],
+                      color: colors.grey[100],
+                      py: 1.5,
+                      fontSize: '16px',
+                      fontWeight: 'bold',
+                      borderRadius: '12px',
+                      '&:hover': {
+                        backgroundColor: colors.orangeAccent[600],
+                      },
+                    }}
+                  >
+                    {mt.name === 'Desayuno' && '🌅 '}
+                    {mt.name === 'Media Mañana' && '☕ '}
+                    {mt.name === 'Almuerzo' && '🍽️ '}
+                    {mt.name === 'Merienda' && '🍪 '}
+                    {mt.name === 'Cena' && '🌙 '}
+                    {mt.name === 'Snack' && '🍿 '}
+                    {mt.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Footer paso 1 */}
+            <div style={{ 
+              borderTop: `1px solid ${colors.primary[400]}`,
+              padding: '12px 16px',
+              backgroundColor: colors.primary[600]
+            }}>
+              <Button 
+                onClick={onClose}
+                variant="outlined"
+                fullWidth
+                sx={{ 
+                  color: colors.grey[300],
+                  borderColor: colors.grey[600],
+                  minHeight: '44px',
+                }}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          /* ========== PASO 2: Agregar alimentos ========== */
           <>
+            {/* Header con comida seleccionada */}
+            <div style={{ 
+              padding: '8px 16px', 
+              backgroundColor: colors.orangeAccent[700],
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexShrink: 0,
+            }}>
+              <Typography variant="body2" color="#fff" fontWeight="bold">
+                📍 {mealTypes.find(m => m.id === selectedMealType)?.name || 'Sin especificar'}
+              </Typography>
+              <Button 
+                size="small" 
+                onClick={() => setStep(1)}
+                sx={{ color: '#fff', fontSize: '12px', textTransform: 'none' }}
+              >
+                Cambiar ↩
+              </Button>
+            </div>
+
             {/* Tabs para cambiar entre Alimentos y Recetas */}
             <Box sx={{ 
               borderBottom: `1px solid ${colors.primary[400]}`, 
@@ -259,7 +410,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
             </Box>
 
             {/* Buscador */}
-            <div style={{ padding: '16px', backgroundColor: colors.primary[600], borderBottom: `1px solid ${colors.primary[400]}`, flexShrink: 0 }}>
+            <div style={{ padding: '12px 16px', backgroundColor: colors.primary[600], borderBottom: `1px solid ${colors.primary[400]}`, flexShrink: 0 }}>
               <input
                 type="text"
                 placeholder={tabValue === 0 ? "Buscar alimento..." : "Buscar receta..."}
@@ -267,7 +418,7 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                 onChange={(e) => setSearchText(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '12px 12px 12px 40px',
+                  padding: '10px 12px 10px 40px',
                   border: `1px solid ${colors.grey[600]}`,
                   borderRadius: '8px',
                   fontSize: '16px',
@@ -287,38 +438,72 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
               flex: '1 1 0',
               overflowY: 'scroll',
               backgroundColor: colors.primary[500],
-              WebkitOverflowScrolling: 'touch'
+              WebkitOverflowScrolling: 'touch',
+              minHeight: 0,
             }}>
               {tabValue === 0 ? (
                 // ALIMENTOS
                 filteredFoods.length > 0 ? (
                   <div style={{ width: '100%' }}>
-                    {filteredFoods.map((food) => (
-                      <div
-                        key={food.id}
-                        onClick={() => handleSelectFood(food)}
-                        style={{
-                          padding: '16px 20px',
-                          borderBottom: `1px solid ${colors.primary[600]}`,
-                          cursor: 'pointer',
-                          backgroundColor: colors.primary[500],
-                          minHeight: '60px',
-                          display: 'block',
-                          width: '100%',
-                          boxSizing: 'border-box',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.primary[600]}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.primary[500]}
-                      >
-                        <div style={{ fontSize: '16px', color: colors.grey[100], fontWeight: '500', marginBottom: '4px' }}>
-                          {food.name}
+                    {filteredFoods.map((food) => {
+                      const inCart = cartItems.find(ci => ci.foodItemId === food.id);
+                      return (
+                        <div
+                          key={food.id}
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: `1px solid ${colors.primary[600]}`,
+                            backgroundColor: inCart ? colors.greenAccent[900] : colors.primary[500],
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ 
+                              fontSize: '15px', 
+                              color: colors.grey[100], 
+                              fontWeight: '500', 
+                              marginBottom: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                            }}>
+                              {food.name}
+                              {inCart && (
+                                <Chip 
+                                  size="small" 
+                                  label={`${inCart.quantityGrams}g`}
+                                  sx={{ 
+                                    height: '20px',
+                                    fontSize: '11px',
+                                    backgroundColor: colors.greenAccent[600],
+                                    color: '#fff',
+                                  }}
+                                />
+                              )}
+                            </div>
+                            <div style={{ fontSize: '11px', color: colors.grey[400] }}>
+                              P:{food.proteinPer100g}g | H:{food.carbsPer100g}g | G:{food.fatPer100g}g | {food.caloriesPer100g}kcal
+                            </div>
+                          </div>
+                          <IconButton
+                            onClick={() => handleAddToCart(food, false)}
+                            sx={{
+                              backgroundColor: inCart ? colors.greenAccent[600] : colors.orangeAccent[600],
+                              color: '#fff',
+                              width: '36px',
+                              height: '36px',
+                              '&:hover': {
+                                backgroundColor: inCart ? colors.greenAccent[700] : colors.orangeAccent[700],
+                              },
+                            }}
+                          >
+                            <AddIcon sx={{ fontSize: 20 }} />
+                          </IconButton>
                         </div>
-                        <div style={{ fontSize: '12px', color: colors.grey[400] }}>
-                          P:{food.proteinPer100g}g | H:{food.carbsPer100g}g | G:{food.fatPer100g}g | {food.caloriesPer100g}kcal
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -331,33 +516,66 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                 // RECETAS
                 filteredRecipes.length > 0 ? (
                   <div style={{ width: '100%' }}>
-                    {filteredRecipes.map((recipe) => (
-                      <div
-                        key={recipe.id}
-                        onClick={() => handleSelectRecipe(recipe)}
-                        style={{
-                          padding: '16px 20px',
-                          borderBottom: `1px solid ${colors.primary[600]}`,
-                          cursor: 'pointer',
-                          backgroundColor: colors.primary[500],
-                          minHeight: '60px',
-                          display: 'block',
-                          width: '100%',
-                          boxSizing: 'border-box',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.primary[600]}
-                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.primary[500]}
-                      >
-                        <div style={{ fontSize: '16px', color: colors.grey[100], fontWeight: '500', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <BlenderIcon sx={{ fontSize: 16, color: colors.orangeAccent[400] }} />
-                          {recipe.name}
+                    {filteredRecipes.map((recipe) => {
+                      const inCart = cartItems.find(ci => ci.recipeId === recipe.id);
+                      return (
+                        <div
+                          key={recipe.id}
+                          style={{
+                            padding: '12px 16px',
+                            borderBottom: `1px solid ${colors.primary[600]}`,
+                            backgroundColor: inCart ? colors.greenAccent[900] : colors.primary[500],
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ 
+                              fontSize: '15px', 
+                              color: colors.grey[100], 
+                              fontWeight: '500', 
+                              marginBottom: '2px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                            }}>
+                              <BlenderIcon sx={{ fontSize: 16, color: colors.blueAccent[400] }} />
+                              {recipe.name}
+                              {inCart && (
+                                <Chip 
+                                  size="small" 
+                                  label={`${inCart.quantityGrams}g`}
+                                  sx={{ 
+                                    height: '20px',
+                                    fontSize: '11px',
+                                    backgroundColor: colors.greenAccent[600],
+                                    color: '#fff',
+                                  }}
+                                />
+                              )}
+                            </div>
+                            <div style={{ fontSize: '11px', color: colors.grey[400] }}>
+                              {recipe.totalGrams}g • P:{Math.round(recipe.proteinPer100g)}g | H:{Math.round(recipe.carbsPer100g)}g | G:{Math.round(recipe.fatPer100g)}g | {Math.round(recipe.caloriesPer100g)}kcal/100g
+                            </div>
+                          </div>
+                          <IconButton
+                            onClick={() => handleAddToCart(recipe, true)}
+                            sx={{
+                              backgroundColor: inCart ? colors.greenAccent[600] : colors.blueAccent[600],
+                              color: '#fff',
+                              width: '36px',
+                              height: '36px',
+                              '&:hover': {
+                                backgroundColor: inCart ? colors.greenAccent[700] : colors.blueAccent[700],
+                              },
+                            }}
+                          >
+                            <AddIcon sx={{ fontSize: 20 }} />
+                          </IconButton>
                         </div>
-                        <div style={{ fontSize: '12px', color: colors.grey[400] }}>
-                          {recipe.totalGrams}g total • P:{Math.round(recipe.proteinPer100g)}g | H:{Math.round(recipe.carbsPer100g)}g | G:{Math.round(recipe.fatPer100g)}g | {Math.round(recipe.caloriesPer100g)}kcal/100g
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div style={{ padding: '40px', textAlign: 'center' }}>
@@ -365,211 +583,165 @@ const AddFoodModal = ({ open, onClose, onSuccess, studentId, selectedMeal, selec
                     <p style={{ color: colors.grey[400], margin: 0 }}>
                       No tenés recetas creadas
                     </p>
-                    <p style={{ color: colors.grey[500], margin: '8px 0 0 0', fontSize: '12px' }}>
-                      Creá recetas desde la pestaña "Recetas"
-                    </p>
                   </div>
                 )
               )}
             </div>
-          </>
-        ) : (
-          /* PASO 2: Completar cantidad */
-          <div style={{ 
-            flex: '1 1 0',
-            overflowY: 'auto',
-            padding: '16px 20px',
-            WebkitOverflowScrolling: 'touch'
-          }}>
-            {/* Alimento o receta seleccionada */}
-            <Box sx={{ 
-              p: 2, 
-              mb: 2, 
-              bgcolor: isRecipe ? colors.blueAccent[700] : colors.orangeAccent[700], 
-              borderRadius: 1,
-            }}>
-              <Typography variant="subtitle1" fontWeight="bold" color={colors.grey[100]} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {isRecipe && <BlenderIcon sx={{ fontSize: 18 }} />}
-                {selectedItem.name}
-              </Typography>
-              <Typography variant="caption" color={colors.grey[200]}>
-                {Math.round(selectedItem.caloriesPer100g)} kcal / 100g
-                {isRecipe && ` • Receta de ${selectedItem.totalGrams}g`}
-              </Typography>
-            </Box>
 
-            {/* Cantidad */}
-            <Typography variant="subtitle2" color={colors.grey[100]} mb={1}>
-              ¿Cuántos gramos?
-            </Typography>
-            <TextField
-              fullWidth
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(e.target.value)}
-              size="small"
-              inputProps={{ min: 1 }}
-              InputProps={{
-                endAdornment: <InputAdornment position="end">g</InputAdornment>,
-              }}
-              sx={{
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  color: colors.grey[100],
-                  '& fieldset': { borderColor: colors.grey[600] },
-                },
-              }}
-            />
-
-            {/* Chips rápidos */}
-            <Box display="flex" gap={1} mb={2} flexWrap="wrap">
-              {[50, 100, 150, 200, 250].map((g) => (
-                <Chip
-                  key={g}
-                  label={`${g}g`}
-                  onClick={() => setQuantity(g)}
-                  variant={parseInt(quantity) === g ? 'filled' : 'outlined'}
-                  sx={{
-                    color: parseInt(quantity) === g ? '#ffffff' : colors.grey[300],
-                    bgcolor: parseInt(quantity) === g ? colors.greenAccent[600] : 'transparent',
-                    borderColor: parseInt(quantity) === g ? colors.greenAccent[600] : colors.grey[600],
-                    borderWidth: parseInt(quantity) === g ? '2px' : '1px',
-                    minHeight: '32px',
-                    fontWeight: parseInt(quantity) === g ? 'bold' : 'normal',
-                    transition: 'all 0.2s ease',
-                  }}
-                />
-              ))}
-            </Box>
-
-            {/* Momento de comida */}
-            <Typography variant="caption" color={colors.grey[400]} mb={0.5} display="block">
-              Momento de la comida:
-            </Typography>
-            <Box sx={{ mb: 2 }}>
-              {mealTypes.map((mt) => (
-                <Chip
-                  key={mt.id}
-                  label={mt.name}
-                  onClick={() => setSelectedMealType(mt.id)}
-                  variant={selectedMealType === mt.id ? 'filled' : 'outlined'}
-                  sx={{
-                    mr: 1,
-                    mb: 1,
-                    color: selectedMealType === mt.id ? '#ffffff' : colors.grey[300],
-                    bgcolor: selectedMealType === mt.id ? colors.greenAccent[600] : 'transparent',
-                    borderColor: selectedMealType === mt.id ? colors.greenAccent[600] : colors.grey[600],
-                    borderWidth: selectedMealType === mt.id ? '2px' : '1px',
-                    minHeight: '36px',
-                    fontWeight: selectedMealType === mt.id ? 'bold' : 'normal',
-                    transition: 'all 0.2s ease',
-                  }}
-                />
-              ))}
-              <Chip
-                label="Sin especificar"
-                onClick={() => setSelectedMealType('')}
-                variant={selectedMealType === '' ? 'filled' : 'outlined'}
-                sx={{
-                  mr: 1,
-                  mb: 1,
-                  color: selectedMealType === '' ? '#ffffff' : colors.grey[300],
-                  bgcolor: selectedMealType === '' ? colors.greenAccent[600] : 'transparent',
-                  borderColor: selectedMealType === '' ? colors.greenAccent[600] : colors.grey[600],
-                  borderWidth: selectedMealType === '' ? '2px' : '1px',
-                  minHeight: '36px',
-                  fontWeight: selectedMealType === '' ? 'bold' : 'normal',
-                  transition: 'all 0.2s ease',
-                }}
-              />
-            </Box>
-
-            {/* Preview de macros */}
-            {macros && (
-              <Box sx={{ 
-                p: 2, 
-                bgcolor: colors.primary[600], 
-                borderRadius: 1,
-                textAlign: 'center',
+            {/* Carrito - Items agregados */}
+            {cartItems.length > 0 && (
+              <div style={{
+                borderTop: `2px solid ${colors.greenAccent[600]}`,
+                backgroundColor: colors.primary[600],
+                flexShrink: 0,
+                maxHeight: '40vh',
+                overflowY: 'auto',
               }}>
-                <Typography variant="caption" color={colors.grey[400]} display="block" mb={1}>
-                  Por {quantity}g consumirás:
-                </Typography>
-                <Box display="flex" justifyContent="space-around" mb={1}>
-                  <Box>
-                    <Typography variant="h6" color={colors.redAccent[400]}>{macros.protein}g</Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>P 🥩</Typography>
+                {/* Header del carrito */}
+                <div style={{
+                  padding: '10px 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  borderBottom: `1px solid ${colors.primary[400]}`,
+                  position: 'sticky',
+                  top: 0,
+                  backgroundColor: colors.primary[600],
+                  zIndex: 1,
+                }}>
+                  <Typography variant="subtitle2" color={colors.grey[100]} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <ShoppingCartIcon sx={{ fontSize: 18, color: colors.greenAccent[400] }} />
+                    AGREGADOS ({itemsInCart})
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <Chip size="small" label={`${totals.calories} kcal`} sx={{ backgroundColor: colors.greenAccent[700], color: '#fff', fontSize: '11px' }} />
+                    <Chip size="small" label={`P: ${totals.protein}g`} sx={{ backgroundColor: colors.redAccent[700], color: '#fff', fontSize: '11px' }} />
+                    <Chip size="small" label={`H: ${totals.carbs}g`} sx={{ backgroundColor: colors.blueAccent[700], color: '#fff', fontSize: '11px' }} />
+                    <Chip size="small" label={`G: ${totals.fat}g`} sx={{ backgroundColor: colors.orangeAccent[700], color: '#fff', fontSize: '11px' }} />
                   </Box>
-                  <Box>
-                    <Typography variant="h6" color={colors.blueAccent[400]}>{macros.carbs}g</Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>H 💧</Typography>
-                  </Box>
-                  <Box>
-                    <Typography variant="h6" color={colors.orangeAccent[400]}>{macros.fat}g</Typography>
-                    <Typography variant="caption" color={colors.grey[400]}>G 🧈</Typography>
-                  </Box>
-                </Box>
-                <Typography variant="h5" color={colors.greenAccent[400]} fontWeight="bold">
-                  {macros.calories} kcal
-                </Typography>
-              </Box>
+                </div>
+
+                {/* Lista de items en el carrito */}
+                <div style={{ padding: '8px 16px' }}>
+                  {cartItems.map((cartItem) => (
+                    <div 
+                      key={cartItem.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '8px',
+                        marginBottom: '6px',
+                        backgroundColor: colors.primary[500],
+                        borderRadius: '8px',
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <Typography 
+                          variant="body2" 
+                          color={colors.grey[100]}
+                          sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
+                          {cartItem.isRecipe && <BlenderIcon sx={{ fontSize: 14, color: colors.blueAccent[400] }} />}
+                          {cartItem.item.name}
+                        </Typography>
+                      </div>
+                      <TextField
+                        type="text"
+                        inputMode="numeric"
+                        size="small"
+                        value={cartItem.quantityGrams}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          // Permitir vacío o solo números
+                          if (val === '' || /^\d+$/.test(val)) {
+                            handleUpdateQuantity(cartItem.id, val === '' ? '' : parseInt(val));
+                          }
+                        }}
+                        onBlur={(e) => {
+                          // Si está vacío o es 0, poner 1 como mínimo
+                          const val = parseInt(e.target.value);
+                          if (!val || val < 1) {
+                            handleUpdateQuantity(cartItem.id, 1);
+                          }
+                        }}
+                        inputProps={{ style: { textAlign: 'center', padding: '4px' } }}
+                        sx={{
+                          width: '70px',
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: colors.primary[400],
+                            '& fieldset': { borderColor: colors.grey[600] },
+                          },
+                          '& .MuiInputBase-input': {
+                            color: colors.grey[100],
+                            fontSize: '13px',
+                          },
+                        }}
+                      />
+                      <Typography variant="caption" color={colors.grey[400]} sx={{ width: '12px' }}>g</Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleRemoveFromCart(cartItem.id)}
+                        sx={{ color: colors.redAccent[400], padding: '4px' }}
+                      >
+                        <DeleteIcon sx={{ fontSize: 18 }} />
+                      </IconButton>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Footer */}
         <div style={{ 
           borderTop: `1px solid ${colors.primary[400]}`,
-          padding: '16px 20px',
+          padding: '12px 16px',
           display: 'flex',
           gap: '12px',
           flexShrink: 0,
           backgroundColor: colors.primary[600]
         }}>
-          {selectedItem ? (
-            <>
-              <Button 
-                onClick={handleBack}
-                variant="outlined"
-                fullWidth
-                disabled={saving}
-                sx={{ 
-                  color: colors.grey[300],
-                  borderColor: colors.grey[600],
-                  minHeight: '48px',
-                }}
-              >
-                Volver
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={!selectedItem || !quantity || saving}
-                variant="contained"
-                fullWidth
-                startIcon={saving ? <CircularProgress size={20} /> : <CheckIcon />}
-                sx={{ 
-                  bgcolor: colors.greenAccent[600], 
-                  minHeight: '48px',
-                  '&:hover': { bgcolor: colors.greenAccent[700] },
-                }}
-              >
-                {saving ? 'Guardando...' : 'Guardar'}
-              </Button>
-            </>
-          ) : (
-            <Button 
-              onClick={onClose}
-              variant="outlined"
-              fullWidth
-              sx={{ 
-                color: colors.grey[300],
-                borderColor: colors.grey[600],
-                minHeight: '48px',
-              }}
-            >
-              Cancelar
-            </Button>
-          )}
+          <Button 
+            onClick={onClose}
+            variant="outlined"
+            fullWidth
+            disabled={saving}
+            sx={{ 
+              color: colors.grey[300],
+              borderColor: colors.grey[600],
+              minHeight: '44px',
+            }}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleSaveAll}
+            disabled={cartItems.length === 0 || saving}
+            variant="contained"
+            fullWidth
+            startIcon={saving ? <CircularProgress size={18} /> : <CheckIcon />}
+            sx={{ 
+              bgcolor: colors.greenAccent[600], 
+              minHeight: '44px',
+              fontWeight: 'bold',
+              '&:hover': { bgcolor: colors.greenAccent[700] },
+              '&.Mui-disabled': {
+                bgcolor: colors.grey[700],
+                color: colors.grey[500],
+              },
+            }}
+          >
+            {saving ? 'Guardando...' : `Guardar ${itemsInCart} item${itemsInCart !== 1 ? 's' : ''}`}
+          </Button>
         </div>
       </div>
     </div>

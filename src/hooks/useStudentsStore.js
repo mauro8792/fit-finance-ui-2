@@ -248,6 +248,41 @@ export const useStudentsStore = () => {
     []
   );
 
+  /**
+   * Pausar un estudiante y cancelar cuotas futuras pendientes
+   */
+  const pauseStudent = useCallback(
+    async (studentId) => {
+      try {
+        const { data } = await financeApi.post(`/students/${studentId}/pause`);
+        return data;
+      } catch (error) {
+        console.error('Error al pausar estudiante:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
+  /**
+   * Reactivar un estudiante con una nueva fecha de inicio
+   * Genera nuevas cuotas desde la nueva fecha
+   */
+  const reactivateStudent = useCallback(
+    async (studentId, newStartDate) => {
+      try {
+        const { data } = await financeApi.post(`/students/${studentId}/reactivate`, {
+          newStartDate,
+        });
+        return data;
+      } catch (error) {
+        console.error('Error al reactivar estudiante:', error);
+        throw error;
+      }
+    },
+    []
+  );
+
   return {
     //* Propiedades
     students,
@@ -273,5 +308,7 @@ export const useStudentsStore = () => {
     clearError: clearErrorMessage,
     clearSelectedStudent: clearSelectedStudentData,
     changeStudentPlan,
+    pauseStudent,
+    reactivateStudent,
   };
 };

@@ -6,7 +6,10 @@ import {
   Button,
   CircularProgress,
   Chip,
+  IconButton,
 } from '@mui/material';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { createCardio, ACTIVITY_TYPES, INTENSITY_LEVELS } from '../../../api/cardioApi';
 
 const COLORS = {
@@ -21,16 +24,41 @@ const COLORS = {
   red: '#ef4444',
 };
 
+// Obtener fecha LOCAL actual (sin problemas de UTC)
+const getLocalDate = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
+// Formatear fecha a DD/MM/AAAA
+const formatDateDisplay = (date) => {
+  const d = date.getDate().toString().padStart(2, '0');
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+};
+
+// Formatear fecha a YYYY-MM-DD para el API (sin UTC)
+const formatDateForApi = (date) => {
+  const y = date.getFullYear();
+  const m = (date.getMonth() + 1).toString().padStart(2, '0');
+  const d = date.getDate().toString().padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+// Obtener nombre del día corto
+const getDayName = (date) => {
+  const days = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  return days[date.getDay()];
+};
+
+const MONTH_NAMES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
 const AddCardioModal = ({ studentId, onClose, onSave, initialDate = null }) => {
-  // Fecha LOCAL, no UTC
-  const getLocalDateString = () => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  };
-  const today = getLocalDateString();
+  const today = getLocalDate();
+  const [selectedDate, setSelectedDate] = useState(initialDate ? new Date(initialDate) : today);
   
   const [formData, setFormData] = useState({
-    date: initialDate || today,
     activityType: 'run',
     durationMinutes: 30,
     distanceKm: '',
@@ -39,6 +67,23 @@ const AddCardioModal = ({ studentId, onClose, onSave, initialDate = null }) => {
     steps: '',
     notes: '',
   });
+
+  // Verificar si la fecha seleccionada es hoy
+  const isSelectedToday = selectedDate.getDate() === today.getDate() && 
+                          selectedDate.getMonth() === today.getMonth() && 
+                          selectedDate.getFullYear() === today.getFullYear();
+
+  // Navegar fecha
+  const goToPreviousDay = () => {
+    setSelectedDate(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() - 1));
+  };
+
+  const goToNextDay = () => {
+    const nextDay = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate() + 1);
+    if (nextDay <= today) {
+      setSelectedDate(nextDay);
+    }
+  };
   
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -58,7 +103,7 @@ const AddCardioModal = ({ studentId, onClose, onSave, initialDate = null }) => {
       setError(null);
       
       const dataToSend = {
-        date: formData.date,
+        date: formatDateForApi(selectedDate),
         activityType: formData.activityType,
         durationMinutes: parseInt(formData.durationMinutes),
         intensity: formData.intensity,
@@ -145,17 +190,49 @@ const AddCardioModal = ({ studentId, onClose, onSave, initialDate = null }) => {
 
         {/* Body */}
         <Box sx={{ p: 2.5, display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-          {/* Fecha */}
-          <TextField
-            label="Fecha"
-            type="date"
-            value={formData.date}
-            onChange={(e) => handleChange('date', e.target.value)}
-            fullWidth
-            size="small"
-            sx={inputStyle}
-            InputLabelProps={{ shrink: true }}
-          />
+          {/* Selector de Fecha */}
+          <Box>
+            <Typography fontSize={12} color={COLORS.textMuted} mb={1}>
+              Fecha
+            </Typography>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between',
+              backgroundColor: 'rgba(0,0,0,0.3)',
+              borderRadius: 2,
+              border: `1px solid ${COLORS.border}`,
+              p: 0.5,
+            }}>
+              <IconButton 
+                onClick={goToPreviousDay}
+                size="small"
+                sx={{ color: COLORS.text }}
+              >
+                <ChevronLeftIcon />
+              </IconButton>
+              
+              <Box sx={{ textAlign: 'center', flex: 1 }}>
+                <Typography fontSize={18} fontWeight={700} color={COLORS.text}>
+                  {formatDateDisplay(selectedDate)}
+                </Typography>
+                <Typography fontSize={11} color={COLORS.textMuted}>
+                  {getDayName(selectedDate)}, {selectedDate.getDate()} de {MONTH_NAMES[selectedDate.getMonth()]}
+                </Typography>
+              </Box>
+              
+              <IconButton 
+                onClick={goToNextDay}
+                disabled={isSelectedToday}
+                size="small"
+                sx={{ 
+                  color: isSelectedToday ? COLORS.border : COLORS.text,
+                }}
+              >
+                <ChevronRightIcon />
+              </IconButton>
+            </Box>
+          </Box>
 
           {/* Tipo de actividad */}
           <Box>

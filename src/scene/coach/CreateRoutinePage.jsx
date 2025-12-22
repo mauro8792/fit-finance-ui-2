@@ -24,6 +24,8 @@ import {
   MobileStepper,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import {
   ArrowBack as ArrowBackIcon,
   ArrowForward as ArrowForwardIcon,
@@ -86,8 +88,31 @@ const CreateRoutinePage = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
-          const data = await response.json();
+          let data = await response.json();
           console.log('✅ Ejercicios cargados:', data.length);
+          
+          // Si no hay ejercicios, importar los base automáticamente
+          if (data.length === 0) {
+            console.log('📦 No hay ejercicios, importando base...');
+            const importResponse = await fetch(`${VITE_API_URL}/exercise-catalog/import-base`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (importResponse.ok) {
+              const importResult = await importResponse.json();
+              console.log('✅ Ejercicios importados:', importResult);
+              
+              // Recargar el catálogo
+              const reloadResponse = await fetch(`${VITE_API_URL}/exercise-catalog`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (reloadResponse.ok) {
+                data = await reloadResponse.json();
+                console.log('✅ Ejercicios recargados:', data.length);
+              }
+            }
+          }
+          
           setExerciseCatalog(data);
           
           // Extraer grupos musculares únicos
@@ -535,6 +560,55 @@ const CreateRoutinePage = () => {
   );
 };
 
+// Estilos para el DatePicker (tema oscuro)
+const datePickerStyles = `
+  .react-datepicker {
+    background-color: #1a1a2e;
+    border: 1px solid #444;
+    font-family: inherit;
+  }
+  .react-datepicker__header {
+    background-color: #2a2a3e;
+    border-bottom: 1px solid #444;
+  }
+  .react-datepicker__current-month,
+  .react-datepicker__day-name,
+  .react-datepicker__day {
+    color: #e0e0e0;
+  }
+  .react-datepicker__day:hover {
+    background-color: #ffd700;
+    color: #000;
+  }
+  .react-datepicker__day--selected,
+  .react-datepicker__day--keyboard-selected {
+    background-color: #ffd700;
+    color: #000;
+  }
+  .react-datepicker__navigation-icon::before {
+    border-color: #e0e0e0;
+  }
+  .react-datepicker__triangle {
+    display: none;
+  }
+`;
+
+// Helper para parsear fecha string a Date
+const parseDate = (dateStr) => {
+  if (!dateStr) return null;
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+// Helper para formatear Date a string YYYY-MM-DD (para el backend)
+const formatDateToString = (date) => {
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 // ============================================
 // STEP 1: MACROCICLO
 // ============================================
@@ -543,6 +617,7 @@ const StepMacrocycle = ({ data, existingMacrocycles = [], onChange }) => {
   
   return (
     <Box>
+      <style>{datePickerStyles}</style>
       <Typography variant="h5" sx={{ color: '#ffd700', mb: 3, fontWeight: 600 }}>
         📝 Configuración del Macrociclo
       </Typography>
@@ -595,14 +670,36 @@ const StepMacrocycle = ({ data, existingMacrocycles = [], onChange }) => {
         </Grid>
 
         <Grid item xs={12} sm={6}>
-          <TextField
-            fullWidth
-            type="date"
-            label="Fecha de Inicio *"
-            value={data.fechaInicio}
-            onChange={(e) => onChange({ fechaInicio: e.target.value })}
-            InputLabelProps={{ shrink: true }}
-            sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#2a2a2a' } }}
+          <Typography sx={{ color: '#b3b3b3', fontSize: '0.75rem', mb: 0.5 }}>
+            Fecha de Inicio *
+          </Typography>
+          <DatePicker
+            selected={parseDate(data.fechaInicio)}
+            onChange={(date) => onChange({ fechaInicio: formatDateToString(date) })}
+            dateFormat="dd/MM/yyyy"
+            placeholderText="dd/mm/aaaa"
+            className="custom-datepicker"
+            wrapperClassName="datepicker-wrapper"
+            customInput={
+              <Box
+                sx={{
+                  width: '100%',
+                  padding: '16.5px 14px',
+                  bgcolor: '#2a2a2a',
+                  border: '1px solid rgba(255,255,255,0.23)',
+                  borderRadius: '4px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  '&:hover': { borderColor: 'rgba(255,255,255,0.5)' },
+                }}
+              >
+                <span>{data.fechaInicio ? parseDate(data.fechaInicio)?.toLocaleDateString('es-AR') : 'dd/mm/aaaa'}</span>
+                <span style={{ opacity: 0.5 }}>📅</span>
+              </Box>
+            }
           />
         </Grid>
 
@@ -694,14 +791,34 @@ const StepMesociclos = ({ cantidadMesociclos, mesociclos, onCantidadChange, onMe
 
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      type="date"
-                      label="Fecha de Inicio *"
-                      value={meso.fechaInicio}
-                      onChange={(e) => onMesocicloChange(index, 'fechaInicio', e.target.value)}
-                      InputLabelProps={{ shrink: true }}
-                      sx={{ '& .MuiOutlinedInput-root': { bgcolor: '#333' } }}
+                    <Typography sx={{ color: '#b3b3b3', fontSize: '0.75rem', mb: 0.5 }}>
+                      Fecha de Inicio *
+                    </Typography>
+                    <DatePicker
+                      selected={parseDate(meso.fechaInicio)}
+                      onChange={(date) => onMesocicloChange(index, 'fechaInicio', formatDateToString(date))}
+                      dateFormat="dd/MM/yyyy"
+                      placeholderText="dd/mm/aaaa"
+                      customInput={
+                        <Box
+                          sx={{
+                            width: '100%',
+                            padding: '12px 14px',
+                            bgcolor: '#333',
+                            border: '1px solid rgba(255,255,255,0.23)',
+                            borderRadius: '4px',
+                            color: '#fff',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            '&:hover': { borderColor: 'rgba(255,255,255,0.5)' },
+                          }}
+                        >
+                          <span>{meso.fechaInicio ? parseDate(meso.fechaInicio)?.toLocaleDateString('es-AR') : 'dd/mm/aaaa'}</span>
+                          <span style={{ opacity: 0.5 }}>📅</span>
+                        </Box>
+                      }
                     />
                   </Grid>
                   <Grid item xs={12}>
@@ -754,11 +871,11 @@ const StepMicrociclos = ({
           mesocicloIndex: index,
           mesocicloNombre: meso.nombre,
           cantidadMicrociclos: 4,
-          plantillaDias: Array.from({ length: 7 }, (_, i) => ({
+          plantillaDias: Array.from({ length: 3 }, (_, i) => ({
             dia: i + 1,
             nombre: `Día ${i + 1}`,
             ejercicios: [],
-            esDescanso: i === 6 // Día 7 es descanso por defecto
+            esDescanso: false
           }))
         });
       });
@@ -831,6 +948,30 @@ const StepMicrociclos = ({
   const handleGroupChange = (mesoIndex, diaIndex, ejercicioIndex, grupo) => {
     handleExerciseChange(mesoIndex, diaIndex, ejercicioIndex, 'grupoMuscular', grupo);
     handleExerciseChange(mesoIndex, diaIndex, ejercicioIndex, 'nombre', '');
+  };
+
+  // Agregar un nuevo día de entrenamiento
+  const handleAddDay = (mesoIndex) => {
+    const micro = microciclos[mesoIndex] || {};
+    const plantilla = [...(micro.plantillaDias || [])];
+    const newDayNumber = plantilla.length + 1;
+    plantilla.push({
+      dia: newDayNumber,
+      nombre: `Día ${newDayNumber}`,
+      ejercicios: [],
+      esDescanso: false
+    });
+    onMicrocicloUpdate(mesoIndex, { ...micro, plantillaDias: plantilla });
+  };
+
+  // Eliminar el último día
+  const handleRemoveDay = (mesoIndex) => {
+    const micro = microciclos[mesoIndex] || {};
+    const plantilla = [...(micro.plantillaDias || [])];
+    if (plantilla.length > 1) {
+      plantilla.pop();
+      onMicrocicloUpdate(mesoIndex, { ...micro, plantillaDias: plantilla });
+    }
   };
 
   // Manejar sets individuales
@@ -1265,6 +1406,41 @@ const StepMicrociclos = ({
                   </Paper>
                 );
               })}
+
+              {/* Botones para agregar/quitar días */}
+              <Box sx={{ display: 'flex', gap: 2, mt: 2, mb: 2, flexWrap: 'wrap' }}>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => handleAddDay(mesoIndex)}
+                  disabled={(microData.plantillaDias || []).length >= 7}
+                  sx={{
+                    bgcolor: '#4caf50',
+                    color: '#fff',
+                    '&:hover': { bgcolor: '#388e3c' },
+                    '&:disabled': { bgcolor: '#333', color: '#666' },
+                  }}
+                >
+                  Agregar Día
+                </Button>
+                <Button
+                  variant="outlined"
+                  startIcon={<DeleteIcon />}
+                  onClick={() => handleRemoveDay(mesoIndex)}
+                  disabled={(microData.plantillaDias || []).length <= 1}
+                  sx={{
+                    borderColor: '#d32f2f',
+                    color: '#d32f2f',
+                    '&:hover': { borderColor: '#f44336', bgcolor: 'rgba(211,47,47,0.1)' },
+                    '&:disabled': { borderColor: '#333', color: '#666' },
+                  }}
+                >
+                  Quitar Día
+                </Button>
+                <Typography variant="body2" sx={{ color: '#888', alignSelf: 'center' }}>
+                  {(microData.plantillaDias || []).length}/7 días configurados
+                </Typography>
+              </Box>
 
               {/* Resumen */}
               <Alert severity="success" sx={{ mt: 2 }}>

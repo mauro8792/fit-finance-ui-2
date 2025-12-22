@@ -18,7 +18,7 @@ const EditSetModal = ({
     notes: set.notes || "",
     order: typeof set.order === "number" ? set.order : 0,
     isExtra: set.isExtra || false,
-    status: set.status || "completed", // Si está guardando, asume completado
+    status: set.status || "", // Sin estado por defecto, debe seleccionar
     isAmrap: set.isAmrap || false,
     amrapInstruction: set.amrapInstruction || "misma_carga",
     amrapNotes: set.amrapNotes || "",
@@ -33,7 +33,7 @@ const EditSetModal = ({
       notes: set.notes || "",
       order: typeof set.order === "number" ? set.order : 0,
       isExtra: set.isExtra || false,
-      status: set.status || "completed",
+      status: set.status || "", // Sin estado por defecto
       isAmrap: set.isAmrap || false,
       amrapInstruction: set.amrapInstruction || "misma_carga",
       amrapNotes: set.amrapNotes || "",
@@ -52,8 +52,23 @@ const EditSetModal = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    
+    // Validaciones
+    if (!form.reps || form.reps <= 0) {
+      setError("Debes ingresar las repeticiones realizadas");
+      return;
+    }
+    if (!form.load || form.load <= 0) {
+      setError("Debes ingresar la carga utilizada");
+      return;
+    }
+    if (!form.status) {
+      setError("Debes seleccionar el estado del set (Completado, Fallido o Saltado)");
+      return;
+    }
+    
+    setLoading(true);
     try {
       const payload = { ...form };
       if (!canConfigureAmrap) {
@@ -122,7 +137,7 @@ const EditSetModal = ({
             <div className="form-field">
               <label className="form-label">
                 <span className="label-icon">🔢</span>
-                Reps
+                Reps <span style={{ color: '#f44336', fontWeight: 'bold' }}>*</span>
                 <span className="value-badge">{form.reps}</span>
               </label>
               <input
@@ -148,7 +163,7 @@ const EditSetModal = ({
             <div className="form-field">
               <label className="form-label">
                 <span className="label-icon">⚖️</span>
-                Carga (kg)
+                Carga (kg) <span style={{ color: '#f44336', fontWeight: 'bold' }}>*</span>
                 <span className="value-badge">{form.load}</span>
               </label>
               <input
@@ -219,9 +234,20 @@ const EditSetModal = ({
 
           {/* Estado del Set */}
           <div className="form-field form-field-full">
-            <label className="form-label">
+            <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span className="label-icon">🎯</span>
               Estado del Set
+              <span style={{ color: '#f44336', fontWeight: 'bold' }}>*</span>
+              {!form.status && (
+                <span style={{ 
+                  fontSize: 10, 
+                  color: '#ff9800', 
+                  marginLeft: 8,
+                  fontWeight: 'normal'
+                }}>
+                  (Seleccioná uno)
+                </span>
+              )}
             </label>
             <div
               style={{

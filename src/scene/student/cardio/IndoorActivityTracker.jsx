@@ -12,7 +12,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import CloseIcon from '@mui/icons-material/Close';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import { getActivityInfo, INDOOR_ACTIVITIES } from '../../../api/activityTrackerApi';
+import { getActivityInfo, INDOOR_ACTIVITIES, estimateSteps, saveManualSteps } from '../../../api/activityTrackerApi';
 import { createCardio } from '../../../api/cardioApi';
 
 const COLORS = {
@@ -137,9 +137,10 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
       };
 
       const durationMinutes = Math.ceil(elapsedSeconds / 60);
+      const todayDate = getLocalDateString();
       
       await createCardio(studentId, {
-        date: getLocalDateString(),
+        date: todayDate,
         activityType: activityType,
         durationMinutes,
         intensity: durationMinutes > 30 ? 'high' : durationMinutes > 15 ? 'medium' : 'low',
@@ -147,6 +148,26 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
         caloriesBurned: calories ? parseInt(calories) : null,
         notes: notes || `Cronómetro: ${formatTime(elapsedSeconds)}`,
       });
+      
+      // Si es cinta y hay distancia, estimar y guardar pasos
+      if (activityType === 'treadmill' && distance && parseFloat(distance) > 0) {
+        const distanceMeters = parseFloat(distance) * 1000;
+        const estimatedSteps = estimateSteps('treadmill', distanceMeters);
+        
+        if (estimatedSteps > 0) {
+          try {
+            await saveManualSteps(
+              studentId,
+              todayDate,
+              estimatedSteps,
+              `Cinta - ${distance}km`
+            );
+            console.log(`✅ Pasos guardados desde cinta: ${estimatedSteps}`);
+          } catch (stepErr) {
+            console.error('Error guardando pasos:', stepErr);
+          }
+        }
+      }
       
       onComplete();
     } catch (error) {

@@ -37,37 +37,54 @@ const CoachStudents = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active'); // 'all', 'active', 'paused'
   const navigate = useNavigate();
 
-  useEffect(() => {
+  // Cargar alumnos (incluyendo pausados)
+  const loadStudents = () => {
     if (status !== 'authenticated' || !coachUserId) return;
     setLoading(true);
-    getCoachStudentsData(coachUserId)
+    getCoachStudentsData(coachUserId, true) // includeInactive = true
       .then((data) => {
         setStudents(data);
-        setFilteredStudents(data);
       })
       .catch((err) => {
         setError(err);
       })
       .finally(() => setLoading(false));
-  }, [coachUserId, getCoachStudentsData, status]);
+  };
 
-  // Filtrar alumnos por búsqueda
   useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredStudents(students);
-    } else {
+    loadStudents();
+  }, [coachUserId, status]);
+
+  // Filtrar alumnos por búsqueda y estado
+  useEffect(() => {
+    let filtered = students;
+    
+    // Filtrar por estado
+    if (statusFilter === 'active') {
+      filtered = filtered.filter(s => s.isActive !== false);
+    } else if (statusFilter === 'paused') {
+      filtered = filtered.filter(s => s.isActive === false);
+    }
+    
+    // Filtrar por búsqueda
+    if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      setFilteredStudents(
-        students.filter(s => 
-          (s.user?.fullName || `${s.firstName} ${s.lastName}`).toLowerCase().includes(term) ||
-          s.user?.email?.toLowerCase().includes(term) ||
-          s.sport?.name?.toLowerCase().includes(term)
-        )
+      filtered = filtered.filter(s => 
+        (s.user?.fullName || `${s.firstName} ${s.lastName}`).toLowerCase().includes(term) ||
+        s.user?.email?.toLowerCase().includes(term) ||
+        s.sport?.name?.toLowerCase().includes(term)
       );
     }
-  }, [searchTerm, students]);
+    
+    setFilteredStudents(filtered);
+  }, [searchTerm, students, statusFilter]);
+
+  // Contar alumnos por estado
+  const activeCount = students.filter(s => s.isActive !== false).length;
+  const pausedCount = students.filter(s => s.isActive === false).length;
 
   if (loading) {
     return (
@@ -106,12 +123,12 @@ const CoachStudents = () => {
           <GroupIcon /> Mis Alumnos
         </Typography>
         <Typography variant="body2" sx={{ color: '#888' }}>
-          {students.length} alumno{students.length !== 1 ? 's' : ''} asignado{students.length !== 1 ? 's' : ''}
+          {activeCount} activo{activeCount !== 1 ? 's' : ''}{pausedCount > 0 && ` · ${pausedCount} pausado${pausedCount !== 1 ? 's' : ''}`}
         </Typography>
       </Box>
 
-      {/* Buscador */}
-      <Box sx={{ mb: 3 }}>
+      {/* Buscador y Filtro */}
+      <Box sx={{ mb: 3, display: 'flex', gap: 2, flexDirection: isMobile ? 'column' : 'row' }}>
         <TextField
           placeholder="Buscar por nombre, email o deporte..."
           value={searchTerm}
@@ -133,6 +150,26 @@ const CoachStudents = () => {
             }
           }}
         />
+        
+        {/* Filtro de estado nativo */}
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{
+            minWidth: isMobile ? '100%' : '180px',
+            padding: '8px 12px',
+            backgroundColor: 'rgba(255,255,255,0.05)',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '8px',
+            fontSize: '14px',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="all" style={{ backgroundColor: '#1e1e1e' }}>Todos ({students.length})</option>
+          <option value="active" style={{ backgroundColor: '#1e1e1e' }}>Activos ({activeCount})</option>
+          <option value="paused" style={{ backgroundColor: '#1e1e1e' }}>Pausados ({pausedCount})</option>
+        </select>
       </Box>
 
       {/* Lista de Alumnos */}
@@ -153,15 +190,23 @@ const CoachStudents = () => {
               <Card 
                 sx={{ 
                   height: '100%',
-                  background: 'linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%)',
-                  border: '1px solid #333',
+                  background: student.isActive === false 
+                    ? 'linear-gradient(135deg, #1a1a1a 0%, #151515 100%)' 
+                    : 'linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%)',
+                  border: student.isActive === false 
+                    ? '1px solid #f44336' 
+                    : '1px solid #333',
                   borderRadius: 3,
                   transition: 'all 0.3s ease',
                   cursor: 'pointer',
+                  opacity: student.isActive === false ? 0.8 : 1,
                   '&:hover': {
                     transform: 'translateY(-8px)',
-                    boxShadow: '0 12px 32px rgba(255, 179, 0, 0.2)',
-                    borderColor: '#FFB300',
+                    boxShadow: student.isActive === false 
+                      ? '0 12px 32px rgba(244, 67, 54, 0.2)'
+                      : '0 12px 32px rgba(255, 179, 0, 0.2)',
+                    borderColor: student.isActive === false ? '#f44336' : '#FFB300',
+                    opacity: 1,
                   }
                 }}
                 onClick={() => navigate(`/coach/alumno/${student.id}`)}
@@ -196,19 +241,32 @@ const CoachStudents = () => {
                       >
                         {student.user?.fullName || `${student.firstName} ${student.lastName}`}
                       </Typography>
-                      {student.sport && (
-                        <Chip 
-                          label={student.sport.name}
-                          size="small"
-                          sx={{ 
-                            mt: 0.5,
-                            bgcolor: '#70d8bd',
-                            color: '#000',
-                            fontWeight: 600,
-                            fontSize: '0.75rem'
-                          }}
-                        />
-                      )}
+                      <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mt: 0.5 }}>
+                        {student.sport && (
+                          <Chip 
+                            label={student.sport.name}
+                            size="small"
+                            sx={{ 
+                              bgcolor: '#70d8bd',
+                              color: '#000',
+                              fontWeight: 600,
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                        )}
+                        {student.isActive === false && (
+                          <Chip 
+                            label="Pausado"
+                            size="small"
+                            sx={{ 
+                              bgcolor: '#f44336',
+                              color: '#fff',
+                              fontWeight: 600,
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                        )}
+                      </Box>
                     </Box>
                   </Box>
 

@@ -70,6 +70,8 @@ export const CoachFees = () => {
     cancelPriceSchedule,
     getCoachPlanPrices,
     saveCoachPlanPrices,
+    applyScheduledIncreases,
+    generateFutureFees,
   } = useFeesStore();
 
   const [loading, setLoading] = useState(true);
@@ -103,8 +105,11 @@ export const CoachFees = () => {
         : new Date().getFullYear(),
     amount: "",
     description: "",
+    sportPlanId: "", // Opcional: para aumento específico por plan
   });
   const [savingSchedule, setSavingSchedule] = useState(false);
+  const [applyingIncreases, setApplyingIncreases] = useState(false);
+  const [generatingFees, setGeneratingFees] = useState(false);
 
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(
@@ -246,21 +251,34 @@ export const CoachFees = () => {
 
     try {
       setSavingSchedule(true);
-      await createPriceSchedule({
+      const scheduleData = {
         effectiveMonth: parseInt(newSchedule.effectiveMonth),
         effectiveYear: parseInt(newSchedule.effectiveYear),
         amount: parseFloat(newSchedule.amount),
         description: newSchedule.description,
-      });
+      };
+      
+      // Si se seleccionó un plan específico, agregarlo
+      if (newSchedule.sportPlanId) {
+        scheduleData.sportPlanId = parseInt(newSchedule.sportPlanId);
+      }
+      
+      await createPriceSchedule(scheduleData);
+      
+      const planName = newSchedule.sportPlanId 
+        ? planPrices.find(p => p.id === parseInt(newSchedule.sportPlanId))?.name 
+        : 'todos los planes';
+      
       setSnackbar({
         open: true,
-        message: "✅ Aumento programado",
+        message: `✅ Aumento programado para ${planName}`,
         severity: "success",
       });
       setNewSchedule({
         ...newSchedule,
         amount: "",
         description: "",
+        sportPlanId: "",
       });
       loadPriceSchedules();
     } catch (error) {
@@ -291,6 +309,54 @@ export const CoachFees = () => {
         message: "❌ Error al cancelar",
         severity: "error",
       });
+    }
+  };
+
+  // Aplicar aumentos a cuotas pendientes
+  const handleApplyIncreases = async () => {
+    try {
+      setApplyingIncreases(true);
+      const result = await applyScheduledIncreases();
+      setSnackbar({
+        open: true,
+        message: result.message || "✅ Aumentos aplicados",
+        severity: result.updatedFees > 0 ? "success" : "info",
+      });
+      // Recargar cuotas para ver los cambios
+      loadFees();
+    } catch (error) {
+      console.error("Error aplicando aumentos:", error);
+      setSnackbar({
+        open: true,
+        message: "❌ Error al aplicar aumentos",
+        severity: "error",
+      });
+    } finally {
+      setApplyingIncreases(false);
+    }
+  };
+
+  // Generar cuotas futuras
+  const handleGenerateFutureFees = async () => {
+    try {
+      setGeneratingFees(true);
+      const result = await generateFutureFees();
+      setSnackbar({
+        open: true,
+        message: result.message || "✅ Cuotas generadas",
+        severity: result.generated > 0 ? "success" : "info",
+      });
+      // Recargar cuotas para ver las nuevas
+      loadFees();
+    } catch (error) {
+      console.error("Error generando cuotas:", error);
+      setSnackbar({
+        open: true,
+        message: "❌ Error al generar cuotas",
+        severity: "error",
+      });
+    } finally {
+      setGeneratingFees(false);
     }
   };
 
@@ -658,78 +724,124 @@ export const CoachFees = () => {
 
             {/* Formulario para nuevo aumento */}
             <Grid container spacing={2} mb={3}>
-              <Grid item xs={6} sm={3}>
-                <Select
-                  fullWidth
+              {/* Selector de plan (Opción B - mobile first) */}
+              <Grid item xs={12} sm={4}>
+                <select
+                  value={newSchedule.sportPlanId}
+                  onChange={(e) =>
+                    setNewSchedule({
+                      ...newSchedule,
+                      sportPlanId: e.target.value,
+                    })
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    color: "white",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="" style={{ backgroundColor: "#1a1a2e" }}>
+                    📋 Todos los planes
+                  </option>
+                  {planPrices.map((plan) => (
+                    <option 
+                      key={plan.id} 
+                      value={plan.id}
+                      style={{ backgroundColor: "#1a1a2e" }}
+                    >
+                      {plan.name} (${(plan.coachPrice || plan.defaultPrice)?.toLocaleString()})
+                    </option>
+                  ))}
+                </select>
+              </Grid>
+              <Grid item xs={6} sm={2}>
+                <select
                   value={newSchedule.effectiveMonth}
                   onChange={(e) =>
                     setNewSchedule({
                       ...newSchedule,
-                      effectiveMonth: e.target.value,
+                      effectiveMonth: parseInt(e.target.value),
                     })
                   }
-                  size="small"
-                  sx={{
-                    bgcolor: "rgba(255,255,255,0.1)",
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                    backgroundColor: "rgba(255,255,255,0.1)",
                     color: "white",
-                    "& .MuiSelect-icon": { color: "white" },
+                    fontSize: "14px",
+                    cursor: "pointer",
                   }}
                 >
                   {monthOptions.map((opt) => (
-                    <MenuItem key={opt.value} value={parseInt(opt.value)}>
+                    <option 
+                      key={opt.value} 
+                      value={parseInt(opt.value)}
+                      style={{ backgroundColor: "#1a1a2e" }}
+                    >
                       {opt.label}
-                    </MenuItem>
+                    </option>
                   ))}
-                </Select>
+                </select>
               </Grid>
               <Grid item xs={6} sm={2}>
-                <Select
-                  fullWidth
+                <select
                   value={newSchedule.effectiveYear}
                   onChange={(e) =>
                     setNewSchedule({
                       ...newSchedule,
-                      effectiveYear: e.target.value,
+                      effectiveYear: parseInt(e.target.value),
                     })
                   }
-                  size="small"
-                  sx={{
-                    bgcolor: "rgba(255,255,255,0.1)",
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                    backgroundColor: "rgba(255,255,255,0.1)",
                     color: "white",
-                    "& .MuiSelect-icon": { color: "white" },
+                    fontSize: "14px",
+                    cursor: "pointer",
                   }}
                 >
                   {yearOptions.map((opt) => (
-                    <MenuItem key={opt.value} value={parseInt(opt.value)}>
+                    <option 
+                      key={opt.value} 
+                      value={parseInt(opt.value)}
+                      style={{ backgroundColor: "#1a1a2e" }}
+                    >
                       {opt.label}
-                    </MenuItem>
+                    </option>
                   ))}
-                </Select>
+                </select>
               </Grid>
-              <Grid item xs={12} sm={3}>
-                <TextField
-                  fullWidth
+              <Grid item xs={12} sm={4}>
+                <input
                   type="number"
-                  label="Nuevo Monto"
+                  placeholder="Nuevo Monto"
                   value={newSchedule.amount}
                   onChange={(e) =>
                     setNewSchedule({ ...newSchedule, amount: e.target.value })
                   }
-                  size="small"
-                  placeholder="40000"
-                  sx={{
-                    "& .MuiInputBase-root": {
-                      bgcolor: "rgba(255,255,255,0.1)",
-                      color: "white",
-                    },
-                    "& .MuiInputLabel-root": { color: "rgba(255,255,255,0.7)" },
-                    "& .MuiOutlinedInput-notchedOutline": {
-                      borderColor: "rgba(255,255,255,0.3)",
-                    },
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    borderRadius: "4px",
+                    border: "1px solid rgba(255,255,255,0.3)",
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                    color: "white",
+                    fontSize: "14px",
+                    boxSizing: "border-box",
                   }}
                 />
               </Grid>
-              <Grid item xs={12} sm={4}>
+              <Grid item xs={12}>
                 <Button
                   fullWidth
                   variant="contained"
@@ -737,7 +849,7 @@ export const CoachFees = () => {
                   disabled={savingSchedule || !newSchedule.amount}
                   sx={{
                     bgcolor: COLORS.green,
-                    height: "40px",
+                    height: "44px",
                     "&:hover": { bgcolor: "#388e3c" },
                   }}
                 >
@@ -745,6 +857,49 @@ export const CoachFees = () => {
                 </Button>
               </Grid>
             </Grid>
+
+            {/* Botones de acciones rápidas */}
+            <Box sx={{ display: 'flex', gap: 2, mt: 3, flexWrap: 'wrap' }}>
+              <Button
+                variant="outlined"
+                onClick={handleApplyIncreases}
+                disabled={applyingIncreases || priceSchedules.length === 0}
+                sx={{
+                  borderColor: COLORS.orange,
+                  color: COLORS.orange,
+                  "&:hover": { 
+                    bgcolor: "rgba(255, 152, 0, 0.1)",
+                    borderColor: COLORS.orange,
+                  },
+                  "&:disabled": {
+                    borderColor: "rgba(255, 152, 0, 0.3)",
+                    color: "rgba(255, 152, 0, 0.3)",
+                  },
+                }}
+              >
+                {applyingIncreases ? "Aplicando..." : "📊 Aplicar Aumentos a Cuotas Pendientes"}
+              </Button>
+              
+              <Button
+                variant="outlined"
+                onClick={handleGenerateFutureFees}
+                disabled={generatingFees}
+                sx={{
+                  borderColor: COLORS.blue,
+                  color: COLORS.blue,
+                  "&:hover": { 
+                    bgcolor: "rgba(33, 150, 243, 0.1)",
+                    borderColor: COLORS.blue,
+                  },
+                }}
+              >
+                {generatingFees ? "Generando..." : "📅 Generar Cuotas Futuras"}
+              </Button>
+            </Box>
+
+            <Typography variant="caption" color="rgba(255,255,255,0.5)" sx={{ mt: 1, display: 'block' }}>
+              💡 "Aplicar Aumentos" actualiza cuotas pendientes existentes. "Generar Cuotas" crea cuotas para los próximos 3 meses.
+            </Typography>
 
             {/* Lista de aumentos programados */}
             {priceSchedules.length > 0 && (
@@ -786,6 +941,24 @@ export const CoachFees = () => {
                               >
                                 ${schedule.amount?.toLocaleString()}
                               </Typography>
+                              {schedule.sportPlan?.name && (
+                                <Typography
+                                  variant="caption"
+                                  color={COLORS.orange}
+                                  display="block"
+                                >
+                                  📋 {schedule.sportPlan.name}
+                                </Typography>
+                              )}
+                              {!schedule.sportPlan && !schedule.studentName && (
+                                <Typography
+                                  variant="caption"
+                                  color="rgba(255,255,255,0.5)"
+                                  display="block"
+                                >
+                                  Todos los planes
+                                </Typography>
+                              )}
                               {schedule.studentName && (
                                 <Typography
                                   variant="caption"
@@ -1103,14 +1276,30 @@ export const CoachFees = () => {
                   </Box>
 
                   {/* Vencimiento */}
-                  <Typography
-                    variant="caption"
-                    color="rgba(255,255,255,0.5)"
-                    display="block"
-                    mb={2}
+                  <Box
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      bgcolor: 'rgba(255, 179, 0, 0.15)',
+                      border: '1px solid rgba(255, 179, 0, 0.3)',
+                      borderRadius: '6px',
+                      px: 1.5,
+                      py: 0.5,
+                      mb: 2,
+                    }}
                   >
-                    Vence: día {fee.dueDayOfMonth} de cada mes
-                  </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ 
+                        color: '#FFB300',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                      }}
+                    >
+                      📅 Vence: {fee.dueDayOfMonth}/{fee.month < 10 ? '0' + fee.month : fee.month}/{fee.year}
+                    </Typography>
+                  </Box>
 
                   {/* Estado y botón */}
                   <Box
