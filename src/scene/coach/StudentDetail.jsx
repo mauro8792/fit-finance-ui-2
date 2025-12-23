@@ -122,6 +122,7 @@ import StepsProgressChart from '../../components/charts/StepsProgressChart';
 import WeightProgressChart from '../../components/charts/WeightProgressChart';
 import StepsWeightCorrelationChart from '../../components/charts/StepsWeightCorrelationChart';
 import NutritionWeeklyChart from '../../components/charts/NutritionWeeklyChart';
+import FullscreenChartWrapper from '../../components/charts/FullscreenChartWrapper';
 import { 
   LineChart, 
   Line, 
@@ -2156,7 +2157,9 @@ const StudentDetail = () => {
                     overflow: 'hidden',
                     minWidth: 0,
                   }}>
-                    <StepsProgressChart studentId={student?.id} studentName={student?.firstName} />
+                    <FullscreenChartWrapper title="Evolución de Pasos">
+                      <StepsProgressChart studentId={student?.id} studentName={student?.firstName} />
+                    </FullscreenChartWrapper>
                   </Box>
                 </Box>
 
@@ -2170,7 +2173,9 @@ const StudentDetail = () => {
                     overflow: 'hidden',
                     minWidth: 0,
                   }}>
+                    <FullscreenChartWrapper title="Evolución de Peso">
                     <WeightProgressChart studentId={student?.id} studentName={student?.firstName} />
+                    </FullscreenChartWrapper>
                   </Box>
                 </Box>
 
@@ -2184,7 +2189,9 @@ const StudentDetail = () => {
                     overflow: 'hidden',
                     minWidth: 0,
                   }}>
-                    <StepsWeightCorrelationChart studentId={student?.id} studentName={student?.firstName} />
+                    <FullscreenChartWrapper title="Correlación Pasos - Peso">
+                      <StepsWeightCorrelationChart studentId={student?.id} studentName={student?.firstName} />
+                    </FullscreenChartWrapper>
                   </Box>
                 </Box>
 
@@ -2198,7 +2205,9 @@ const StudentDetail = () => {
                     overflow: 'hidden',
                     minWidth: 0,
                   }}>
+                    <FullscreenChartWrapper title="Nutrición Semanal">
                     <NutritionWeeklyChart studentId={student?.id} />
+                    </FullscreenChartWrapper>
                   </Box>
                 </Box>
 
