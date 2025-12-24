@@ -99,13 +99,13 @@ const TemplateCard = ({ template, onAssign, onEdit, onDelete, onDuplicate }) => 
         {/* Header con color de categoría */}
         <Box
           sx={{
-            height: 6,
+            height: 4,
             background: `linear-gradient(90deg, ${categoryInfo.color} 0%, ${categoryInfo.color}88 100%)`,
           }}
         />
 
         {/* Contenido */}
-        <Box sx={{ p: 2.5 }}>
+        <Box sx={{ p: { xs: 2, md: 2.5 } }}>
           {/* Top row: categoría + menú */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
             <Chip
@@ -138,7 +138,7 @@ const TemplateCard = ({ template, onAssign, onEdit, onDelete, onDuplicate }) => 
             variant="h6" 
             fontWeight={700} 
             color={colors.grey[100]}
-            sx={{ mb: 0.5, lineHeight: 1.3 }}
+            sx={{ mb: 0.5, lineHeight: 1.2, fontSize: { xs: 16, md: 18 } }}
           >
             {template.templateName || template.name}
           </Typography>
@@ -149,37 +149,54 @@ const TemplateCard = ({ template, onAssign, onEdit, onDelete, onDuplicate }) => 
               variant="body2" 
               color={colors.grey[400]}
               sx={{ 
-                mb: 2,
+                mb: 1.5,
                 display: '-webkit-box',
                 WebkitLineClamp: 2,
                 WebkitBoxOrient: 'vertical',
                 overflow: 'hidden',
                 lineHeight: 1.4,
+                fontSize: { xs: 12, md: 13 },
               }}
             >
               {template.templateDescription}
             </Typography>
           )}
 
-          {/* Stats */}
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <CalendarTodayIcon sx={{ fontSize: 16, color: colors.greenAccent[500] }} />
-              <Typography variant="body2" color={colors.grey[300]}>
+          {/* Stats - más compactos */}
+          <Box sx={{ display: 'flex', gap: { xs: 1.5, md: 2 }, mb: 1.5, flexWrap: 'wrap' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 0.5,
+              background: `${colors.greenAccent[600]}15`,
+              px: 1,
+              py: 0.3,
+              borderRadius: 1,
+            }}>
+              <CalendarTodayIcon sx={{ fontSize: 14, color: colors.greenAccent[500] }} />
+              <Typography variant="body2" color={colors.grey[300]} fontSize={12}>
                 {template.microcyclesCount || 0} semanas
               </Typography>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <FitnessCenterIcon sx={{ fontSize: 16, color: colors.blueAccent[400] }} />
-              <Typography variant="body2" color={colors.grey[300]}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: 0.5,
+              background: `${colors.blueAccent[500]}15`,
+              px: 1,
+              py: 0.3,
+              borderRadius: 1,
+            }}>
+              <FitnessCenterIcon sx={{ fontSize: 14, color: colors.blueAccent[400] }} />
+              <Typography variant="body2" color={colors.grey[300]} fontSize={12}>
                 {template.totalExercises || 0} ejercicios
               </Typography>
             </Box>
           </Box>
 
-          {/* Tags */}
+          {/* Tags - más compactos */}
           {tags.length > 0 && (
-            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 2 }}>
+            <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', mb: 1.5 }}>
               {tags.slice(0, 3).map((tag, idx) => (
                 <Chip
                   key={idx}
@@ -187,7 +204,7 @@ const TemplateCard = ({ template, onAssign, onEdit, onDelete, onDuplicate }) => 
                   size="small"
                   sx={{
                     fontSize: 10,
-                    height: 20,
+                    height: 18,
                     backgroundColor: colors.primary[500],
                     color: colors.grey[400],
                   }}
@@ -199,7 +216,7 @@ const TemplateCard = ({ template, onAssign, onEdit, onDelete, onDuplicate }) => 
                   size="small"
                   sx={{
                     fontSize: 10,
-                    height: 20,
+                    height: 18,
                     backgroundColor: colors.primary[500],
                     color: colors.grey[400],
                   }}
@@ -208,17 +225,19 @@ const TemplateCard = ({ template, onAssign, onEdit, onDelete, onDuplicate }) => 
             </Box>
           )}
 
-          {/* Botones de acción */}
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          {/* Botones de acción - más compactos */}
+          <Box sx={{ display: 'flex', gap: 1, mt: 'auto' }}>
             <Button
               variant="contained"
               size="small"
-              startIcon={<PersonAddIcon />}
+              startIcon={<PersonAddIcon sx={{ fontSize: '16px !important' }} />}
               onClick={onAssign}
               fullWidth
               sx={{
                 background: `linear-gradient(135deg, ${colors.greenAccent[600]} 0%, ${colors.greenAccent[700]} 100%)`,
                 fontWeight: 600,
+                py: 0.8,
+                fontSize: 12,
                 '&:hover': {
                   background: `linear-gradient(135deg, ${colors.greenAccent[500]} 0%, ${colors.greenAccent[600]} 100%)`,
                 },
@@ -232,16 +251,18 @@ const TemplateCard = ({ template, onAssign, onEdit, onDelete, onDuplicate }) => 
                 size="small"
                 onClick={onEdit}
                 sx={{
-                  minWidth: 40,
+                  minWidth: 38,
+                  px: 1,
                   borderColor: colors.grey[600],
                   color: colors.grey[300],
                   '&:hover': {
                     borderColor: colors.blueAccent[400],
                     color: colors.blueAccent[400],
+                    background: `${colors.blueAccent[400]}15`,
                   },
                 }}
               >
-                <EditIcon fontSize="small" />
+                <EditIcon sx={{ fontSize: 18 }} />
               </Button>
             </Tooltip>
           </Box>

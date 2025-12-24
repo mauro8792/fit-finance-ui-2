@@ -6,6 +6,7 @@ import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
 import SportsMmaIcon from '@mui/icons-material/SportsMma';
 import { tokens } from '../../theme';
 import ProfileSwitcher from '../../components/ProfileSwitcher';
+import NotificationBell from '../../components/notifications/NotificationBell';
 
 const Topbar = () => {
   const theme = useTheme();
@@ -104,7 +105,10 @@ const Topbar = () => {
           }
         </Typography>
         
-        <IconButton color='inherit'>
+        {/* Campanita de notificaciones */}
+        <NotificationBell />
+        
+        <IconButton color='inherit' sx={{ display: { xs: 'none', sm: 'flex' } }}>
           <PersonOutlinedIcon />
         </IconButton>
         <IconButton color='inherit' onClick={startLogout}>
