@@ -6,12 +6,14 @@ import {
   IconButton,
   TextField,
   Fade,
+  Alert,
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
 import StopIcon from '@mui/icons-material/Stop';
 import CloseIcon from '@mui/icons-material/Close';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import RestoreIcon from '@mui/icons-material/Restore';
 import { getActivityInfo, INDOOR_ACTIVITIES, estimateSteps, saveManualSteps } from '../../../api/activityTrackerApi';
 import { createCardio } from '../../../api/cardioApi';
 
@@ -25,6 +27,27 @@ const COLORS = {
   green: '#4cceac',
   red: '#ef4444',
   blue: '#6870fa',
+};
+
+// Key para localStorage
+const STORAGE_KEY = 'cardio_session';
+
+// Helpers para persistencia
+const saveSession = (sessionData) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(sessionData));
+};
+
+const getSession = () => {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+};
+
+const clearSession = () => {
+  localStorage.removeItem(STORAGE_KEY);
 };
 
 const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }) => {
@@ -47,6 +70,10 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
   const [calories, setCalories] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  
+  // Estado para sesión recuperada
+  const [hasRestoredSession, setHasRestoredSession] = useState(false);
+  const [pendingSession, setPendingSession] = useState(null);
 
   // Formatear tiempo
   const formatTime = (seconds) => {
@@ -58,6 +85,72 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
       return `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     }
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+  };
+
+  // Verificar si hay sesión pendiente al montar
+  useEffect(() => {
+    const session = getSession();
+    if (session && session.activityType === activityType && session.studentId === studentId) {
+      // Hay una sesión previa para esta misma actividad
+      setPendingSession(session);
+    }
+  }, [activityType, studentId]);
+
+  // Guardar sesión cuando cambia el estado
+  useEffect(() => {
+    if (status === 'running' || status === 'paused') {
+      saveSession({
+        studentId,
+        activityType,
+        status,
+        startTimestamp: startTimestampRef.current,
+        pausedTime: pausedTimeRef.current,
+        elapsedSeconds,
+        startTime: startTime?.toISOString(),
+        savedAt: Date.now(),
+      });
+    } else if (status === 'finished' || status === 'ready') {
+      // Solo limpiar si no hay sesión pendiente
+      if (!pendingSession) {
+        // No limpiar si está ready (podría haber sesión pendiente)
+      }
+    }
+  }, [status, elapsedSeconds, studentId, activityType, startTime, pendingSession]);
+
+  // Restaurar sesión
+  const handleRestoreSession = () => {
+    if (!pendingSession) return;
+    
+    const { status: savedStatus, startTimestamp, pausedTime, elapsedSeconds: savedElapsed, startTime: savedStartTime } = pendingSession;
+    
+    // Restaurar refs
+    startTimestampRef.current = startTimestamp;
+    pausedTimeRef.current = pausedTime;
+    
+    // Si estaba running, calcular tiempo transcurrido desde que se guardó
+    if (savedStatus === 'running' && startTimestamp) {
+      const now = Date.now();
+      const elapsed = Math.floor((now - startTimestamp) / 1000) + pausedTime;
+      setElapsedSeconds(elapsed);
+      setStatus('running');
+    } else {
+      // Si estaba paused, restaurar el tiempo guardado
+      setElapsedSeconds(savedElapsed);
+      setStatus('paused');
+    }
+    
+    if (savedStartTime) {
+      setStartTime(new Date(savedStartTime));
+    }
+    
+    setPendingSession(null);
+    setHasRestoredSession(true);
+  };
+
+  // Descartar sesión pendiente
+  const handleDiscardSession = () => {
+    clearSession();
+    setPendingSession(null);
   };
 
   // Timer basado en timestamps (funciona aunque la app esté en segundo plano)
@@ -118,12 +211,14 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
 
   const handleStop = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    clearSession(); // Limpiar sesión al finalizar
     setStatus('finished');
     setShowFinishForm(true);
   };
 
   const handleCancel = () => {
     if (timerRef.current) clearInterval(timerRef.current);
+    clearSession(); // Limpiar sesión al cancelar
     onCancel();
   };
 
@@ -169,6 +264,7 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
         }
       }
       
+      clearSession(); // Limpiar sesión después de guardar exitosamente
       onComplete();
     } catch (error) {
       console.error('Error guardando actividad:', error);
@@ -474,7 +570,57 @@ const IndoorActivityTracker = ({ studentId, activityType, onComplete, onCancel }
           borderTop: '1px solid rgba(255,255,255,0.1)',
         }}
       >
-        {status === 'ready' && (
+        {status === 'ready' && pendingSession && (
+          <Box>
+            <Alert 
+              severity="info" 
+              sx={{ 
+                mb: 2, 
+                backgroundColor: 'rgba(255,152,0,0.15)',
+                color: COLORS.text,
+                border: '1px solid rgba(255,152,0,0.3)',
+                '& .MuiAlert-icon': { color: COLORS.orange },
+              }}
+            >
+              <Typography fontWeight="bold" fontSize={14}>
+                ⏱️ Sesión en progreso detectada
+              </Typography>
+              <Typography fontSize={12} color={COLORS.textMuted}>
+                {formatTime(pendingSession.elapsedSeconds)} • {pendingSession.status === 'running' ? 'Corriendo' : 'En pausa'}
+              </Typography>
+            </Alert>
+            <Box sx={{ display: 'flex', gap: 2 }}>
+              <Button
+                fullWidth
+                onClick={handleDiscardSession}
+                sx={{
+                  py: 1.5,
+                  background: 'rgba(255,255,255,0.1)',
+                  color: COLORS.text,
+                  borderRadius: 3,
+                }}
+              >
+                Descartar
+              </Button>
+              <Button
+                fullWidth
+                onClick={handleRestoreSession}
+                sx={{
+                  py: 1.5,
+                  background: 'linear-gradient(135deg, #4cceac 0%, #3da58a 100%)',
+                  color: '#fff',
+                  borderRadius: 3,
+                  fontWeight: 'bold',
+                }}
+              >
+                <RestoreIcon sx={{ mr: 1 }} />
+                Continuar
+              </Button>
+            </Box>
+          </Box>
+        )}
+
+        {status === 'ready' && !pendingSession && (
           <Button
             fullWidth
             onClick={handleStart}

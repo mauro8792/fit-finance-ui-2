@@ -12,7 +12,14 @@ import {
   Autocomplete,
   Alert,
 } from '@mui/material';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import { useStudentsStore, useSportsStore, useCoachesStore } from '../../hooks';
+import DatePicker, { registerLocale } from 'react-datepicker';
+import { es } from 'date-fns/locale';
+import 'react-datepicker/dist/react-datepicker.css';
+
+// Registrar locale español
+registerLocale('es', es);
 
 const UpdateStudent = ({ open, onClose, studentId, onSuccess }) => {
   const { getStudentById, updateStudent, loading } = useStudentsStore();
@@ -30,6 +37,12 @@ const UpdateStudent = ({ open, onClose, studentId, onSuccess }) => {
     coachId: '',
     isActive: true,
   });
+  
+  // Campos para cambio de contraseña
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  
   const [error, setError] = useState('');
   const [loadingData, setLoadingData] = useState(true);
 
@@ -92,7 +105,32 @@ const UpdateStudent = ({ open, onClose, studentId, onSuccess }) => {
   const handleSubmit = async () => {
     try {
       setError('');
-      await updateStudent(studentId, formData);
+      
+      // Validar contraseñas si se quiere cambiar
+      if (showPasswordSection && newPassword) {
+        if (newPassword.length < 8) {
+          setError('La contraseña debe tener al menos 8 caracteres');
+          return;
+        }
+        if (newPassword !== confirmPassword) {
+          setError('Las contraseñas no coinciden');
+          return;
+        }
+      }
+      
+      // Preparar datos para enviar
+      const dataToSend = { ...formData };
+      if (showPasswordSection && newPassword) {
+        dataToSend.newPassword = newPassword;
+      }
+      
+      await updateStudent(studentId, dataToSend);
+      
+      // Limpiar campos de contraseña
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPasswordSection(false);
+      
       onSuccess?.();
       onClose();
     } catch (err) {
@@ -158,24 +196,105 @@ const UpdateStudent = ({ open, onClose, studentId, onSuccess }) => {
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Fecha de Nacimiento"
-                  type="date"
-                  value={formData.birthDate}
-                  onChange={(e) => handleInputChange('birthDate', e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block' }}>
+                    Fecha de Nacimiento
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    bgcolor: 'rgba(255,255,255,0.05)',
+                    borderRadius: 1,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    p: 1.5,
+                  }}>
+                    <CalendarTodayIcon sx={{ color: '#ff9800', fontSize: 20 }} />
+                    <DatePicker
+                      selected={formData.birthDate ? new Date(formData.birthDate) : null}
+                      onChange={(date) => {
+                        if (date) {
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          handleInputChange('birthDate', `${year}-${month}-${day}`);
+                        } else {
+                          handleInputChange('birthDate', '');
+                        }
+                      }}
+                      dateFormat="dd/MM/yyyy"
+                      locale="es"
+                      showYearDropdown
+                      showMonthDropdown
+                      dropdownMode="select"
+                      yearDropdownItemNumber={100}
+                      scrollableYearDropdown
+                      maxDate={new Date()}
+                      placeholderText="dd/mm/aaaa"
+                      customInput={
+                        <input
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#fff',
+                            fontSize: '16px',
+                            width: '100%',
+                            outline: 'none',
+                          }}
+                        />
+                      }
+                    />
+                  </Box>
+                </Box>
               </Grid>
               <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Fecha de Inicio"
-                  type="date"
-                  value={formData.startDate}
-                  onChange={(e) => handleInputChange('startDate', e.target.value)}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                />
+                <Box>
+                  <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block' }}>
+                    Fecha de Inicio
+                  </Typography>
+                  <Box sx={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 1,
+                    bgcolor: 'rgba(255,255,255,0.05)',
+                    borderRadius: 1,
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    p: 1.5,
+                  }}>
+                    <CalendarTodayIcon sx={{ color: '#ff9800', fontSize: 20 }} />
+                    <DatePicker
+                      selected={formData.startDate ? new Date(formData.startDate) : null}
+                      onChange={(date) => {
+                        if (date) {
+                          const year = date.getFullYear();
+                          const month = String(date.getMonth() + 1).padStart(2, '0');
+                          const day = String(date.getDate()).padStart(2, '0');
+                          handleInputChange('startDate', `${year}-${month}-${day}`);
+                        } else {
+                          handleInputChange('startDate', '');
+                        }
+                      }}
+                      dateFormat="dd/MM/yyyy"
+                      locale="es"
+                      showYearDropdown
+                      showMonthDropdown
+                      dropdownMode="select"
+                      placeholderText="dd/mm/aaaa"
+                      customInput={
+                        <input
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#fff',
+                            fontSize: '16px',
+                            width: '100%',
+                            outline: 'none',
+                          }}
+                        />
+                      }
+                    />
+                  </Box>
+                </Box>
               </Grid>
 
               <Grid item xs={12}>
@@ -214,6 +333,55 @@ const UpdateStudent = ({ open, onClose, studentId, onSuccess }) => {
                     </Box>
                   )}
                 />
+              </Grid>
+
+              {/* Sección de Cambio de Contraseña */}
+              <Grid item xs={12}>
+                <Box sx={{ mt: 3, pt: 2, borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                  <Button
+                    variant="text"
+                    onClick={() => setShowPasswordSection(!showPasswordSection)}
+                    sx={{ color: '#ff9800', mb: 1 }}
+                  >
+                    🔐 {showPasswordSection ? 'Ocultar cambio de contraseña' : 'Cambiar contraseña'}
+                  </Button>
+                  
+                  {showPasswordSection && (
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          Dejá en blanco si no querés cambiar la contraseña
+                        </Alert>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label="Nueva Contraseña"
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          fullWidth
+                          helperText="Mínimo 8 caracteres"
+                          error={newPassword.length > 0 && newPassword.length < 8}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <TextField
+                          label="Confirmar Contraseña"
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          fullWidth
+                          error={confirmPassword.length > 0 && newPassword !== confirmPassword}
+                          helperText={
+                            confirmPassword.length > 0 && newPassword !== confirmPassword
+                              ? 'Las contraseñas no coinciden'
+                              : ''
+                          }
+                        />
+                      </Grid>
+                    </Grid>
+                  )}
+                </Box>
               </Grid>
             </Grid>
           </Box>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Grid,
@@ -26,17 +27,14 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { useStudentsStore, useSportsStore, useCoachesStore } from '../../hooks';
 import StudentWizard from './StudentWizard';
-import NewStudentWizard from './NewStudentWizard';
 import ViewStudent from './ViewStudent';
-import UpdateStudent from './UpdateStudent';
 
 const AdminStudents = () => {
   const theme = useTheme();
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [openWizard, setOpenWizard] = useState(false);
-  const [openNewWizard, setOpenNewWizard] = useState(false);
   const [openView, setOpenView] = useState(false);
-  const [openEdit, setOpenEdit] = useState(false);
   const [selectedStudentId, setSelectedStudentId] = useState(null);
 
   const {
@@ -78,8 +76,7 @@ const AdminStudents = () => {
   };
 
   const handleEditStudent = (studentId) => {
-    setSelectedStudentId(studentId);
-    setOpenEdit(true);
+    navigate(`/admin-students/edit/${studentId}`);
   };
 
   const handleToggleActive = async (studentId) => {
@@ -307,7 +304,7 @@ const AdminStudents = () => {
         <Button
           variant="outlined"
           startIcon={<AddIcon />}
-          onClick={() => setOpenNewWizard(true)}
+          onClick={() => navigate('/admin-students/new')}
           sx={{ whiteSpace: 'nowrap' }}
         >
           Crear Nuevo Estudiante
@@ -338,22 +335,12 @@ const AdminStudents = () => {
         onClose={() => setOpenWizard(false)}
       />
 
-      <NewStudentWizard
-        open={openNewWizard}
-        onClose={() => setOpenNewWizard(false)}
-      />
-
       <ViewStudent
         open={openView}
         onClose={() => setOpenView(false)}
         studentId={selectedStudentId}
       />
 
-      <UpdateStudent
-        open={openEdit}
-        onClose={() => setOpenEdit(false)}
-        studentId={selectedStudentId}
-      />
     </Box>
   );
 };
