@@ -14,9 +14,12 @@ import {
   Card,
   CardContent,
   IconButton,
+  InputAdornment,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { useTheme } from '@mui/material/styles';
 import { useStudentsStore, useSportsStore, useCoachesStore } from '../../hooks';
 import DatePicker, { registerLocale } from 'react-datepicker';
@@ -124,6 +127,8 @@ const NewStudentPage = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { createCompleteStudent, loading } = useStudentsStore();
   const { sports, findAllSports } = useSportsStore();
@@ -255,25 +260,51 @@ const NewStudentPage = () => {
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Contraseña *"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   error={!!formErrors.password}
                   helperText={formErrors.password || 'Mínimo 8 caracteres'}
                   fullWidth
                   InputLabelProps={{ style: { color: COLORS.textMuted } }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          sx={{ color: COLORS.textMuted }}
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="Confirmar Contraseña *"
-                  type="password"
+                  type={showConfirmPassword ? 'text' : 'password'}
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
                   error={!!formErrors.confirmPassword}
                   helperText={formErrors.confirmPassword}
                   fullWidth
                   InputLabelProps={{ style: { color: COLORS.textMuted } }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          edge="end"
+                          sx={{ color: COLORS.textMuted }}
+                        >
+                          {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
                 />
               </Grid>
             </Grid>

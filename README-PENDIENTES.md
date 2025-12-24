@@ -24,6 +24,15 @@
 - [x] Stepper de 3 pasos para crear alumno
 - [x] Validación de confirmar contraseña
 - [x] DatePicker con formato dd/mm/aaaa en español
+- [x] Botón ojito para ver/ocultar contraseñas
+
+### Coach - Biblioteca de Plantillas
+- [x] Crear página `/coach/templates/new` (reemplaza modal que se cerraba en PWA)
+- [x] Editar plantilla ahora navega dentro de la app (no abre pestaña nueva)
+
+### Coach - Microciclos
+- [x] Botón "Volver" agregado en vista de detalle de microciclo
+- [x] Crear página `/coach/microcycle/:id/add-exercise` (reemplaza modal que se cerraba en PWA)
 
 ### Cardio sin GPS
 - [x] Quitar tracking GPS outdoor (PWA no soporta GPS en background)

@@ -275,6 +275,28 @@ const MicrocycleDetail = () => {
       transform: isTransitioning ? 'scale(0.98)' : 'scale(1)',
       transition: 'opacity 0.15s ease-out, transform 0.15s ease-out',
     }}>
+      {/* Botón volver */}
+      <button
+        onClick={() => navigate(-1)}
+        style={{
+          background: '#1e1e1e',
+          border: 'none',
+          color: '#ffd700',
+          fontSize: 14,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          marginBottom: 12,
+          padding: '8px 12px',
+          borderRadius: 8,
+          fontWeight: 600,
+          width: 'fit-content',
+        }}
+      >
+        ← Volver
+      </button>
+
       {/* Header simplificado */}
       <div style={{ marginBottom: 16 }}>
         {/* Header del microciclo */}
@@ -313,7 +335,8 @@ const MicrocycleDetail = () => {
                   alignItems: 'center', 
                   justifyContent: 'center',
                   gap: 12,
-                  width: '100%'
+                  width: '100%',
+                  marginBottom: 8
                 }}>
                   <button
                     onClick={goToPrevious}
@@ -445,7 +468,7 @@ const MicrocycleDetail = () => {
                   ✏️ Editar Sets
                 </button>
                 <button
-                  onClick={() => setAddExerciseModalOpen(true)}
+                  onClick={() => navigate(`/coach/microcycle/${id}/add-exercise`, { state: { days: microcycle?.days || [] } })}
                   style={{
                     padding: '8px 16px',
                     borderRadius: 8,
@@ -467,8 +490,9 @@ const MicrocycleDetail = () => {
           {isMobile && (
             <div style={{ 
               display: 'flex', 
-              gap: 8,
-              marginBottom: 8,
+              gap: 16,
+              marginBottom: 16,
+              marginTop: 8,
             }}>
               <button
                 onClick={() => navigate(`/coach/microcycle/${id}/edit-sets`)}
@@ -487,7 +511,7 @@ const MicrocycleDetail = () => {
                 ✏️ Editar Sets
               </button>
               <button
-                onClick={() => setAddExerciseModalOpen(true)}
+                onClick={() => navigate(`/coach/microcycle/${id}/add-exercise`, { state: { days: microcycle?.days || [] } })}
                 style={{
                   flex: 1,
                   padding: '10px',
