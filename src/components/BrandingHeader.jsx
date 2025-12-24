@@ -8,6 +8,7 @@ import { useAuthStore } from '../hooks';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import FinalMobileDrawer from './FinalMobileDrawer';
 import ProfileSwitcher from './ProfileSwitcher';
+import NotificationBell from './notifications/NotificationBell';
 
 export default function BrandingHeader() {
   const { startLogout, user, student, userType, hasMultipleProfiles, profiles } = useAuthStore();
@@ -52,7 +53,7 @@ export default function BrandingHeader() {
         )}
         <GymLogo height={48} />
       </Box>
-      <Box display='flex' alignItems='center' gap={2}>
+      <Box display='flex' alignItems='center' gap={isMobile ? 1 : 2}>
         {/* ProfileSwitcher para usuarios con perfil dual, o Chip normal */}
         {!isMobile && showProfileSwitcher ? (
           <ProfileSwitcher />
@@ -97,6 +98,10 @@ export default function BrandingHeader() {
             }
           </Typography>
         )}
+        
+        {/* Campanita de notificaciones - siempre visible */}
+        <NotificationBell />
+        
         {!isMobile && (
           <IconButton color='inherit'>
             <PersonOutlinedIcon />
