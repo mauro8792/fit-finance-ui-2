@@ -11,6 +11,7 @@ import SportsMartialArtsIcon from '@mui/icons-material/SportsMartialArts';
 import PersonSearchIcon from '@mui/icons-material/PersonSearch';
 import PaidIcon from '@mui/icons-material/Paid';
 import FeedIcon from '@mui/icons-material/Feed';
+import SchoolIcon from '@mui/icons-material/School';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import ScheduleIcon from '@mui/icons-material/Schedule';
@@ -130,7 +131,7 @@ const MobileDrawer = ({ open, onClose }) => {
         <>
           <MobileItem title='HOME' to='/' icon={<HomeOutlinedIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileItem title='Disciplinas' to='/sports' icon={<SportsMartialArtsIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
-          <MobileItem title='Alumnos' to='/alumnos' icon={<PersonSearchIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
+          <MobileItem title='Gestión Alumnos' to='/admin-students' icon={<SchoolIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileItem title='Pagos' to='/pagos' icon={<PaidIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileItem title='Cuotas' to='/cuotas' icon={<FeedIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
           <MobileItem title='Usuarios' to='/usuarios' icon={<GroupIcon />} selected={selected} setSelected={setSelected} onClose={onClose} />
