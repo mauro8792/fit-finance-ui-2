@@ -73,10 +73,12 @@ export const StudentDashboard = () => {
   const nextFee = fees.find(f => f.status !== 'paid' && (f.isCurrent || f.isNext)) || fees.find(f => f.status !== 'paid');
   const isUpToDate = summary.pending === 0 && summary.partial === 0;
 
-  // Formatear fecha
+  // Formatear fecha (evitar problema de UTC)
   const formatDueDate = (dueDate) => {
     if (!dueDate) return null;
-    const date = new Date(dueDate);
+    // Parsear fecha sin timezone para evitar que se reste un día
+    const [year, month, day] = dueDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month es 0-indexed
     return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
   };
 
@@ -157,20 +159,16 @@ export const StudentDashboard = () => {
 
               <Typography variant="h6" color="white" fontWeight="bold">
                 {nextFee.monthName} {nextFee.year}
+                {nextFee.dueDate && (
+                  <Typography component="span" variant="body2" color="rgba(255,255,255,0.7)" sx={{ ml: 1 }}>
+                    — {nextFee.isOverdue ? 'Venció' : 'Vence'} {formatDueDate(nextFee.dueDate)}
+                  </Typography>
+                )}
               </Typography>
               
               <Typography variant="h4" fontWeight="bold" color={nextFee.isOverdue ? COLORS.red : COLORS.orange} my={1}>
                 ${(nextFee.remainingAmount || nextFee.value)?.toLocaleString()}
               </Typography>
-
-              {nextFee.dueDate && (
-                <Box display="flex" alignItems="center" gap={1}>
-                  <CalendarToday sx={{ fontSize: 16, color: 'rgba(255,255,255,0.5)' }} />
-                  <Typography variant="body2" color="rgba(255,255,255,0.6)">
-                    {nextFee.isOverdue ? 'Venció el' : 'Vence el'} {formatDueDate(nextFee.dueDate)}
-                  </Typography>
-                </Box>
-              )}
 
               {nextFee.status === 'partial' && (
                 <Typography variant="caption" color={COLORS.orange} display="block" mt={1}>
