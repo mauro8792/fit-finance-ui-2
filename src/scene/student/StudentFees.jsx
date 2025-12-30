@@ -9,16 +9,11 @@ import {
   Alert,
   Button,
   IconButton,
-  Collapse,
 } from '@mui/material';
 import { 
   CheckCircle, 
-  Warning, 
-  Error as ErrorIcon,
   ArrowBack,
   ContentCopy,
-  ExpandMore,
-  ExpandLess,
   CalendarToday,
   ReceiptLong,
 } from '@mui/icons-material';
@@ -50,7 +45,6 @@ export const StudentFees = () => {
   });
   const [coachPaymentInfo, setCoachPaymentInfo] = useState(null);
   const [copiedAlias, setCopiedAlias] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -87,10 +81,12 @@ export const StudentFees = () => {
   const paidFees = fees.filter(f => f.status === 'paid');
   const isUpToDate = summary.pending === 0 && summary.partial === 0;
 
-  // Formatear fecha de vencimiento
+  // Formatear fecha de vencimiento (evitar problema de UTC)
   const formatDueDate = (dueDate) => {
     if (!dueDate) return null;
-    const date = new Date(dueDate);
+    // Parsear fecha sin timezone para evitar que se reste un día
+    const [year, month, day] = dueDate.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
     return date.toLocaleDateString('es-AR', { day: 'numeric', month: 'long' });
   };
 
@@ -279,84 +275,69 @@ export const StudentFees = () => {
         </Card>
       )}
 
-      {/* Cuotas futuras pendientes */}
+      {/* Cuotas futuras pendientes - Cards más grandes */}
       {pendingFees.length > 0 && (
         <Box mb={3}>
-          <Typography variant="subtitle2" color="rgba(255,255,255,0.5)" mb={1}>
-            Próximos meses pendientes ({pendingFees.length})
+          <Typography variant="subtitle1" fontWeight="bold" color="rgba(255,255,255,0.7)" mb={2}>
+            📋 Próximas cuotas ({pendingFees.length})
           </Typography>
-          <Box display="flex" flexWrap="wrap" gap={1}>
+          <Box display="flex" flexDirection="column" gap={2}>
             {pendingFees.slice(0, 3).map((fee) => (
-              <Chip 
+              <Card 
                 key={fee.id}
-                label={`${fee.monthName?.slice(0,3)} - $${fee.value?.toLocaleString()}`}
-                size="small"
                 sx={{ 
-                  bgcolor: 'rgba(255,152,0,0.15)', 
-                  color: COLORS.orange,
-                  border: '1px solid rgba(255,152,0,0.3)',
+                  bgcolor: 'rgba(255,152,0,0.08)',
+                  border: '1px solid rgba(255,152,0,0.25)',
+                  borderRadius: 2,
                 }}
-              />
+              >
+                <CardContent sx={{ py: 2, px: 2.5, '&:last-child': { pb: 2 } }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center">
+                    <Box>
+                      <Typography variant="h6" fontWeight="bold" color="white">
+                        {fee.monthName} {fee.year}
+                      </Typography>
+                      {fee.dueDate && (
+                        <Typography variant="body2" color="rgba(255,255,255,0.5)">
+                          Vence el {formatDueDate(fee.dueDate)}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Typography variant="h5" fontWeight="bold" color={COLORS.orange}>
+                      ${fee.value?.toLocaleString()}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
             ))}
             {pendingFees.length > 3 && (
-              <Chip 
-                label={`+${pendingFees.length - 3} más`}
-                size="small"
-                sx={{ bgcolor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.5)' }}
-              />
+              <Typography variant="body2" color="rgba(255,255,255,0.5)" textAlign="center">
+                +{pendingFees.length - 3} cuota{pendingFees.length - 3 !== 1 ? 's' : ''} más
+              </Typography>
             )}
           </Box>
         </Box>
       )}
 
-      {/* Historial de pagos (colapsable) */}
+      {/* Botón para ver historial completo */}
       {paidFees.length > 0 && (
-        <Box>
-          <Button
-            fullWidth
-            onClick={() => setShowHistory(!showHistory)}
-            endIcon={showHistory ? <ExpandLess /> : <ExpandMore />}
-            sx={{ 
-              color: 'rgba(255,255,255,0.6)',
-              justifyContent: 'space-between',
-              textTransform: 'none',
-              mb: 1,
-            }}
-          >
-            <Typography variant="subtitle2">
-              ✅ Historial de pagos ({paidFees.length} cuota{paidFees.length !== 1 ? 's' : ''})
-            </Typography>
-          </Button>
-          
-          <Collapse in={showHistory}>
-            <Box display="flex" flexDirection="column" gap={1}>
-              {paidFees.map((fee) => (
-                <Box 
-                  key={fee.id}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    p: 1.5,
-                    bgcolor: 'rgba(76, 175, 80, 0.05)',
-                    borderRadius: 1,
-                    border: '1px solid rgba(76, 175, 80, 0.2)',
-                  }}
-                >
-                  <Box display="flex" alignItems="center" gap={1}>
-                    <CheckCircle sx={{ color: COLORS.green, fontSize: 18 }} />
-                    <Typography variant="body2" color="white">
-                      {fee.monthName} {fee.year}
-                    </Typography>
-                  </Box>
-                  <Typography variant="body2" color={COLORS.green} fontWeight="bold">
-                    ${fee.value?.toLocaleString()}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          </Collapse>
-        </Box>
+        <Button
+          fullWidth
+          variant="outlined"
+          startIcon={<CheckCircle />}
+          onClick={() => navigate('/student/payment-history')}
+          sx={{
+            borderColor: 'rgba(76, 175, 80, 0.3)',
+            color: COLORS.green,
+            py: 1.5,
+            '&:hover': {
+              borderColor: COLORS.green,
+              bgcolor: 'rgba(76, 175, 80, 0.1)',
+            },
+          }}
+        >
+          Ver historial de pagos ({paidFees.length} cuota{paidFees.length !== 1 ? 's' : ''})
+        </Button>
       )}
 
       {/* Sin cuotas */}

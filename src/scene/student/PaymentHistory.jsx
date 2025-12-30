@@ -112,34 +112,6 @@ const PaymentHistory = () => {
         </Card>
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-          {/* Resumen */}
-          <Card sx={{ 
-            bgcolor: 'rgba(76, 175, 80, 0.1)', 
-            border: '1px solid rgba(76, 175, 80, 0.3)',
-            borderRadius: 3,
-          }}>
-            <CardContent sx={{ py: 2 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Box>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                    Total pagos registrados
-                  </Typography>
-                  <Typography variant="h4" sx={{ color: '#4caf50', fontWeight: 700 }}>
-                    {payments.length}
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: 'right' }}>
-                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.6)' }}>
-                    Monto total pagado
-                  </Typography>
-                  <Typography variant="h5" sx={{ color: '#fff', fontWeight: 600 }}>
-                    {formatCurrency(payments.reduce((acc, p) => acc + parseFloat(p.amount), 0))}
-                  </Typography>
-                </Box>
-              </Box>
-            </CardContent>
-          </Card>
-
           {/* Lista de pagos */}
           {payments.map((payment, index) => (
             <Card
